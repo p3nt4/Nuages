@@ -10,4 +10,4 @@ The following clients are currently available:
  
  Both these clients were originally developped for development and testing purposes but they are reliable despite the spaghetti code.
 
-![Nuages_WebCli](https://user-images.githubusercontent.com/19682240/56824893-c8981700-6825-11e9-9cdc-8d8a02245d61.PNG)
+![Nuages_Cli](https://user-images.githubusercontent.com/19682240/57589031-ee8f0e00-74eb-11e9-9f7d-b3023a0e6506.PNG)
