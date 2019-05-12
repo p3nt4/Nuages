@@ -3,7 +3,9 @@ A modular C2
 
 ## Introduction
 
-Nuages aims at being a C2 framework in which back end elements are open source, whilst implants and handlers must be developed ad hoc by each user. It does not provide a way to generate implants, but an open source framework to develop and manage compatible implants that can leverage all the back end resources already developed.
+Nuages aims at being a C2 framework in which back end elements are open source, whilst implants and handlers must be developed ad hoc by users. As a result, it does not provide a way to generate implants, but an open source framework to develop and manage compatible implants that can leverage all the back end resources already developed. 
+
+This design hopes to facilitate penetration testing by facilitating the development of custom implants and reducing the likelihood of implants being detected by defensive solutions.
 
 Although Nuages is functionning, it is still a work in progress and contribution are welcome, wether it is solely testing, or development of new modules and compatible clients.
 
