@@ -1,0 +1,72 @@
+<!doctype html>
+  <html>
+    <head>
+      <link rel="stylesheet" href="lib/xterm.css" />
+      <script src="lib/xterm.js"></script> 
+      <script src="lib/fit.js"></script> 
+      <script type="text/javascript" src="lib/ajax.js"></script>
+      <script src="lib/feathers.js"></script>
+	  <script src="lib/socket.io.js"></script>
+    </head>
+	<style>
+	  .terminal {
+		position: fixed;
+		width: 100%;
+		height: 100%;
+		left: 0;
+		top: 0;
+		z-index: 10;
+	  }
+  </style>
+    <body>
+	  <div id="terminal" class='terminal'></div>
+		<script src="app/term.js"></script>
+		<script src="app/cmd.js"></script>
+		<script src="app/nuagesAPI.js"></script>
+		<script>
+          	
+		vars = { 
+			implants: {},
+			files: {},
+			modules: {},
+			jobs: {},
+			module: ""
+		};
+		vars.globalOptions = {
+				implant: 0,
+				path : ".",
+				chunksize: 2400000,
+				timeout: "1",
+		};
+			
+		vars.moduleOptions = {};
+
+		runFakeTerminal();
+		term.writeln(term.toBlue(term.toBold("                     +,,,,,,,,,,~=                        ")));
+		term.writeln(term.toBlue(term.toBold("                    ?,,,,,,,,,,,,,,,,?                      ")));
+		term.writeln(term.toBlue(term.toBold("                  +,,,,,,,,,,,,,,,,,,,:                                        ")));
+		term.writeln(term.toBlue(term.toBold("                 ~,,,,,,,,,,,,,,,,+,,,,,,,,,+               ")));
+		term.writeln(term.toBlue(term.toBold("               ,+?+:,,,,,,,,,,,,?,,,,,,,,,,,,,=             ")));
+		term.writeln(term.toBlue(term.toBold("            ?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:,,,,,,,,,?     ")));
+		term.writeln(term.toBlue(term.toBold("        ?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,= ")));
+		term.writeln(term.toBlue(term.toBold("       :,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,   , ,,,,,,,,,, ")));
+		term.writeln(term.toBlue(term.toBold("      ~+=:,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,:~,,,,,,,  ")));
+		term.writeln(term.toBlue(term.toBold("   ? ,,,,,,,=,,,,,,,,,,,,,,,,,"))+"_  _  __  __    __    ___  ____  ___     ___  ___  ");
+		term.writeln(term.toBlue(term.toBold(" + ,,,,,,,,,,, ,,, :,,,,,,,,,"))+"( \\( )(  )(  )  /__\\  / __)( ___)/ __)   / __)(__ \\ ");
+		term.writeln(term.toBlue(term.toBold("+ ,,,,,,,,,,,,,,,?,,,,,,,,,,, "))+")  (  )(__)(  /(__)\\( (_-. )__) \\__ \\  ( (__  / _/ ");
+		term.writeln(term.toBlue(term.toBold(" ,,,,,,,,,,,,,,?,,,,,,,,,,,,,"))+"(_)\\_)(______)(__)(__)\\___/(____)(___/   \\___)(____)");
+		term.writeln(term.toBlue(term.toBold(",,,,,,,,,,,,,,=,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,?          ")));
+		term.writeln(term.toBlue(term.toBold("  ~,,,,,,,,,,?,,,,,,,,,,,,,,, ,,,,,,,,,,,,,,,,,,,,,,+       ")));
+		term.writeln(term.toBlue(term.toBold("     ~+ ,,,,,~,,,,,,,,,,,,,,, ,,,,,,,,,,:,,,,,,,,,,+        ")));
+		term.writeln(term.toBlue(term.toBold("        ,,,,,,+ ,,,,,,,,,,,,,: ,,,,,,,,= +:   =?~           ")));
+		term.writeln(term.toBlue(term.toBold("          I:=, :,,,,,,,,,,,,,,+?,,,,,,~                     ")));
+		term.writeln(term.toBlue(term.toBold("                 =:,,,,,,,, ?                               ")));
+		term.writeln(term.toBlue(term.toBold("                     :++~                                   ")));
+		term.writeln("                                             !help for assistance");
+		term.prompt();
+
+    </script>
+	<input type="file" hidden onchange="loadFile()"><br>
+	<a id="DL" hidden><br>
+    </body>
+  </html>
