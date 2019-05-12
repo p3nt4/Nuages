@@ -134,7 +134,7 @@ if __name__ == "__main__":
     #The address of the Nuages C2 Server
     connectionString  = "http://192.168.49.133:3030"
     pkcs7 = PKCS7Encoder()
-    if len(argv) == 2:
-        run(port=int(argv[1]))
+    if len(argv) > 1:
+        run(HTTPServer, S, int(argv[1]))
     else:
         run()

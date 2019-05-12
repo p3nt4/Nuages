@@ -415,7 +415,7 @@ namespace NuagesSharpImplant
     {
     static void Main(string[] args)
         {
-            NuagesC2Direct connector = new NuagesC2Direct("http://127.0.0.1:3333");
+            NuagesC2Direct connector = new NuagesC2Direct("http://127.0.0.1:3030");
 
             // If the PyAES256 Handler is used:
             // NuagesC2PyAES256 connector = new NuagesC2PyAES256("http://192.168.49.1:4040", "PASSWORD");
