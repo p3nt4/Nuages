@@ -132,7 +132,7 @@ if __name__ == "__main__":
     # The encryption password
     aes = AESCipher("PASSWORD")
     #The address of the Nuages C2 Server
-    connectionString  = "http://192.168.49.133:3030"
+    connectionString  = "http://127.0.0.1:3030"
     pkcs7 = PKCS7Encoder()
     if len(argv) == 2:
         run(port=int(argv[1]))
