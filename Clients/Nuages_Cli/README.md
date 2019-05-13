@@ -18,7 +18,7 @@ or
 ## Reference
 
 ```
-!login <username>                       - Login to Nuages
+ !login <username>                       - Login to Nuages
  !implants                               - List implants
  !implants <id>                          - Show an implant
  !implants <id> del                      - Delete an implant
