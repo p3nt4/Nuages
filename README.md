@@ -20,7 +20,7 @@ For testing and refererence, an example implant and handler are provided on this
 ## Architecture
 ![Nuages](https://user-images.githubusercontent.com/19682240/56617113-ffcfb380-65ec-11e9-99ca-fc0e674d4dcd.PNG)
 
-**Nuages C2:** It is the core of the C2 and manages the implants, it is open source and should not need to be customized.
+**Nuages C2:** It is the core of the C2 and manages the implants, it is open source and should not need to be customized. It exposes the Nuages API, accessible over REST or Socket.io.
 
 **Implants:** Custom code to run on the target devices, they can communicate with handlers over custom protocol or directly with the Nuages API.
 
