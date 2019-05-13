@@ -1,6 +1,9 @@
 # Nuages
 A modular C2
 
+![Nuages_Cli - Copy](https://user-images.githubusercontent.com/19682240/57589042-1da57f80-74ec-11e9-9662-0e79268ff702.PNG)
+
+
 ## Introduction
 
 Nuages aims at being a C2 framework in which back end elements are open source, whilst implants and handlers must be developed ad hoc by users. As a result, it does not provide a way to generate implants, but an open source framework to develop and manage compatible implants that can leverage all the back end resources already developed. 
