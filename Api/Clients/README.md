@@ -1,4 +1,4 @@
-## The client API
+## Client API
 
 Nuages is based on FeatherJS, so referring to the FeatherJS documentation is a good way to get started: https://docs.feathersjs.com/api/client.
 
