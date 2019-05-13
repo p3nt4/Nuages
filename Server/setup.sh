@@ -14,7 +14,7 @@ else
 fi
 
 printf "\n\nInstalling feathers cli\n";
-npm install -g 2&>1 >/dev/null;
+npm install @feathersjs/cli  2&>1 >/dev/null;
 
 if [ $? -eq 0 ]; then
     echo "Done!"

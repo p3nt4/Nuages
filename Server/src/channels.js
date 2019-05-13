@@ -42,6 +42,10 @@ module.exports = function(app) {
     // To publish only for a specific event use `app.publish(eventname, () => {})`
 	if(hook.path == "fs/chunks"){
 		return;
+  }
+  
+  if(hook.path == "implant/heartbeat"){
+		return;
 	}
 	
 	if(hook.path == "fs"){
