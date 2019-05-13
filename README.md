@@ -1,5 +1,5 @@
 # Nuages
-A modular C2 framework.
+Nuages is a modular C2 framework.
 
 
 Refer to the [Wiki](https://github.com/p3nt4/Nuages/wiki) for documentation.
