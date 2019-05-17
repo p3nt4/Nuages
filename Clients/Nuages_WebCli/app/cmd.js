@@ -38,7 +38,7 @@ function executeCommand(cmd){
         cmdArray[0]="!implants";
     }
     if (cmdArray[0].toLowerCase() == "cd"){
-        createJob(vars.globalOptions.implant, {type:"Command", options:{ path: cmdArray.slice(1).join(" "), cmd: "   echo %cd%"}});
+        createJob(vars.globalOptions.implant, {type:"Command", options:{ path: vars.globalOptions.path, cmd: "cd /d "+cmdArray.slice(1).join(" ")+" &&   chdir"}});
     }
     else if (cmdArray[0].toLowerCase() == "!options"){
         printOptions();
