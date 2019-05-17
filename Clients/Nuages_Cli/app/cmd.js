@@ -49,7 +49,7 @@ exports.execute = function(cmd){
         cmdArray[0]="!implants";
     }
     if (cmdArray[0].toLowerCase() == "cd"){
-        nuages.createJob(nuages.vars.globalOptions.implant, {type:"Command", options:{ path: cmdArray.slice(1).join(" "), cmd: "   echo %cd%"}});
+        nuages.createJob(nuages.vars.globalOptions.implant, {type:"Command", options:{ path: nuages.vars.globalOptions.path, cmd: "cd /d "+cmdArray.slice(1).join(" ")+" &&   chdir"}});
     }
     else if (cmdArray[0].toLowerCase() == "!options"){
         nuages.printOptions();
