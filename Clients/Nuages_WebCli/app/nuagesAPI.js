@@ -9,7 +9,7 @@ const jobService = app.service('jobs');
 const fsService = app.service('fs');
 const fileService = app.service('/fs/files');
 const chunkService = app.service('/fs/chunks');
-const modrunService = app.service('/modules/run');
+const modrunService = app.service('/modules/runs');
 const moduleService = app.service('/modules');
 const modloadService = app.service('/modules/load');
 fsService.timeout = 20000000;
@@ -243,11 +243,7 @@ function processJobPatched(job){
     if(job.moduleRun !== undefined){
         return;
     }
-    if(job.payload.type=="Command" && job.payload.options.cmd == "   echo %cd%" && job.jobStatus == 3 && job.result){
-        vars.globalOptions.path = job.result.trim();
-        term.reprompt();
-    }
-    if(job.payload.type=="Command" && job.payload.options.cmd == "   echo %cd%" && job.jobStatus == 3 && job.result){
+    if(job.payload.type=="Command" && job.payload.options.cmd.split("&&").length > 1 && job.payload.options.cmd.split("&&")[1] == "   chdir" && job.jobStatus == 3 && job.result){
         vars.globalOptions.path = job.result.trim();
         term.reprompt();
     }
