@@ -260,11 +260,7 @@ nuages.processJobPatched = function (job){
     if(job.moduleRun !== undefined){
         return;
     }
-    if(job.payload.type=="Command" && job.payload.options.cmd == "   echo %cd%" && job.jobStatus == 3 && job.result){
-        nuages.vars.globalOptions.path = job.result.trim();
-        term.reprompt();
-    }
-    if(job.payload.type=="Command" && job.payload.options.cmd == "   echo %cd%" && job.jobStatus == 3 && job.result){
+    if(job.payload.type=="Command" && job.payload.options.cmd.split("&&").length > 1 && job.payload.options.cmd.split("&&")[1] == "   chdir" && job.jobStatus == 3 && job.result){
         nuages.vars.globalOptions.path = job.result.trim();
         term.reprompt();
     }
