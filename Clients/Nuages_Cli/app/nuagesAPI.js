@@ -40,6 +40,16 @@ nuages.vars.globalOptions = {
     
 nuages.vars.moduleOptions = {};
 
+function makeid(length) { //Note made to be secure - just to differentiates sessions as we are only using one user
+   var result           = '';
+   var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+   var charactersLength = characters.length;
+   for ( var i = 0; i < length; i++ ) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+   }
+   return result;
+}
+
 nuages.login = async function(user,password){
     try {
         await app.logout();
@@ -49,6 +59,7 @@ nuages.login = async function(user,password){
         term.logSuccess("Authentication Successful", user.email);
         nuages.getImplants();
         nuages.getModules(false);
+        nuages.vars.session = makeid(32);
     } catch(error) {
     // If we got an error, show the login page
         term.logError(error.message);
@@ -247,6 +258,7 @@ nuages.createJob = function (implant, payload){
         nuages.jobService.create({
             implantId: nuages.vars.implants[implant]._id,
             timeout: timeout,
+            vars: {session: nuages.vars.session},
             payload: payload}
             ).catch((err) => {
                 term.logError(err.message);
@@ -258,6 +270,9 @@ nuages.createJob = function (implant, payload){
 
 nuages.processJobPatched = function (job){
     if(job.moduleRun !== undefined){
+        return;
+    }
+    if(job.vars.session === undefined || job.vars.session != nuages.vars.session){
         return;
     }
     if(job.payload.type=="Command" && job.payload.options.cmd.split("&&").length > 1 && job.payload.options.cmd.split("&&")[1] == "   chdir" && job.jobStatus == 3 && job.result){
