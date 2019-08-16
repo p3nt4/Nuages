@@ -13,20 +13,24 @@ module.exports = function (options = {}) {
 			throw error.NotFound("File not found");
 		}
 		
-		// Find the last chunk of the file
-		const query = await context.app.service('/fs/chunks').find({
-		  query: {
-			$limit: 1,
-			files_id: context.id,
-			$sort: {
-			  n: -1
-			}
-		  }
-		});
-		
-		const lastChunk = query.data[0];
-		
-		file.length = lastChunk.n * file.chunkSize + lastChunk.data.length;
+		// Find the last chunk of the file if not provided
+        if(context.data.lastChunk===undefined){
+		    const query = await context.app.service('/fs/chunks').find({
+		      query: {
+			    $limit: 1,
+			    files_id: context.id,
+			    $sort: {
+			      n: -1
+			    }
+		      }
+	        });
+		    const lastChunk = query.data[0];
+            file.length = lastChunk.n * file.chunkSize + lastChunk.data.length;
+            file.complete = true;
+        }else{
+            file.length = context.data.lastChunk * (1 + file.chunkSize);
+            file.complete = false;
+        }
 		
 		file.uploadDate = Date.now();
 
