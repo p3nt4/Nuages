@@ -15,6 +15,17 @@ const modloadService = app.service('/modules/load');
 fsService.timeout = 20000000;
 chunkService.timeout = 20000000;
 
+function makeid(length) { //Note made to be secure - just to differentiates sessions as we are only using one user
+   var result           = '';
+   var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+   var charactersLength = characters.length;
+   for ( var i = 0; i < length; i++ ) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+   }
+   return result;
+}
+
+
 async function login(user,password){
     try {
         await app.logout();
@@ -24,6 +35,7 @@ async function login(user,password){
         term.logSuccess("Authentication Successful", user.email);
         getImplants();
         getModules(false);
+        vars.session = makeid(32);
     } catch(error) {
     // If we got an error, show the login page
         term.logError(error.message);
@@ -228,6 +240,7 @@ function createJob(implant, payload){
         jobService.create({
             implantId: vars.implants[implant]._id,
             timeout: timeout,
+            vars: {session: vars.session},
             payload: payload}
             ).catch((err) => {
                 term.logError(err.message);
@@ -238,7 +251,10 @@ function createJob(implant, payload){
 }
 
 function processJobPatched(job){
-    //!console.log(job);
+    //console.log(job);
+    if(job.vars.session === undefined || job.vars.session != vars.session){
+        return;
+    }
 
     if(job.moduleRun !== undefined){
         return;
