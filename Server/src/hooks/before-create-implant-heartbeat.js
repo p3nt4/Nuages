@@ -36,6 +36,7 @@ module.exports = function (options = {}) {
         }else{
           context.app.service('jobs').patch(jobs.data[i]._id, {jobStatus: 1});
           delete jobs.data[i].creator;
+          delete jobs.data[i].vars;
           if(jobs.data[i].payload.type == "Upload"){
             delete jobs.data[i].payload.options.file_id;
           }
