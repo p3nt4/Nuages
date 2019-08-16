@@ -18,6 +18,8 @@ module.exports = function (options = {}) {
 
     context.data.result = "";
 
+    context.data.vars = context.data.vars ? context.data.vars : {}; // An object to put any variables wanted, that will not be shared with the implant
+
     context.data.creator = context.params.user ? context.params.user.email : "";
 
     context.data.timeout = context.data.timeout ? parseInt(context.data.timeout) : 9555520390191;
