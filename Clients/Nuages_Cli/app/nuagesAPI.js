@@ -450,7 +450,7 @@ nuages.jobService.on('patched', job => nuages.processJobPatched(job));
 nuages.implantService.on('created', function(implant){nuages.vars.implants[implant._id.substring(0,6)] = implant; term.logInfo("New Implant:\r\n" + nuages.printImplants({imp: implant}));});
 nuages.implantService.on('patched', function(implant){nuages.vars.implants[implant._id.substring(0,6)] = implant});
 nuages.implantService.on('removed', function(implant){delete nuages.vars.implants[implant._id.substring(0,6)]; term.logInfo("Deleted Implant:\r\n" + nuages.printImplants({imp: implant}));});
-nuages.fsService.on('patched', function(file){nuages.vars.files[file._id.substring(0,6)] = file; term.logInfo("New File:\r\n" + nuages.printFiles({imp: file}));});
+nuages.fsService.on('patched', function(file){nuages.vars.files[file._id.substring(0,6)] = file; if(file.completed){term.logInfo("New File:\r\n" + nuages.printFiles({imp: file}));}});
 nuages.fsService.on('removed', function(file){term.logInfo("Deleted file:\r\n" + nuages.printFiles({imp: nuages.vars.files[file.id.substring(0,6)]}));delete nuages.vars.files[file.id.substring(0,6)];});
 nuages.modrunService.on('patched', function(run){nuages.printModRunLog(run)});
 nuages.moduleService.on('created', function(mod){term.logInfo("Module loaded:\r\n" + nuages.printModules({mod: mod}));nuages.vars.modules[mod.name]=mod;});
