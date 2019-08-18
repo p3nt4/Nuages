@@ -392,7 +392,7 @@ jobService.on('patched', job => processJobPatched(job));
 implantService.on('created', function(implant){vars.implants[implant._id.substring(0,6)] = implant; term.logInfo("New Implant:\r\n" + printImplants({imp: implant}));});
 implantService.on('patched', function(implant){vars.implants[implant._id.substring(0,6)] = implant});
 implantService.on('removed', function(implant){delete vars.implants[implant._id.substring(0,6)]; term.logInfo("Deleted Implant:\r\n" + printImplants({imp: implant}));});
-fsService.on('patched', function(file){vars.files[file._id.substring(0,6)] = file; if(file.completed){ term.logInfo("New File:\r\n" + printFiles({imp: file}));}});
+fsService.on('patched', function(file){vars.files[file._id.substring(0,6)] = file; if(file.complete){ term.logInfo("New File:\r\n" + printFiles({imp: file}));}});
 fsService.on('removed', function(file){term.logInfo("Deleted file:\r\n" + printFiles({imp: vars.files[file.id.substring(0,6)]}));delete vars.files[file.id.substring(0,6)];});
 modrunService.on('patched', function(run){printModRunLog(run)});
 moduleService.on('created', function(mod){term.logInfo("Module loaded:\r\n" + printModules({mod: mod}));vars.modules[mod.name]=mod;});
