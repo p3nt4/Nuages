@@ -23,10 +23,10 @@ else
     exit 1
 fi
 
-command -v feathers >/dev/null 2>&1 || { printf >&2 "\n\nFeathers-cli install failed.  Aborting."; exit 1; }
+command -v ./node_modules/@feathersjs/cli/bin/feathers.js >/dev/null 2>&1 || { printf >&2 "\n\nFeathers-cli install failed.  Aborting."; exit 1; }
 
 printf "\n\nSetting up database, select mongodb and enter connection string:\n"
-feathers generate connection;
+./node_modules/@feathersjs/cli/bin/feathers.js generate connection;
 
 if [ $? -eq 0 ]; then
     echo "Done!"
@@ -47,7 +47,7 @@ else
 fi
 
 printf "\n\nSetting up authentication, select local and users:\n";
-feathers generate authentication;
+./node_modules/@feathersjs/cli/bin/feathers.js generate authentication;
 
 if [ $? -eq 0 ]; then
     echo "Done!"
