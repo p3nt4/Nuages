@@ -141,6 +141,6 @@ if __name__ == "__main__":
     connectionString  = args.uri
     pkcs7 = PKCS7Encoder()
     if len(argv) > 1:
-        run(HTTPServer, S, int(args.port)
+        run(HTTPServer, S, int(args.port))
     else:
         run()
