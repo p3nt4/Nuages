@@ -30,6 +30,7 @@ or
  !put <fileId> [path]                    - Start a download job on the current implant
  !get <path>                             - Start an upload job on the current implant
  cd <path>                               - Change path on the current implant
+ !files                                  - List files
  !files upload <path>                    - Upload a file from the local client
  !files <id> download <path>             - Download a file to the local client
  !files <id> del                         - Delete a file
