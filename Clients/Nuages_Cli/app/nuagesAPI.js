@@ -350,6 +350,7 @@ nuages.printHelp  = function (){
     string += " !put <fileId> [path]                    - Start a download job on the current implant\r\n";
     string += " !get <path>                             - Start an upload job on the current implant\r\n";
     string += " cd <path>                               - Change path on the current implant\r\n";
+    string += " !files                                  - List files\r\n";
     string += " !files upload <path>                    - Upload a file from the local client\r\n";
     string += " !files <id> download <path>             - Download a file to the local client\r\n";
     string += " !files <id> del                         - Delete a file\r\n";

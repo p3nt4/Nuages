@@ -96,6 +96,7 @@ term.setPromptline = function(){
         return;
     }
     var imp = vars.implants[vars.globalOptions.implant];
+    var path = vars.paths[vars.globalOptions.implant];
     var mod = vars.modules[vars.module];
     term.promptline = "";
     var n = 0;
@@ -108,7 +109,7 @@ term.setPromptline = function(){
         n += 20;
     }
     if(imp){
-        term.promptline += term.toRed(imp.username) + "@" + term.toRed(imp.hostname) + ": "+ vars.globalOptions.path;
+        term.promptline += term.toRed(imp.username) + "@" + term.toRed(imp.hostname) + ": "+ path;
         n += 40;
     }else if(!mod) {
         term.promptline += "|"+term.toBold(term.toBlue('Nuages'));

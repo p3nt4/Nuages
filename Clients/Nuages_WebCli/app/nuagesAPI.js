@@ -1,4 +1,5 @@
-const socket = io(window.location.protocol+ "//" + window.location.host);
+//const socket = io(window.location.protocol+ "//" + window.location.host);
+const socket = io("http://192.168.49.130:3030");
 const app = feathers();
 app.configure(feathers.authentication({
     storage: window.localStorage
@@ -171,7 +172,7 @@ function printOptions(){
     string += " Implant       | " + vars.globalOptions.implant.toString() +"\r\n";
     string += " Chunk Size    | " + vars.globalOptions.chunksize.toString() +"\r\n";
     string += " Timeout (min) | " + vars.globalOptions.timeout.toString() +"\r\n";
-    string += " Path          | " + vars.globalOptions.path;
+    //string += " Path          | " + vars.globalOptions.path;
     term.writeln(string);
     if(vars.modules[vars.module]!=undefined){
         string = "\r\n ["+term.toBold(term.toMagenta("Module"))+"]"
@@ -259,9 +260,13 @@ function processJobPatched(job){
     if(job.moduleRun !== undefined){
         return;
     }
-    if(job.payload.type=="Command" && job.payload.options.cmd.split("&&").length > 1 && job.payload.options.cmd.split("&&")[1] == "   chdir" && job.jobStatus == 3 && job.result){
-        vars.globalOptions.path = job.result.trim();
+    if(job.payload.type=="Command" && job.payload.options.cd == true && job.result){
+        vars.globalOptions.path = job.result.trim();	        if(job.result.split('\n').length > 3){
+        vars.paths[job.implantId.substring(0,6)] = job.result.split('\n')[2].trim();
         term.reprompt();
+        }else{
+            term.logError("Path not found");
+        }
     }
     else if(job.jobStatus == 4){
         if(job.payload.type=="Command"){
@@ -335,6 +340,7 @@ function printHelp(){
     string += " !put <fileId> [path]                    - Start a download job on the current implant\r\n";
     string += " !get <path>                             - Start an upload job on the current implant\r\n";
     string += " cd <path>                               - Change path on the current implant\r\n";
+    string += " !files                                  - List files\r\n";
     string += " !files upload                           - Upload a file from the local client\r\n";
     string += " !files <id> download                    - Download a file to the local client\r\n";
     string += " !files <id> del                         - Delete a file\r\n";
