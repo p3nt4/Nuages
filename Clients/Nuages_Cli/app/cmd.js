@@ -121,7 +121,7 @@ exports.execute = function(cmd){
     else if (cmdArray[0].toLowerCase() == "!put"){
         if(nuages.vars.files[cmdArray[1]] != undefined ||  cmdArray.length < 2){
             var file = cmdArray[2] ? cmdArray[2] : nuages.vars.files[cmdArray[1]].filename;
-            nuages.createJob(nuages.vars.globalOptions.implant, {type:"Download", options:{ file: file, file_id: nuages.vars.files[cmdArray[1]]._id, length: nuages.vars.files[cmdArray[1]].length, chunkSize: nuages.vars.files[cmdArray[1]].chunkSize, path: nuages.vars.implants[nuages.vars.globalOptions.implant.substring(0.6).path]}});
+            nuages.createJob(nuages.vars.globalOptions.implant, {type:"Download", options:{ file: file, file_id: nuages.vars.files[cmdArray[1]]._id, length: nuages.vars.files[cmdArray[1]].length, chunkSize: nuages.vars.files[cmdArray[1]].chunkSize, path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)]}});
         }else{
             term.printError("\r\n File not found");
         }

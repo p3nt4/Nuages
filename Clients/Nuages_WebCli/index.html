@@ -25,23 +25,6 @@
 		<script src="app/nuagesAPI.js"></script>
 		<script>
           	
-		vars = { 
-			implants: {},
-			files: {},
-			modules: {},
-			jobs: {},
-			paths: {},
-			module: ""
-		};
-		vars.globalOptions = {
-				implant: 0,
-				//path : ".",
-				chunksize: 2400000,
-				timeout: "1",
-		};
-			
-		vars.moduleOptions = {};
-
 		runFakeTerminal();
 		term.writeln(term.toBlue(term.toBold("                     +,,,,,,,,,,~=                        ")));
 		term.writeln(term.toBlue(term.toBold("                    ?,,,,,,,,,,,,,,,,?                      ")));
@@ -67,7 +50,7 @@
 		term.prompt();
 
     </script>
-	<input type="file" hidden onchange="loadFile()"><br>
+	<input type="file" hidden onchange="nuages.loadFile()"><br>
 	<a id="DL" hidden><br>
     </body>
   </html>

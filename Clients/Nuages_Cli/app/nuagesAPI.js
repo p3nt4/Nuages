@@ -41,6 +41,111 @@ nuages.vars.globalOptions = {
     
 nuages.vars.moduleOptions = {};
 
+nuages.printHelp = function (){
+    var string = "\r\n";
+    string += " !login <username>                       - Login to Nuages\r\n" ;
+    string += " !implants                               - List implants\r\n";
+    string += " !implants <id>                          - Show an implant\r\n";
+    string += " !implants <id> del                      - Delete an implant\r\n";
+    string += " !implants <id> kill                     - Kill an implant\r\n";
+    string += " !implants <id> config                   - Get the configuration from the implant\r\n";
+    string += " !implants <id> config <option> <value>  - Reconfigure the implant\r\n";
+    string += " !implant [Command..]                    - Apply the command to the current implant\r\n";
+    string += " !shell <implant>                        - Start interracting with an implant\r\n" ;
+    string += " !put <fileId> [path]                    - Start a download job on the current implant\r\n";
+    string += " !get <path>                             - Start an upload job on the current implant\r\n";
+    string += " cd <path>                               - Change path on the current implant\r\n";
+    string += " !files                                  - List files\r\n";
+    string += " !files upload <path>                    - Upload a file from the local client\r\n";
+    string += " !files <id> download <path>             - Download a file to the local client\r\n";
+    string += " !files <id> del                         - Delete a file\r\n";
+    string += " !options                                - Show options\r\n" ;
+    string += " !setg <option> <value>                  - Set a global option\r\n" ;
+    string += " !set <option> <value>                   - Set a module option\r\n" ;
+    string += " !use <path>                             - Select a module\r\n";
+    string += " !modules load <path>                    - Load a module\r\n";
+    string += " !modules <path> del                     - Delete a module\r\n";
+    string += " !jobs                                   - Display the last jobs\r\n";
+    string += " !jobs  <id>                             - Display a job and its result\r\n";
+    string += " !help                                   - Print this message\r\n";
+    term.printInfo(string, "Help")
+}
+nuages.loadFile = async function(filePath) {
+    var CHUNK_SIZE = parseInt(nuages.vars.globalOptions.chunksize) * 3/4;
+    buffer = new Buffer(CHUNK_SIZE);
+    fs.open(filePath, 'r', async function(err, fd) {
+        if (err) {term.logError(err.message); return};
+        var file = await nuages.fileService.create({filename: path.basename(filePath), chunkSize: parseInt(nuages.vars.globalOptions.chunksize) , length: 0, metadata:{path:"N/A"}}).catch((err) => {
+            term.logError(err.message);
+        });
+        if (!file){return;}
+        var n = 0;
+        async function readNextChunk() {
+          fs.read(fd, buffer, 0, CHUNK_SIZE, null, async function(err, nread) {
+            if (err) throw err;
+            if (nread === 0) {
+                nuages.fsService.patch(file._id,{}).catch((err) => {
+                    term.logError(err.message);
+                });	
+                fs.close(fd, function(err) {
+                    if (err) throw err;
+                });
+                return;
+            }
+      
+            var data;
+            if (nread < CHUNK_SIZE)
+              data = buffer.slice(0, nread);
+            else
+              data = buffer;
+              // We dont really have to wait but lets spare the server
+              await nuages.chunkService.create({files_id: file._id, n: n, data:data.toString('base64')}).catch((err) => {
+                term.logError(err.message);
+                return;
+            });	
+            n++;
+            readNextChunk();
+          });
+
+        }
+        readNextChunk();
+      });
+}
+
+nuages.downloadFile = async function(fileId, filePath){
+    if (nuages.vars.files[fileId] != undefined){
+        nuages.fileService.get(nuages.vars.files[fileId]._id).then(async function(result) {
+            try{
+            var arraySize = Math.floor(result.length/result.chunkSize);
+            if (result.length != arraySize * result.chunkSize){
+                arraySize++;
+            }
+            filePath = !(fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()) ? filePath : path.resolve(filePath, result.filename);
+            var writeStream = fs.createWriteStream(filePath);
+            for(var i = 0; i < arraySize; i ++){
+                await nuages.chunkService.find({query: {
+                    n: i,
+                    files_id: nuages.vars.files[fileId]._id
+                    }}).then( function(result) {
+                        var buf = Buffer.from(result.data[0].data, 'base64');
+                        writeStream.write(buf);
+                    }).catch((e) =>{
+                        term.logError(e.message);
+                        writeStream.close();
+                        return;
+                    });
+            }
+            writeStream.close();
+            term.logInfo(filePath + " downloaded");
+        }catch(e){term.logError(e.message);}
+        });
+    }else{
+        term.logError("File not found");
+    }
+};
+
+// Everything below this should be the same in the WebCli
+
 function makeid(length) { //Not made to be secure - just to differentiates sessions as we are only using one user
    var result           = '';
    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -312,7 +417,7 @@ nuages.dataURLtoBlob  = function (dataurl) {
 
 nuages.exportToFile  = function (b64, fileName) {
     //const u8arr = new TextEncoder('utf-8').encode(JSON.stringify(jsonData, null, 2));
-    const url = window.URL.createObjectURL(dataURLtoBlob("data:application/octet-stream;base64,"+b64));
+    const url = window.URL.createObjectURL(nuages.dataURLtoBlob("data:application/octet-stream;base64,"+b64));
     const element = document.createElement('a');
     element.setAttribute('href', url);
     element.setAttribute('download', fileName);
@@ -336,36 +441,6 @@ nuages.printModRunLog  = function (modRun){
     }
 }
 
-nuages.printHelp  = function (){
-    var string = "\r\n";
-    string += " !login <username>                       - Login to Nuages\r\n" ;
-    string += " !implants                               - List implants\r\n";
-    string += " !implants <id>                          - Show an implant\r\n";
-    string += " !implants <id> del                      - Delete an implant\r\n";
-    string += " !implants <id> kill                     - Kill an implant\r\n";
-    string += " !implants <id> config                   - Get the configuration from the implant\r\n";
-    string += " !implants <id> config <option> <value>  - Reconfigure the implant\r\n";
-    string += " !implant [Command..]                    - Apply the command to the current implant\r\n";
-    string += " !shell <implant>                        - Start interracting with an implant\r\n" ;
-    string += " !put <fileId> [path]                    - Start a download job on the current implant\r\n";
-    string += " !get <path>                             - Start an upload job on the current implant\r\n";
-    string += " cd <path>                               - Change path on the current implant\r\n";
-    string += " !files                                  - List files\r\n";
-    string += " !files upload <path>                    - Upload a file from the local client\r\n";
-    string += " !files <id> download <path>             - Download a file to the local client\r\n";
-    string += " !files <id> del                         - Delete a file\r\n";
-    string += " !options                                - Show options\r\n" ;
-    string += " !setg <option> <value>                  - Set a global option\r\n" ;
-    string += " !set <option> <value>                   - Set a module option\r\n" ;
-    string += " !use <path>                             - Select a module\r\n";
-    string += " !modules load <path>                    - Load a module\r\n";
-    string += " !modules <path> del                     - Delete a module\r\n";
-    string += " !jobs                                   - Display the last jobs\r\n";
-    string += " !jobs  <id>                             - Display a job and its result\r\n";
-    string += " !help                                   - Print this message\r\n";
-
-    term.printInfo(string, "Help")
-}
 
 nuages.chunkSubstr  = function (str, size) {
     const numChunks = Math.ceil(str.length / size)
@@ -377,80 +452,6 @@ nuages.chunkSubstr  = function (str, size) {
 
     return chunks
   }
-
-  nuages.loadFile = async function(filePath) {
-    var CHUNK_SIZE = parseInt(nuages.vars.globalOptions.chunksize) * 3/4;
-    buffer = new Buffer(CHUNK_SIZE);
-    fs.open(filePath, 'r', async function(err, fd) {
-        if (err) {term.logError(err.message); return};
-        var file = await nuages.fileService.create({filename: path.basename(filePath), chunkSize: parseInt(nuages.vars.globalOptions.chunksize) , length: 0, metadata:{path:"N/A"}}).catch((err) => {
-            term.logError(err.message);
-        });
-        if (!file){return;}
-        var n = 0;
-        async function readNextChunk() {
-          fs.read(fd, buffer, 0, CHUNK_SIZE, null, async function(err, nread) {
-            if (err) throw err;
-            if (nread === 0) {
-                nuages.fsService.patch(file._id,{}).catch((err) => {
-                    term.logError(err.message);
-                });	
-                fs.close(fd, function(err) {
-                    if (err) throw err;
-                });
-                return;
-            }
-      
-            var data;
-            if (nread < CHUNK_SIZE)
-              data = buffer.slice(0, nread);
-            else
-              data = buffer;
-              // We dont really have to wait but lets spare the server
-              await nuages.chunkService.create({files_id: file._id, n: n, data:data.toString('base64')}).catch((err) => {
-                term.logError(err.message);
-                return;
-            });	
-            n++;
-            readNextChunk();
-          });
-
-        }
-        readNextChunk();
-      });
-}
-
-nuages.downloadFile = async function(fileId, filePath){
-    if (nuages.vars.files[fileId] != undefined){
-        nuages.fileService.get(nuages.vars.files[fileId]._id).then(async function(result) {
-            try{
-            var arraySize = Math.floor(result.length/result.chunkSize);
-            if (result.length != arraySize * result.chunkSize){
-                arraySize++;
-            }
-            filePath = !(fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()) ? filePath : path.resolve(filePath, result.filename);
-            var writeStream = fs.createWriteStream(filePath);
-            for(var i = 0; i < arraySize; i ++){
-                await nuages.chunkService.find({query: {
-                    n: i,
-                    files_id: nuages.vars.files[fileId]._id
-                    }}).then( function(result) {
-                        var buf = Buffer.from(result.data[0].data, 'base64');
-                        writeStream.write(buf);
-                    }).catch((e) =>{
-                        term.logError(e.message);
-                        writeStream.close();
-                        return;
-                    });
-            }
-            writeStream.close();
-            term.logInfo(filePath + " downloaded");
-        }catch(e){term.logError(e.message);}
-        });
-    }else{
-        term.logError("File not found");
-    }
-};
 
 nuages.jobService.on('patched', job => nuages.processJobPatched(job));
 nuages.implantService.on('created', function(implant){nuages.vars.implants[implant._id.substring(0,6)] = implant; term.logInfo("New Implant:\r\n" + nuages.printImplants({imp: implant}));});

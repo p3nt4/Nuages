@@ -95,13 +95,13 @@ term.setPromptline = function(){
         term.promptLength = term.promptline.length;
         return;
     }
-    var imp = vars.implants[vars.globalOptions.implant];
-    var path = vars.paths[vars.globalOptions.implant];
-    var mod = vars.modules[vars.module];
+    var imp = nuages.vars.implants[nuages.vars.globalOptions.implant];
+    var path = nuages.vars.paths[nuages.vars.globalOptions.implant];
+    var mod = nuages.vars.modules[nuages.vars.module];
     term.promptline = "";
     var n = 0;
     if(imp){
-        term.promptline += "["+term.toBold(term.toBlue(vars.globalOptions.implant))+"]";
+        term.promptline += "["+term.toBold(term.toBlue(nuages.vars.globalOptions.implant))+"]";
         n += 40;
     }
     if (mod){
@@ -177,7 +177,7 @@ term.on('key', async function(key, ev) {
         if(term.passwordMode){
             term.passwordMode = false;
             term.setPromptline();
-            login(vars.user.email, term.command+term.command2);
+            nuages.login(nuages.vars.user.email, term.command+term.command2);
         }else{
             term.commandHistory.push(term.command+term.command2);
             executeCommand(term.command+term.command2);
