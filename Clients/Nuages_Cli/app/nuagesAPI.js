@@ -26,6 +26,7 @@ nuages.chunkService.timeout = 20000000;
 
 nuages.vars = { 
     implants: {},
+    paths:{},
     files: {},
     modules: {},
     jobs: {},
@@ -33,14 +34,14 @@ nuages.vars = {
 };
 nuages.vars.globalOptions = {
         implant: 0,
-        path : ".",
+        //path : ".",
         chunksize: 2400000,
         timeout: "1",
 };
     
 nuages.vars.moduleOptions = {};
 
-function makeid(length) { //Note made to be secure - just to differentiates sessions as we are only using one user
+function makeid(length) { //Not made to be secure - just to differentiates sessions as we are only using one user
    var result           = '';
    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
    var charactersLength = characters.length;
@@ -190,7 +191,7 @@ nuages.printOptions = function(){
     string += " Implant       | " + nuages.vars.globalOptions.implant.toString() +"\r\n";
     string += " Chunk Size    | " + nuages.vars.globalOptions.chunksize.toString() +"\r\n";
     string += " Timeout (min) | " + nuages.vars.globalOptions.timeout.toString() +"\r\n";
-    string += " Path          | " + nuages.vars.globalOptions.path;
+    //string += " Path          | " + nuages.vars.globalOptions.path;
     term.writeln(string);
     if(nuages.vars.modules[nuages.vars.module]!=undefined){
         string = "\r\n ["+term.toBold(term.toMagenta("Module"))+"]"
@@ -275,8 +276,12 @@ nuages.processJobPatched = function (job){
     if(job.vars.session === undefined || job.vars.session != nuages.vars.session){
         return;
     }
-    if(job.payload.type=="Command" && job.payload.options.cmd.split("&&").length > 1 && job.payload.options.cmd.split("&&")[1] == "   chdir" && job.jobStatus == 3 && job.result){
-        nuages.vars.globalOptions.path = job.result.trim();
+    if(job.payload.type=="Command" && job.payload.options.cd == true && job.result){
+        if(job.result.split('\n').length > 3){
+            nuages.vars.paths[job.implantId.substring(0,6)] = job.result.split('\n')[2].trim();
+        }else{
+            term.logError("Path not found");
+        }
         term.reprompt();
     }
     else if(job.jobStatus == 4){

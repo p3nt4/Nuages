@@ -18,6 +18,7 @@ term.toRed = (text) => {
 };
 
 term.reprompt = ()=>{
+    term.setPromptline();
     term.prompt();
 }
 term.toGreen = (text) => {
@@ -84,6 +85,7 @@ term.setPromptline = function(){
     term.stdoutMuted = false;
     var imp = nuages.vars.implants[nuages.vars.globalOptions.implant];
     var mod = nuages.vars.modules[nuages.vars.module];
+    var path = nuages.vars.paths[nuages.vars.globalOptions.implant];
     term.promptline = "";
     var n = 0;
     if(imp){
@@ -95,7 +97,7 @@ term.setPromptline = function(){
         n += 20;
     }
     if(imp){
-        term.promptline += term.toRed(imp.username) + "@" + term.toRed(imp.hostname) + ": "+ nuages.vars.globalOptions.path;
+        term.promptline += term.toRed(imp.username) + "@" + term.toRed(imp.hostname) + ": "+ path;
         n += 40;
     }else if(!mod) {
         term.promptline += "|"+term.toBold(term.toBlue('Nuages'));
