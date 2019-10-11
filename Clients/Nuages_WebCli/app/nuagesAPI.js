@@ -1,5 +1,4 @@
-//const socket = io(window.location.protocol+ "//" + window.location.host);
-const socket = io("http://192.168.49.130:3030");
+const socket = io(window.location.protocol+ "//" + window.location.host);
 const app = feathers();
 app.configure(feathers.authentication({
     storage: window.localStorage
