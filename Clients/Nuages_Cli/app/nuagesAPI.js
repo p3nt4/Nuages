@@ -67,6 +67,7 @@ nuages.printHelp = function (){
     string += " !modules <path> del                     - Delete a module\r\n";
     string += " !jobs                                   - Display the last jobs\r\n";
     string += " !jobs  <id>                             - Display a job and its result\r\n";
+    string += " !jobs search <command>                  - Search jobs by command\r\n";
     string += " !help                                   - Print this message\r\n";
     term.printInfo(string, "Help")
 }
@@ -348,9 +349,13 @@ nuages.getFiles = async function(){
     term.logInfo("Files:\r\n" + nuages.printFiles(items.data)); 
 }
 
-nuages.getJobs = async function(){
+nuages.getJobs = async function(query){
     try{
-        items = await nuages.jobService.find({query: {$limit: 15, $sort: { lastUpdated: -1 }}});
+        if(query == undefined){
+           items = await nuages.jobService.find({query: {$limit: 20, $sort: { lastUpdated: -1 }}});
+        }else{
+           items = await nuages.jobService.find({query: {$limit: 20, $sort: { lastUpdated: -1 }, "payload.options.cmd": query}});
+        }
         }catch(e){term.printError(e);}
     for(var i = 0; i< items.data.length; i++){
         nuages.vars.jobs[items.data[i]._id.substring(0,6)] = items.data[i]

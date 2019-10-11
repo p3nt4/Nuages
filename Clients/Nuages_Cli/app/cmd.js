@@ -154,7 +154,10 @@ exports.execute = function(cmd){
     }else if (cmdArray[0].toLowerCase() == "!jobs"){
         if(cmdArray.length < 2){
             nuages.getJobs();
-        }else{
+        }else if(cmdArray.length == 3 && cmdArray[1].toLowerCase()=="search"){
+            nuages.getJobs(cmdArray[2]);
+        }
+        else{
             if (nuages.vars.jobs[cmdArray[1]] != undefined){
                 term.writeln("\r\n" + nuages.printJobs({imp:nuages.vars.jobs[cmdArray[1]]}));
                 term.writeln("\r\n" + nuages.vars.jobs[cmdArray[1]].result);
