@@ -136,11 +136,11 @@ if __name__ == "__main__":
     parser.add_argument("-u", "--uri", default="http://127.0.0.1:3030", help="The URI of the Nuages API")
     args = parser.parse_args() 
     # The encryption password
-    aes = AESCipher("PASSWORD")
+    aes = AESCipher(args.key)
     #The address of the Nuages C2 Server
-    connectionString  = "http://127.0.0.1:3030"
+    connectionString  = args.uri
     pkcs7 = PKCS7Encoder()
     if len(argv) > 1:
-        run(HTTPServer, S, int(argv[1]))
+        run(HTTPServer, S, int(args.port)
     else:
         run()
