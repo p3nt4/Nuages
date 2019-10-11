@@ -9,6 +9,7 @@ import cgi
 from sys import argv
 import binascii
 import StringIO
+import argparse
 
 class HTTPerror(Exception):
     def __init__(self,HTTPCode,HTTPContent):
@@ -129,6 +130,11 @@ def run(server_class=HTTPServer, handler_class=S, port=4040):
     httpd.serve_forever()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Start an encrypted Nuages HTTP handler')
+    parser.add_argument("-p", "--port", default=80,  help="The port to listen on")
+    parser.add_argument("-k", "--key", required=True, help="The seed for the encryption key")
+    parser.add_argument("-u", "--uri", default="http://127.0.0.1:3030", help="The URI of the Nuages API")
+    args = parser.parse_args() 
     # The encryption password
     aes = AESCipher("PASSWORD")
     #The address of the Nuages C2 Server
