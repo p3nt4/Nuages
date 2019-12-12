@@ -1,5 +1,5 @@
 #!/bin/bash
-command -v mongod >/dev/null 2>&1 || { echo >&2 "mongodb required.  Aborting."; exit 1; }
+#command -v mongod >/dev/null 2>&1 || { echo >&2 "mongodb required.  Aborting."; exit 1; }
 command -v npm >/dev/null 2>&1 || { echo >&2 "npm required.  Aborting."; exit 1; }
 command -v node >/dev/null 2>&1 || { echo >&2 "node required.  Aborting."; exit 1; }
 
