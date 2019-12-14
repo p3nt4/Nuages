@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from SimpleHTTPServer import SimpleHTTPRequestHandler
 import base64
 import hashlib
 import requests
@@ -10,6 +11,7 @@ from sys import argv
 import binascii
 import StringIO
 import argparse
+import os
 
 class HTTPerror(Exception):
     def __init__(self,HTTPCode,HTTPContent):
@@ -72,12 +74,8 @@ class AESCipher(object):
         return pkcs7.decode(s)
 
         
-class S(BaseHTTPRequestHandler):
+class S(SimpleHTTPRequestHandler):
     def send_response(self, code, message=None):
-        """Send the response header and log the response code.
-        Also send two standard headers with the server software
-        version and the current date.
-        """
         self.log_request(code)
         if message is None:
             if code in self.responses:
@@ -113,16 +111,20 @@ class S(BaseHTTPRequestHandler):
             self._set_headers(200)
             self.wfile.write(aes.encrypt(response))
         except HTTPerror as e:
-            #self.send_error
-            #self.wfile.write(aes.encrypt(e.HTTPContent)
             self._set_headers(e.HTTPCode)
             self.wfile.write(aes.encrypt(e.HTTPContent))
-        
         except Exception as e:
-            #self.send_error
-            #self.wfile.write(aes.encrypt(e.HTTPContent)
             print(e)
-        
+
+    def do_GET(self):
+        if args.directory == None:
+            SimpleHTTPRequestHandler.send_error(self,404)
+            return
+        if self.path[-1:]=="/":
+            SimpleHTTPRequestHandler.send_error(self,404)
+            return
+        SimpleHTTPRequestHandler.do_GET(self)
+            
 def run(server_class=HTTPServer, handler_class=S, port=4040):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
@@ -134,12 +136,15 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--port", default=80,  help="The port to listen on")
     parser.add_argument("-k", "--key", required=True, help="The seed for the encryption key")
     parser.add_argument("-u", "--uri", default="http://127.0.0.1:3030", help="The URI of the Nuages API")
+    parser.add_argument("-d", "--directory", help="Directory to serve for GET requests")
     args = parser.parse_args() 
     # The encryption password
     aes = AESCipher(args.key)
     #The address of the Nuages C2 Server
     connectionString  = args.uri
     pkcs7 = PKCS7Encoder()
+    if args.directory != None:
+        os.chdir(args.directory)
     if len(argv) > 1:
         run(HTTPServer, S, int(args.port))
     else:
