@@ -28,7 +28,7 @@ exports.load = function (app) {
             arguments:{
                 value: "",
                 required: false,
-                description: "A coma separated list of arguments"
+                description: "Arguments in format: MyString,[bool]true,[int]21"
             }
         },
         supportedOS: ["windows"],
