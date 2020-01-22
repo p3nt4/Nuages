@@ -204,7 +204,18 @@ function executeCommand(cmd){
         }else{
             nuages.vars.globalOptions[cmdArray[1].toLowerCase()] = cmdArray[2];
         }         
-    }else if (cmdArray[0].toLowerCase() == "!set" && cmdArray.length > 2){
+    }
+else if (cmdArray[0].toLowerCase() == "!unsetg" && cmdArray.length > 1){
+        nuages.vars.globalOptions[cmdArray[1].toLowerCase()] = "";
+    }
+    else if (cmdArray[0].toLowerCase() == "!unset" && cmdArray.length > 1){
+        if(nuages.vars.moduleOptions[cmdArray[1].toLowerCase()] !== undefined){
+                nuages.vars.moduleOptions[cmdArray[1].toLowerCase()].value = "";
+        }else{
+            term.printError("Option does not exist");
+        }   
+    }
+else if (cmdArray[0].toLowerCase() == "!set" && cmdArray.length > 2){
         if(nuages.vars.moduleOptions[cmdArray[1].toLowerCase()] !== undefined){
             if(cmdArray[1].toLowerCase() == "implant"){
                 if(nuages.vars.implants[cmdArray[2]]){
