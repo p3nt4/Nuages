@@ -13,15 +13,15 @@ else
     exit 1
 fi
 
-#printf "\n\nInstalling feathers cli\n";
-#npm install @feathersjs/cli  2&>1 >/dev/null;
+printf "\n\nInstalling feathers cli\n";
+npm install @feathersjs/cli  2&>1 >/dev/null;
 
-#if [ $? -eq 0 ]; then
-#    echo "Done!"
-#else
-#    echo "FAILED !"
-#    exit 1
-#fi
+if [ $? -eq 0 ]; then
+    echo "Done!"
+else
+    echo "FAILED !"
+    exit 1
+fi
 
 command -v ./node_modules/@feathersjs/cli/bin/feathers.js >/dev/null 2>&1 || { printf >&2 "\n\nFeathers-cli install failed.  Aborting."; exit 1; }
 
