@@ -145,31 +145,46 @@ function makeid(length) { //Not made to be secure - just to differentiates sessi
      }
  }
  
- nuages.printImplants= function (imp){
-     var imps = Object.values(imp);
-     if(imps.length == 0 ){return;}
-     var result = "\r\n ID     | OS      | Hostname       | Username      | Local IP       | Handler    | Last Seen\r\n";
-     result += "".padEnd(101,"-") + "\r\n";
-     var implant;
-     var string;
-     for (var i=0; i < imps.length; i ++){
-         string = ""
-         try{
-             implant = imps[i];
-             string += " " + term.toBold(term.toBlue(implant._id.toString().substring(0,6).padEnd(7, ' '))) + "| ";
-             string += implant.os.substring(0, 7).padEnd(8, ' ') + "| ";
-             string += implant.hostname.substring(0,14).padEnd(15, ' ') + "| ";
-             string += implant.username.substring(0,13).padEnd(14, ' ') + "| ";
-             string += implant.localIp.substring(0,14).padEnd(15, ' ') + "| ";
-             string += implant.handler.substring(0,10).padEnd(11, ' ') + "| ";
-             string += new Date(implant.lastSeen).toLocaleDateString('en-GB', {day : 'numeric', month : 'numeric', hour: 'numeric', minute: "numeric", second: "numeric"});
-         }catch(e){
-             console.error(e)
-         }
-         result+=string+"\r\n";
-     }
-     return result;
- }
+ nuages.formatImplantLastSeen = function(timestamp){
+        var difference = new Date().getTime() - new Date(timestamp).getTime();
+        var daysDifference = Math.floor(difference/1000/60/60/24);
+        difference -= daysDifference*1000*60*60*24;
+        var hoursDifference = Math.floor(difference/1000/60/60);
+        difference -= hoursDifference*1000*60*60;
+        var minutesDifference = Math.floor(difference/1000/60);
+        difference -= minutesDifference*1000*60;
+        
+        var final = new Date(timestamp).toLocaleDateString('en-GB', {day : 'numeric', month : 'numeric', hour: 'numeric', minute: "numeric", second: "numeric"});
+        if (minutesDifference <= 5) {return (term.toBold(term.toGreen(final)));}
+        if (daysDifference > 1) {return (term.toBold(term.toRed(final)));}
+        return final;
+}
+
+nuages.printImplants= function (imp){
+    var imps = Object.values(imp);
+    if(imps.length == 0 ){return;}
+    var result = "\r\n ID     | OS      | Hostname       | Username      | Local IP       | Handler    | Last Seen\r\n";
+    result += "".padEnd(101,"-") + "\r\n";
+    var implant;
+    var string;
+    for (var i=0; i < imps.length; i ++){
+        string = ""
+        try{
+            implant = imps[i];
+            string += " " + term.toBold(term.toBlue(implant._id.toString().substring(0,6).padEnd(7, ' '))) + "| ";
+            string += implant.os.substring(0, 7).padEnd(8, ' ') + "| ";
+            string += implant.hostname.substring(0,14).padEnd(15, ' ') + "| ";
+            string += implant.username.substring(0,13).padEnd(14, ' ') + "| ";
+            string += implant.localIp.substring(0,14).padEnd(15, ' ') + "| ";
+            string += implant.handler.substring(0,10).padEnd(11, ' ') + "| ";
+            string += nuages.formatImplantLastSeen(implant.lastSeen);
+        }catch(e){
+            console.error(e)
+        }
+        result+=string+"\r\n";
+    }
+    return result;
+}
  
  nuages.humanFileSize = function(size) {
      if(size==0){
