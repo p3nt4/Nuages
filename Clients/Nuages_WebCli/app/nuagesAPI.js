@@ -155,8 +155,8 @@ function makeid(length) { //Not made to be secure - just to differentiates sessi
         difference -= minutesDifference*1000*60;
         
         var final = new Date(timestamp).toLocaleDateString('en-GB', {day : 'numeric', month : 'numeric', hour: 'numeric', minute: "numeric", second: "numeric"});
-        if (minutesDifference <= 5) {return (term.toBold(term.toGreen(final)));}
         if (daysDifference > 1) {return (term.toBold(term.toRed(final)));}
+        if (minutesDifference <= 5) {return (term.toBold(term.toGreen(final)));}
         return final;
 }
 
