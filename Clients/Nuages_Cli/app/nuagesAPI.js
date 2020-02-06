@@ -186,7 +186,7 @@ nuages.formatImplantLastSeen = function(timestamp){
         
         var final = new Date(timestamp).toLocaleDateString('en-GB', {day : 'numeric', month : 'numeric', hour: 'numeric', minute: "numeric", second: "numeric"});
         if (daysDifference > 1) {return (term.toBold(term.toRed(final)));}
-        if (minutesDifference <= 5) {return (term.toBold(term.toGreen(final)));}
+        if (minutesDifference <= 5 && hoursDifference < 1) {return (term.toBold(term.toGreen(final)));}
         return final;
 }
 
