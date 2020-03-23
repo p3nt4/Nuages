@@ -40,7 +40,16 @@ module.exports = function (options = {}) {
     data2.lastSeen = data2.createdAt;
    
     // Actually create the implant
-    const implant = await context.app.service('implants').create(data2);  
+    const implant = await context.app.service('implants').create(data2);
+    
+    // Run autorun modules
+    context.app.service('/modules/run').find({query: {autorun: true}}).then(autoruns =>{
+      for(var i=0; i< autoruns.data.length; i++){
+        var options = autoruns.data[i].options;
+        options.implant = {value: data2._id};
+        context.app.service('/modules/run').create({moduleId: autoruns.data[i].moduleId, options: options, autorun: false})
+      }
+    });
     
     context.data = implant;
   };

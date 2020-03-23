@@ -67,6 +67,10 @@ nuages.printHelp = function (){
     string += " !use <path>                             - Select a module\r\n";
     string += " !modules load <path>                    - Load a module\r\n";
     string += " !modules <path> del                     - Delete a module\r\n";
+    string += " !run                                    - Run the module\r\n";
+    string += " !autorun                                - Autorun the module on new implants\r\n";
+    string += " !autoruns                               - List module autoruns\r\n";
+    string += " !autoruns clear                         - Clear module autoruns\r\n";
     string += " !jobs                                   - Display the last jobs\r\n";
     string += " !jobs  <id>                             - Display a job and its result\r\n";
     string += " !jobs search <command>                  - Search jobs by command\r\n";
@@ -95,7 +99,6 @@ nuages.loadFile = async function(filePath) {
                 });
                 return;
             }
-      
             var data;
             if (nread < CHUNK_SIZE)
               data = buffer.slice(0, nread);
@@ -366,6 +369,30 @@ nuages.getFiles = async function(){
     term.logInfo("Files:\r\n" + nuages.printFiles(items.data)); 
 }
 
+nuages.getAutoruns = async function(){
+    try{
+        items = await nuages.modrunService.find({query: {autorun: true}});
+        }catch(e){term.printError(e); return}
+    var str = "";
+    for(var i=0; i< items.data.length; i++){
+        str += items.data[i].moduleName +"\r\n";
+    }
+    term.logInfo("Autoruns:\r\n" + str); 
+}
+
+nuages.clearAutoruns = async function(){
+    try{
+        autoruns = await nuages.modrunService.find({query: {autorun: true}});
+        }catch(e){term.printError(e); return}
+    for(var i=0; i< autoruns.data.length; i++){
+        nuages.modrunService.remove(autoruns.data[i]._id).then(item => {
+                term.logInfo("Deleted Autorun: " + item.moduleName); 
+        }).catch((err) => {
+                term.logError(err.message);
+            });;
+    }
+}
+
 nuages.getJobs = async function(query){
     try{
         if(query == undefined){
@@ -387,6 +414,26 @@ nuages.createJob = function (implant, payload){
             implantId: nuages.vars.implants[implant]._id,
             timeout: timeout,
             vars: {session: nuages.vars.session},
+            payload: payload}
+            ).catch((err) => {
+                term.logError(err.message);
+            });
+    }else{
+        //term.logError("Implant not found: !setg implant <ID> or !shell <ID>");
+    }
+}
+
+nuages.createJobWithUpload = function (implant, payload, filename){
+    var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout) * 60000;
+    var chunkSize = parseInt(nuages.vars.globalOptions.chunksize);
+    if (nuages.vars.implants[implant] != undefined){
+        nuages.jobService.create({
+            implantId: nuages.vars.implants[implant]._id,
+            timeout: timeout,
+            vars: {session: nuages.vars.session},
+            fileUpload: true,
+            chunkSize: chunkSize,
+            fileName: filename,
             payload: payload}
             ).catch((err) => {
                 term.logError(err.message);

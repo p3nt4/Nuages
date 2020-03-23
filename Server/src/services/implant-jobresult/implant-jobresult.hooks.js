@@ -1,14 +1,14 @@
 
 const denyAll = require('../../hooks/deny-all');
 
-const afterCreateImplantJobresult = require('../../hooks/after-create-implant-jobresult');
+const beforeCreateImplantJobresult = require('../../hooks/before-create-implant-jobresult');
 
 module.exports = {
   before: {
     all: [],
     find: [denyAll()],
     get: [denyAll()],
-    create: [afterCreateImplantJobresult()],
+    create: [beforeCreateImplantJobresult()],
     update: [denyAll()],
     patch: [denyAll()],
     remove: [denyAll()]

@@ -79,12 +79,27 @@ exports.execute = function(cmd){
     }
     else if(cmdArray[0] == "!run"){
         if(nuages.vars.modules[nuages.vars.module]){
-            nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions}).catch((err) => {
+            nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions, autorun: false}).catch((err) => {
                     term.printError(err.message);
                 });
             }else{
                 term.logError("Module not set");
             }
+    }
+    else if(cmdArray[0] == "!autorun"){
+        if(nuages.vars.modules[nuages.vars.module]){
+                nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions, autorun: true}).then(items => {nuages.getAutoruns()}).catch((err) => {
+                    term.printError(err.message);
+                });
+            }else{
+                term.logError("Module not set");
+            }
+    }
+    else if(cmdArray[0] == "!autoruns"){
+        if(cmdArray[1] == "clear"){
+            nuages.clearAutoruns();
+        } 
+        else {nuages.getAutoruns();}
     }
     else if(cmdArray[0] == "!help" || cmdArray[0] == "?"){
         nuages.printHelp();
@@ -107,12 +122,7 @@ exports.execute = function(cmd){
         var filename = arr[arr.length-1];
         arr = filename.split("/");
         filename = arr[arr.length-1];
-        nuages.fileService.create({filename: filename, chunkSize: parseInt(nuages.vars.globalOptions.chunksize), length: 0, metadata:{path:cmdArray[1], uploadedBy: nuages.vars.implants[nuages.vars.globalOptions.implant]._id }}).then(function(file){
-            nuages.createJob(nuages.vars.globalOptions.implant, {type:"Upload", options:{ file: cmdArray[1], file_id: file._id, chunkSize: parseInt(nuages.vars.globalOptions.chunksize), path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)]}});
-        }).catch((err) => {
-            term.printError(err.message);return;
-        });
-        
+        nuages.createJobWithUpload(nuages.vars.globalOptions.implant, {type:"Upload", options:{ file: cmdArray[1], chunkSize: parseInt(nuages.vars.globalOptions.chunksize), path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)]}}, filename);
     }
     else if (cmdArray[0].toLowerCase() == "!login" && cmdArray.length > 1){
         term.passwordMode = true;

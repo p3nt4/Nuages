@@ -119,6 +119,7 @@ nuages.downloadFile= function(fileId) {
 
 // Everything below this should be the same in the WebCli
 
+
 function makeid(length) { //Not made to be secure - just to differentiates sessions as we are only using one user
     var result           = '';
     var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -146,45 +147,45 @@ function makeid(length) { //Not made to be secure - just to differentiates sessi
  }
  
  nuages.formatImplantLastSeen = function(timestamp){
-        var difference = new Date().getTime() - new Date(timestamp).getTime();
-        var daysDifference = Math.floor(difference/1000/60/60/24);
-        difference -= daysDifference*1000*60*60*24;
-        var hoursDifference = Math.floor(difference/1000/60/60);
-        difference -= hoursDifference*1000*60*60;
-        var minutesDifference = Math.floor(difference/1000/60);
-        difference -= minutesDifference*1000*60;
-        
-        var final = new Date(timestamp).toLocaleDateString('en-GB', {day : 'numeric', month : 'numeric', hour: 'numeric', minute: "numeric", second: "numeric"});
-        if (daysDifference > 1) {return (term.toBold(term.toRed(final)));}
-        if (minutesDifference <= 5 && hoursDifference < 1) {return (term.toBold(term.toGreen(final)));}
-        return final;
-}
-
-nuages.printImplants= function (imp){
-    var imps = Object.values(imp);
-    if(imps.length == 0 ){return;}
-    var result = "\r\n ID     | OS      | Hostname       | Username      | Local IP       | Handler    | Last Seen\r\n";
-    result += "".padEnd(101,"-") + "\r\n";
-    var implant;
-    var string;
-    for (var i=0; i < imps.length; i ++){
-        string = ""
-        try{
-            implant = imps[i];
-            string += " " + term.toBold(term.toBlue(implant._id.toString().substring(0,6).padEnd(7, ' '))) + "| ";
-            string += implant.os.substring(0, 7).padEnd(8, ' ') + "| ";
-            string += implant.hostname.substring(0,14).padEnd(15, ' ') + "| ";
-            string += implant.username.substring(0,13).padEnd(14, ' ') + "| ";
-            string += implant.localIp.substring(0,14).padEnd(15, ' ') + "| ";
-            string += implant.handler.substring(0,10).padEnd(11, ' ') + "| ";
-            string += nuages.formatImplantLastSeen(implant.lastSeen);
-        }catch(e){
-            console.error(e)
-        }
-        result+=string+"\r\n";
-    }
-    return result;
-}
+         var difference = new Date().getTime() - new Date(timestamp).getTime();
+         var daysDifference = Math.floor(difference/1000/60/60/24);
+         difference -= daysDifference*1000*60*60*24;
+         var hoursDifference = Math.floor(difference/1000/60/60);
+         difference -= hoursDifference*1000*60*60;
+         var minutesDifference = Math.floor(difference/1000/60);
+         difference -= minutesDifference*1000*60;
+         
+         var final = new Date(timestamp).toLocaleDateString('en-GB', {day : 'numeric', month : 'numeric', hour: 'numeric', minute: "numeric", second: "numeric"});
+         if (daysDifference > 1) {return (term.toBold(term.toRed(final)));}
+         if (minutesDifference <= 5 && hoursDifference < 1) {return (term.toBold(term.toGreen(final)));}
+         return final;
+ }
+ 
+ nuages.printImplants= function (imp){
+     var imps = Object.values(imp);
+     if(imps.length == 0 ){return;}
+     var result = "\r\n ID     | OS      | Hostname       | Username      | Local IP       | Handler    | Last Seen\r\n";
+     result += "".padEnd(101,"-") + "\r\n";
+     var implant;
+     var string;
+     for (var i=0; i < imps.length; i ++){
+         string = ""
+         try{
+             implant = imps[i];
+             string += " " + term.toBold(term.toBlue(implant._id.toString().substring(0,6).padEnd(7, ' '))) + "| ";
+             string += implant.os.substring(0, 7).padEnd(8, ' ') + "| ";
+             string += implant.hostname.substring(0,14).padEnd(15, ' ') + "| ";
+             string += implant.username.substring(0,13).padEnd(14, ' ') + "| ";
+             string += implant.localIp.substring(0,14).padEnd(15, ' ') + "| ";
+             string += implant.handler.substring(0,10).padEnd(11, ' ') + "| ";
+             string += nuages.formatImplantLastSeen(implant.lastSeen);
+         }catch(e){
+             console.error(e)
+         }
+         result+=string+"\r\n";
+     }
+     return result;
+ }
  
  nuages.humanFileSize = function(size) {
      if(size==0){
@@ -336,6 +337,30 @@ nuages.printImplants= function (imp){
      term.logInfo("Files:\r\n" + nuages.printFiles(items.data)); 
  }
  
+ nuages.getAutoruns = async function(){
+     try{
+         items = await nuages.modrunService.find({query: {autorun: true}});
+         }catch(e){term.printError(e); return}
+     var str = "";
+     for(var i=0; i< items.data.length; i++){
+         str += items.data[i].moduleName +"\r\n";
+     }
+     term.logInfo("Autoruns:\r\n" + str); 
+ }
+ 
+ nuages.clearAutoruns = async function(){
+     try{
+         autoruns = await nuages.modrunService.find({query: {autorun: true}});
+         }catch(e){term.printError(e); return}
+     for(var i=0; i< autoruns.data.length; i++){
+         nuages.modrunService.remove(autoruns.data[i]._id).then(item => {
+                 term.logInfo("Deleted Autorun: " + item.moduleName); 
+         }).catch((err) => {
+                 term.logError(err.message);
+             });;
+     }
+ }
+ 
  nuages.getJobs = async function(query){
      try{
          if(query == undefined){
@@ -357,6 +382,26 @@ nuages.printImplants= function (imp){
              implantId: nuages.vars.implants[implant]._id,
              timeout: timeout,
              vars: {session: nuages.vars.session},
+             payload: payload}
+             ).catch((err) => {
+                 term.logError(err.message);
+             });
+     }else{
+         //term.logError("Implant not found: !setg implant <ID> or !shell <ID>");
+     }
+ }
+ 
+ nuages.createJobWithUpload = function (implant, payload, filename){
+     var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout) * 60000;
+     var chunkSize = parseInt(nuages.vars.globalOptions.chunksize);
+     if (nuages.vars.implants[implant] != undefined){
+         nuages.jobService.create({
+             implantId: nuages.vars.implants[implant]._id,
+             timeout: timeout,
+             vars: {session: nuages.vars.session},
+             fileUpload: true,
+             chunkSize: chunkSize,
+             fileName: filename,
              payload: payload}
              ).catch((err) => {
                  term.logError(err.message);
@@ -453,3 +498,4 @@ nuages.printImplants= function (imp){
  nuages.fsService.on('removed', function(file){term.logInfo("Deleted file:\r\n" + nuages.printFiles({imp: nuages.vars.files[file.id.substring(0,6)]}));delete nuages.vars.files[file.id.substring(0,6)];});
  nuages.modrunService.on('patched', function(run){nuages.printModRunLog(run)});
  nuages.moduleService.on('created', function(mod){term.logInfo("Module loaded:\r\n" + nuages.printModules({mod: mod}));nuages.vars.modules[mod.name]=mod;});
+ 

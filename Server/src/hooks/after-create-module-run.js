@@ -7,6 +7,10 @@ const error = require('@feathersjs/errors');
 module.exports = function (options = {}) {
   return async context => {
     
+    if(context.result.autorun === true){
+      return context;
+    }
+
     moduleFile = require("../../modules/"+context.result.moduleName);
 
     moduleFile.run(context.app, context.result).catch((e) => {

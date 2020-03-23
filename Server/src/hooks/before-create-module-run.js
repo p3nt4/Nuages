@@ -21,16 +21,22 @@ module.exports = function (options = {}) {
         throw new error.NotFound("Module not found");
      });
      
+      // If this is an autorun, delete the implant option
+      if(context.data.autorun === true){
+        delete context.data.options.implant;
+      }
+      
      // Check if the options are filled 
      var options = Object.keys(mod.options);
      for(var i = 0; i < options.length; i++ ){
-       if( mod.options[options[i]].required && (context.data.options[options[i]] === undefined || context.data.options[options[i]].value == "")){
+       if(options[i]=="implant" && context.data.autorun === true){}
+       else if( mod.options[options[i]].required && (context.data.options[options[i]] === undefined || context.data.options[options[i]].value == "")){
          throw new error.BadRequest("Option is missing: "+ options[i]);
        }
-     } 
-
+     }
+     
      // If this module requires an implant, verify it is compatible 
-     if(context.data.options.implant && context.data.options.implant != ""){
+     if(context.data.options.implant && context.data.options.implant != "" && !(context.data.autorun === true)){
       var implant = await context.app.service('implants').get(context.data.options.implant.value).catch((e) =>{
         throw new error.NotFound("Implant not found");
       });  
@@ -56,13 +62,17 @@ module.exports = function (options = {}) {
 
     data.moduleName = mod.name;
 
-    data.creator = context.params.user.email;
+    if(context.params.user !== undefined){
+      data.creator = context.params.user.email;
+    } else {data.creator = "autorun";}
 
     data.options = context.data.options;
 
     data.moduleId = context.data.moduleId;
 
     data.runStatus = 0;
+
+    data.autorun = context.data.autorun
 
     context.data = data;
 

@@ -10,9 +10,7 @@ module.exports = function (options = {}) {
     
     // The implant must know its id
     if(!context.data.id || context.data.id.length != 32){
-		  
 		  throw new error.Forbidden("Unauthorized");
-		  
     }
     
     // Set the implant lastseen
@@ -37,14 +35,10 @@ module.exports = function (options = {}) {
           context.app.service('jobs').patch(jobs.data[i]._id, {jobStatus: 1});
           delete jobs.data[i].creator;
           delete jobs.data[i].vars;
-          if(jobs.data[i].payload.type == "Upload"){
-            delete jobs.data[i].payload.options.file_id;
-          }
+          delete jobs.data[i].fileId;
           context.result.data.push(jobs.data[i]);
         }
     }
-
-
     return context;
   };
 };
