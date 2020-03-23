@@ -444,7 +444,7 @@ nuages.createJobWithUpload = function (implant, payload, filename){
 }
 
 nuages.processJobPatched = function (job){
-    if(job.moduleRun !== undefined){
+    if(job.moduleRun !== null){
         return;
     }
     if(job.vars.session === undefined || job.vars.session != nuages.vars.session){

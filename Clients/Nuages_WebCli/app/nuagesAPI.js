@@ -416,7 +416,7 @@ function makeid(length) { //Not made to be secure - just to differentiates sessi
  }
  
  nuages.processJobPatched = function (job){
-     if(job.moduleRun !== undefined){
+     if(job.moduleRun !== null){
          return;
      }
      if(job.vars.session === undefined || job.vars.session != nuages.vars.session){
