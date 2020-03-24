@@ -29,7 +29,7 @@ function CommandParser(str) {
     args.push(part);
     return args;
 }
-exports.execute = function(cmd){
+executeCommand = function(cmd){
     if(term.passwordMode){
         nuages.login(term.username,cmd);
         cmd = "";
@@ -180,11 +180,19 @@ exports.execute = function(cmd){
         if(cmdArray.length < 2){
             nuages.getImplants();
         }
+        else if(cmdArray[1].toLowerCase() === "all"){
+            nuages.implantService.find().then(implants => {
+                for(var i=0; i< implants.data.length; i++){
+                    cmdArray[1] = implants.data[i]._id.substring(0,6);
+                    executeCommand(cmdArray.join(" "));
+                }
+            }).catch(err=>{
+                term.printError(err);
+            });
+            
+        }
         else if(cmdArray.length == 2){
-            if(cmdArray[1].toLowerCase() === "clear"){
-                nuages.clearImplants();
-            }
-            else if (nuages.vars.implants[cmdArray[1]] != undefined){
+            if (nuages.vars.implants[cmdArray[1]] != undefined){
                 term.writeln("\r\n" + nuages.printImplants({imp:nuages.vars.implants[cmdArray[1]]}));
             }else{
                 term.printError("Implant not found");
@@ -263,3 +271,5 @@ else if (cmdArray[0].toLowerCase() == "!back"){
     }
     return;
 }
+
+exports.execute = executeCommand;

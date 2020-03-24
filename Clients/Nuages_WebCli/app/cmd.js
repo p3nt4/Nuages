@@ -177,6 +177,17 @@ function executeCommand(cmd){
         if(cmdArray.length < 2){
             nuages.getImplants();
         }
+        else if(cmdArray[1].toLowerCase() === "all"){
+            nuages.implantService.find().then(implants => {
+                for(var i=0; i< implants.data.length; i++){
+                    cmdArray[1] = implants.data[i]._id.substring(0,6);
+                    executeCommand(cmdArray.join(" "));
+                }
+            }).catch(err=>{
+                term.printError(err);
+            });
+            
+        }
         else if(cmdArray.length == 2){
             if(cmdArray[1].toLowerCase() === "clear"){
                 nuages.clearImplants();
@@ -191,7 +202,7 @@ function executeCommand(cmd){
             term.printError("Implant not found");
         }
         else if(cmdArray[2] == "del"){
-            implantService.remove(nuages.vars.implants[cmdArray[1]]._id);
+            nuages.implantService.remove(nuages.vars.implants[cmdArray[1]]._id);
         }
         else if(cmdArray[2].toLowerCase() == "kill" || cmdArray[2].toLowerCase() == "exit"){
             nuages.createJob(cmdArray[1], {type: "Exit", options: {}});
