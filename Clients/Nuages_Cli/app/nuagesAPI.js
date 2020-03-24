@@ -50,6 +50,7 @@ nuages.printHelp = function (){
     string += " !implants <id> kill                     - Kill an implant\r\n";
     string += " !implants <id> config                   - Get the configuration from the implant\r\n";
     string += " !implants <id> config <option> <value>  - Reconfigure the implant\r\n";
+    string += " !implants clear                         - Delete all implants\r\n";
     string += " !implant [Command..]                    - Apply the command to the current implant\r\n";
     string += " !shell <implant>                        - Start interracting with an implant\r\n" ;
     string += " !put <fileId> [path]                    - Start a download job on the current implant\r\n";
@@ -388,6 +389,17 @@ nuages.clearAutoruns = async function(){
         nuages.modrunService.remove(autoruns.data[i]._id).then(item => {
                 term.logInfo("Deleted Autorun: " + item.moduleName); 
         }).catch((err) => {
+                term.logError(err.message);
+            });;
+    }
+}
+
+nuages.clearImplants = async function(){
+    try{
+        implants = await nuages.implantService.find();
+        }catch(e){term.printError(e); return}
+    for(var i=0; i< implants.data.length; i++){
+        nuages.implantService.remove(implants.data[i]._id).then(item => {}).catch((err) => {
                 term.logError(err.message);
             });;
     }

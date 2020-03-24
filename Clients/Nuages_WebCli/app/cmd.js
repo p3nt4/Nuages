@@ -178,7 +178,10 @@ function executeCommand(cmd){
             nuages.getImplants();
         }
         else if(cmdArray.length == 2){
-            if (nuages.vars.implants[cmdArray[1]] != undefined){
+            if(cmdArray[1].toLowerCase() === "clear"){
+                nuages.clearImplants();
+            }
+            else if (nuages.vars.implants[cmdArray[1]] != undefined){
                 term.writeln("\r\n" + nuages.printImplants({imp:nuages.vars.implants[cmdArray[1]]}));
             }else{
                 term.printError("Implant not found");
