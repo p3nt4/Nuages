@@ -3,7 +3,7 @@ command -v npm >/dev/null 2>&1 || { echo >&2 "npm required.  Aborting."; exit 1;
 command -v node >/dev/null 2>&1 || { echo >&2 "node required.  Aborting."; exit 1; }
 
 printf "Installing local npm dependencies...\n";
-npm install & > /dev/null ;
+npm install &> /dev/null ;
 
 if [ $? -eq 0 ]; then
     echo "Done!"
