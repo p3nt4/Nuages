@@ -12,16 +12,6 @@ else
     exit 1
 fi
 
-printf "Adding support for gridfs...\n";
-cp src/mongodb.js.grid src/mongodb.js
-
-if [ $? -eq 0 ]; then
-    echo "Done!"
-else
-    echo "FAILED !"
-    exit 1
-fi
-
 printf "Configuring Nuages:\n";
 node ./setup.js
 if [ $? -eq 0 ]; then
