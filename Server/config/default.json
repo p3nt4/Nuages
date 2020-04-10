@@ -5,5 +5,30 @@
   "paginate": {
     "default": 10,
     "max": 50
+  },
+  "mongodb": "mongodb://localhost:27017/nuages_c_2",
+  "authentication": {
+    "secret": "d37ba9ac96b7cdfe324e091c60b8d64b3a8beced1abf3ba02625e6cae8fd9a6e39dc370d5f5b27aae23f9ffe4868522cc9f5fb787793b94a4389d4d78d799accf3106b2be4b371fb9b0540e75c0a399d29ef21b8bacf09d0618c5b729496af29630ace72a68b2413d1e8c224a83529b2ad7cd50963ae1f8fa5efe9525f6e9ff1d2ea7f0678594b007954baea2f83b4ec0b314b1e901d3bfe133094b15cfeb839b9dd0f49c31e6fe1a2202ce2985cce2ad5fffa72f2b48a0915500b24bb298c7472f62c7881f2499dd866496fc414eec1d6466184eea0413eda8446af49abfa6055f7dda33e601a8e092b26b4dc210b1ee28e848b52b36869711b6bfa37993a28",
+    "strategies": [
+      "jwt",
+      "local"
+    ],
+    "path": "/authentication",
+    "service": "users",
+    "jwt": {
+      "header": {
+        "typ": "access"
+      },
+      "audience": "https://yourdomain.com",
+      "subject": "anonymous",
+      "issuer": "feathers",
+      "algorithm": "HS256",
+      "expiresIn": "1d"
+    },
+    "local": {
+      "entity": "user",
+      "usernameField": "email",
+      "passwordField": "password"
+    }
   }
 }

@@ -434,3 +434,4 @@ public
 
 # TernJS port file
 .tern-port
+Server/config/production.json
