@@ -169,8 +169,13 @@ executeCommand = function(cmd){
         }
         else{
             if (nuages.vars.jobs[cmdArray[1]] != undefined){
-                term.writeln("\r\n" + nuages.printJobs({imp:nuages.vars.jobs[cmdArray[1]]}));
-                term.writeln("\r\n" + nuages.vars.jobs[cmdArray[1]].result);
+                if(cmdArray.length == 4 && cmdArray[2].toLowerCase()=="save"){
+                    nuages.saveTextToFile(nuages.vars.jobs[cmdArray[1]].result,cmdArray[3]);
+                }else{
+                    term.writeln("\r\n" + nuages.printJobs({imp:nuages.vars.jobs[cmdArray[1]]}));
+                    term.writeln("\r\n" + nuages.vars.jobs[cmdArray[1]].result);
+                }
+
             }else{
                 term.printError("Job not found");
             }

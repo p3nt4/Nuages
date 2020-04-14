@@ -67,7 +67,8 @@ nuages.printHelp = function(){
     string += " !autoruns                               - List module autoruns\r\n";
     string += " !autoruns clear                         - Clear module autoruns\r\n";
     string += " !jobs                                   - Display the last jobs\r\n";
-    string += " !jobs  <id>                             - Display a job and its result\r\n";
+    string += " !jobs <id>                              - Display a job and its result\r\n";
+    string += " !jobs <id> save <path>                  - Save the job result to the local client\r\n";
     string += " !jobs search <command>                  - Search jobs by command\r\n";
     string += " !help                                   - Print this message\r\n";
     term.printInfo(string, "Help")
@@ -122,6 +123,11 @@ nuages.downloadFile= function(fileId) {
     });
 }
 
+nuages.saveTextToFile= function(text,filename) {
+    link = document.getElementById("DL");
+    var redirectWindow = window.open('');
+    nuages.exportToFile(btoa(text), filename);	
+}
 // Everything below this should be the same in the WebCli
 
 

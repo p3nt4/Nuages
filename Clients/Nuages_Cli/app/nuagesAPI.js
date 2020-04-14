@@ -73,7 +73,8 @@ nuages.printHelp = function (){
     string += " !autoruns                               - List module autoruns\r\n";
     string += " !autoruns clear                         - Clear module autoruns\r\n";
     string += " !jobs                                   - Display the last jobs\r\n";
-    string += " !jobs  <id>                             - Display a job and its result\r\n";
+    string += " !jobs <id>                              - Display a job and its result\r\n";
+    string += " !jobs <id> save <path>                  - Save the job result to the local client\r\n";
     string += " !jobs search <command>                  - Search jobs by command\r\n";
     string += " !help                                   - Print this message\r\n";
     term.printInfo(string, "Help")
@@ -151,9 +152,20 @@ nuages.downloadFile = async function(fileId, filePath){
     }
 };
 
+nuages.saveTextToFile = async function(text, filePath){
+    try{
+        filePath = !(fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()) ? filePath : path.resolve(filePath, result.filename);
+        var writeStream = fs.createWriteStream(filePath);
+        writeStream.write(text);
+        writeStream.close();
+        term.logInfo(filePath + " saved");
+        return;
+    }catch(e){term.logError(e);}
+};
+
 // Everything below this should be the same in the WebCli
 
-function makeid(length) { //Not made to be secure - just to differentiates sessions as we are only using one user
+function makeid(length) { //Not made to be secure - just to differentiates sessions as we are only using one user for now
    var result           = '';
    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
    var charactersLength = characters.length;
