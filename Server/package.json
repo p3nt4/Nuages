@@ -30,7 +30,7 @@
     "mocha": "mocha test/ --recursive --exit"
   },
   "dependencies": {
-    "2": "^2.0.0",
+    "2": "^3.0.0",
     "@feathersjs/authentication": "^4.5.2",
     "@feathersjs/authentication-local": "^4.5.2",
     "@feathersjs/authentication-oauth": "^4.5.2",
@@ -42,8 +42,8 @@
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
-    "feathers-hooks-common": "^4.20.7",
-    "feathers-mongodb": "^4.0.4",
+    "feathers-hooks-common": "^5.0.2",
+    "feathers-mongodb": "^6.1.0",
     "gridfs-stream": "^1.1.1",
     "helmet": "^3.22.0",
     "inquirer": "^7.1.0",
@@ -54,11 +54,11 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
+    "@feathersjs/cli": "^4.3.0",
     "eslint": "^6.8.0",
-    "mocha": "^5.2.0",
+    "mocha": "^7.1.1",
     "nodemon": "^1.19.4",
     "request": "^2.88.2",
-    "@feathersjs/cli": "^4.3.0",
     "request-promise": "^4.2.5"
   }
 }
