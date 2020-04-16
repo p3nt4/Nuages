@@ -1,6 +1,65 @@
 var rl = require('readline'); 
 
-var term = rl.createInterface({ input: process.stdin, output: process.stdout});
+function completer(line) {
+    words = line.split(" ");
+    var targetWord = words[words.length-1];
+    if((words[0].toLowerCase() == "!shell" || words[0].toLowerCase() == "!implants" ) && words.length == 2){
+        var completions = Object.keys(nuages.vars.implants);
+        completions.push("all");
+    }
+    else if(words[0].toLowerCase() == "!implants" && words.length == 3){
+        var completions = 'config del kill'.split(' ');
+    }
+    else if(words[0].toLowerCase() == "!files"  && words.length == 2){
+        var completions = Object.keys(nuages.vars.files);
+        completions.push("upload");
+    }else if(words[0].toLowerCase() == "!files" && words.length == 3){
+        var completions = 'download del'.split(' ');
+    }else if((words[0].toLowerCase() == "!setg" || words[0].toLowerCase() == "!set" ) && words.length == 3){
+        if(words[1].toLowerCase() == "implant"){var completions = Object.keys(nuages.vars.implants);}
+        else if(words[1].toLowerCase() == "file"){var completions = Object.keys(nuages.vars.files);}
+        else {var completions = [];}
+    }
+    else if((words[0].toLowerCase() == "!setg" || words[0].toLowerCase() == "!unsetg") && words.length == 2){
+        var completions = 'chunksize implant timeout'.split(' ');
+    }
+    else if((words[0].toLowerCase() == "!set" || words[0].toLowerCase() == "!unset") && words.length == 2){
+        if(nuages.vars.modules[nuages.vars.module]){
+            var completions = Object.keys(nuages.vars.moduleOptions);
+        }else{
+            var completions = [];
+         }
+    }
+    else if((words[0].toLowerCase() == "!modules" || words[0].toLowerCase() == "!use") && words.length == 2){
+        var completions = Object.keys(nuages.vars.modules)
+        if (words[0].toLowerCase() == "!modules" ){
+            completions.push("load");
+        }
+    }
+    else if((words[0].toLowerCase() == "!modules") && words.length == 3){
+        var completions = 'del'.split(' ');
+    }
+    else if((words[0].toLowerCase() == "!jobs") && words.length == 2){
+        var completions = Object.keys(nuages.vars.jobs);
+        completions.push("search");
+    }
+    else if((words[0].toLowerCase() == "!jobs") && words.length == 3 && (words[1].toLowerCase() != "search")){
+        var completions = 'save'.split(' ');
+    }
+    else if((words[0].toLowerCase() == "!autoruns") && words.length == 2){
+        var completions = 'clear'.split(' ');
+    }
+    else if(words.length==1){ 
+        var completions = '!login !implant !implants !shell !put !get !files !options !setg !unsetg !set !unset !modules !use !run !autorun !autoruns !jobs !help'.split(' ');
+    }else{
+       return[[],line];
+    }       
+    var hits = completions.filter((c) => c.startsWith(targetWord));
+    return [hits && hits.length ? hits : completions, targetWord];
+  }
+
+
+var term = rl.createInterface({ input: process.stdin, output: process.stdout, completer});
 
 term.stdoutMuted = false;
 
