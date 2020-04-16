@@ -6,11 +6,11 @@
     "default": 10,
     "max": 50
   },
-  "mongodb": "mongodb://localhost:27017/nuages_c_2",
+  "mongodb": "mongodb://192.168.49.133/TESTUPGRADE",
   "authentication": {
     "entity": "user",
     "service": "users",
-    "secret": "t0DfPxBateHTkgOo96oeb7IB/z0=",
+    "secret": "ed27ce20700b47ab1ff357ebca1d97e2d82b0fba1a88a5d9b712e7b9ea6308fe1cb7d0d971983af6b2c421ac3b551d3cb0b64ee5b41b9dddb2004718ca1d270196cdcf02c0875cc1f60b7efd66cb5d82308c848c116959b541559715f5506f66ecd45f1fcd3c5cdc89208de7650ba17c8a05c8612ea01f2c1f166ec1f9b12dcaf3db84cf9e2de410e1eaa6a666a7abdf9cef6d3e819112513cbd0f0db79ca20d558c94f72410a8c0e781824dac1f590915dd719b2d863f951ad46b3fc1263c6becfe623eb0e8f6a966bcf662656a2082c6d30c98f54b773ecd9c43ffa0ee8fd0b198ff01be6d2c7237c70b910b59988ac92069b459c48759c4b677393c8c27fe",
     "authStrategies": [
       "jwt",
       "local"
