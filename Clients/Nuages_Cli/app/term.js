@@ -10,9 +10,9 @@ function completer(line) {
     else if(words[0].toLowerCase() == "!implants" && words.length == 3){
         var completions = 'config del kill'.split(' ');
     }
-    else if(words[0].toLowerCase() == "!files"  && words.length == 2){
+    else if((words[0].toLowerCase() == "!files" || words[0].toLowerCase() == "!put")&& words.length == 2){
         var completions = Object.keys(nuages.vars.files);
-        completions.push("upload");
+        if(words[0].toLowerCase() == "!files"){completions.push("upload");}
     }else if(words[0].toLowerCase() == "!files" && words.length == 3){
         var completions = 'download del'.split(' ');
     }else if((words[0].toLowerCase() == "!setg" || words[0].toLowerCase() == "!set" ) && words.length == 3){

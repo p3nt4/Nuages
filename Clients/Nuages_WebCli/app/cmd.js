@@ -42,8 +42,12 @@ function executeCommand(cmd){
         cmdArray[0]="!setg";
     }
     if (cmdArray[0].toLowerCase() == "cd"){
-        nuages.createJob(nuages.vars.globalOptions.implant, {type:"Command", options:{ path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)], cmd: "cmd /C \"FOR /F %i IN (\"\""+cmdArray.slice(1).join(" ")+"\"\") DO IF EXIST %~fi (echo %~fi)\"", cd:true}});
-    }
+        if(nuages.vars.implants[nuages.vars.globalOptions.implant.substring(0.6)].supportedPayloads.includes("cd")){
+            nuages.createJob(nuages.vars.globalOptions.implant, {type:"cd", options:{ path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)], dir:cmdArray.slice(1).join(" ")}});
+        }
+        else{
+            nuages.createJob(nuages.vars.globalOptions.implant, {type:"command", options:{ path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)], cmd: "cmd /C \"FOR /F %i IN (\"\""+cmdArray.slice(1).join(" ")+"\"\") DO IF EXIST %~fi (echo %~fi)\"", cd:true}});
+    }   }
     else if (cmdArray[0].toLowerCase() == "!options"){
         nuages.printOptions();
     }
@@ -112,7 +116,7 @@ function executeCommand(cmd){
         var filename = arr[arr.length-1];
         arr = filename.split("/");
         filename = arr[arr.length-1];
-        nuages.createJobWithUpload(nuages.vars.globalOptions.implant, {type:"Upload", options:{ file: cmdArray[1], chunkSize: parseInt(nuages.vars.globalOptions.chunksize), path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)]}}, filename);
+        nuages.createJobWithUpload(nuages.vars.globalOptions.implant, {type:"upload", options:{ file: cmdArray[1], chunkSize: parseInt(nuages.vars.globalOptions.chunksize), path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)]}}, filename);
     }
     
     else if (cmdArray[0].toLowerCase() == "!login" && cmdArray.length > 1){
@@ -124,7 +128,7 @@ function executeCommand(cmd){
     else if (cmdArray[0].toLowerCase() == "!put"){
         if(nuages.vars.files[cmdArray[1]] != undefined ||  cmdArray.length < 2){
             var file = cmdArray[2] ? cmdArray[2] : nuages.vars.files[cmdArray[1]].filename;
-            nuages.createJob(nuages.vars.globalOptions.implant, {type:"Download", options:{ file: file, file_id: nuages.vars.files[cmdArray[1]]._id, length: nuages.vars.files[cmdArray[1]].length, chunkSize: nuages.vars.files[cmdArray[1]].chunkSize, path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)]}});
+            nuages.createJob(nuages.vars.globalOptions.implant, {type:"download", options:{ file: file, filename: nuages.vars.files[cmdArray[1]].filename, file_id: nuages.vars.files[cmdArray[1]]._id, length: nuages.vars.files[cmdArray[1]].length, chunkSize: nuages.vars.files[cmdArray[1]].chunkSize, path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)]}});
         }else{
             term.printError("\r\n File not found");
         }
@@ -210,14 +214,14 @@ function executeCommand(cmd){
             nuages.implantService.remove(nuages.vars.implants[cmdArray[1]]._id);
         }
         else if(cmdArray[2].toLowerCase() == "kill" || cmdArray[2].toLowerCase() == "exit"){
-            nuages.createJob(cmdArray[1], {type: "Exit", options: {}});
+            nuages.createJob(cmdArray[1], {type: "exit", options: {}});
         }
         else if((cmdArray[2].toLowerCase() == "config" || cmdArray[2].toLowerCase() == "configure")){
             var tmpconfig = {};
             if(cmdArray.length >4 ){
                 tmpconfig[cmdArray[3]] = cmdArray[4];
             }
-            nuages.createJob(cmdArray[1], {type: "Configure", options: {config:tmpconfig}});
+            nuages.createJob(cmdArray[1], {type: "configure", options: {config:tmpconfig}});
         }
     }
     else if (cmdArray[0].toLowerCase() == "!setg" && cmdArray.length > 2){

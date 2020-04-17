@@ -438,23 +438,26 @@ function makeid(length) { //Not made to be secure - just to differentiates sessi
      if(job.vars.session === undefined || job.vars.session != nuages.vars.session){
          return;
      }
-     if(job.payload.type=="Command" && job.payload.options.cd == true && job.result){
+     if(job.payload.type=="command" && job.payload.options.cd == true && job.result){
          if(job.result.split('\n').length > 3){
              nuages.vars.paths[job.implantId.substring(0,6)] = job.result.split('\n')[2].trim();
          }else{
              term.logError("Path not found");
          }
          term.reprompt();
-     }
+     }else if(job.payload.type=="cd" && job.jobStatus == 3 && job.result){
+        nuages.vars.paths[job.implantId.substring(0,6)] = job.result;
+        term.reprompt();
+    }
      else if(job.jobStatus == 4){
-         if(job.payload.type=="Command"){
+         if(job.payload.type=="command"){
              term.logError("Failed command: " + job.payload.options.cmd +"\r\n" + job.result, job.implantId.substring(0,6));
          }else{
              term.logError(job.payload.type + " failed:\r\n " + job.result, job.implantId.substring(0,6));
          }
      }
      else if(job.jobStatus == 3){
-         if(job.payload.type=="Command"){
+         if(job.payload.type=="command"){
              term.logSuccess("Received result for command: " + job.payload.options.cmd +"\r\n" + job.result, job.implantId.substring(0,6));
          }
          else {
