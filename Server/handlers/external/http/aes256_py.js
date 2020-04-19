@@ -9,6 +9,11 @@ exports.load = function (app) {
     var handler = {
         name: "external/http/aes256_py",
         options: {
+            python: {
+                value: "0",
+                required: true,
+                description: "[0] python [1] python3"
+            },
             port: {
                 value: "80",
                 required: true,
@@ -60,7 +65,9 @@ exports.run = async function (app, run) {
     }
     command+=" -q";
 
-    var child = child_process.execFile("python",command.split(" "),{}, function (error, stdout, stderr) {
+    var python = run.options.python.value == "0" ? "python" : "python3";
+
+    var child = child_process.execFile(python,command.split(" "),{}, function (error, stdout, stderr) {
         if(error.killed == false){
             handlerHelper.logError(run, "The external handler exited with error:\n" + error + "\n" + stdout + "\n" + stderr);
             handlerHelper.fail(run);
