@@ -24,7 +24,7 @@ function completer(line) {
         var completions = 'chunksize implant timeout'.split(' ');
     }
     else if((words[0].toLowerCase() == "!set" || words[0].toLowerCase() == "!unset") && words.length == 2){
-        if(nuages.vars.modules[nuages.vars.module]){
+        if(nuages.vars.modules[nuages.vars.module] || nuages.vars.handlers[nuages.vars.module]){
             var completions = Object.keys(nuages.vars.moduleOptions);
         }else{
             var completions = [];
