@@ -30,14 +30,25 @@ function completer(line) {
             var completions = [];
          }
     }
-    else if((words[0].toLowerCase() == "!modules" || words[0].toLowerCase() == "!use") && words.length == 2){
+    else if((words[0].toLowerCase() == "!modules") && words.length == 2){
         var completions = Object.keys(nuages.vars.modules)
-        if (words[0].toLowerCase() == "!modules" ){
-            completions.push("load");
-        }
+        completions.push("load");
     }
-    else if((words[0].toLowerCase() == "!modules") && words.length == 3){
+    else if((words[0].toLowerCase() == "!handlers") && words.length == 2){
+        var completions = Object.keys(nuages.vars.handlers)
+        completions.push("load");
+    }
+    else if((words[0].toLowerCase() == "!listeners") && words.length == 2){
+        var completions = Object.keys(nuages.vars.listeners);
+    }
+    else if((words[0].toLowerCase() == "!use") && words.length == 2){
+        var completions = Object.keys(nuages.vars.modules).concat(Object.keys(nuages.vars.handlers));
+    }
+    else if((words[0].toLowerCase() == "!modules" || words[0].toLowerCase() == "!handlers" ) && words.length == 3){
         var completions = 'del'.split(' ');
+    }
+    else if((words[0].toLowerCase() == "!listeners") && words.length == 3){
+        var completions = 'del start stop'.split(' ');
     }
     else if((words[0].toLowerCase() == "!jobs") && words.length == 2){
         var completions = Object.keys(nuages.vars.jobs);
@@ -50,7 +61,7 @@ function completer(line) {
         var completions = 'clear'.split(' ');
     }
     else if(words.length==1){ 
-        var completions = '!login !implant !implants !shell !put !get !files !options !setg !unsetg !set !unset !modules !use !run !autorun !autoruns !jobs !help'.split(' ');
+        var completions = '!login !implant !implants !shell !put !get !files !options !setg !unsetg !set !unset !modules !use !run !autorun !autoruns !jobs !handlers !listeners !help'.split(' ');
     }else{
        return[[],line];
     }       
@@ -94,6 +105,10 @@ term.toCyan = (text) => {
 
 term.toMagenta = (text) => {
     return "\u001b[35m"+text+"\u001b[39m";
+};
+
+term.toYellow = (text) => {
+    return "\u001b[33m"+text+"\u001b[39m";
 };
 
 term.toBold = (text) => {
@@ -144,6 +159,7 @@ term.setPromptline = function(){
     term.stdoutMuted = false;
     var imp = nuages.vars.implants[nuages.vars.globalOptions.implant];
     var mod = nuages.vars.modules[nuages.vars.module];
+    var handler = nuages.vars.handlers[nuages.vars.module];
     var path = nuages.vars.paths[nuages.vars.globalOptions.implant];
     term.promptline = "";
     var n = 0;
@@ -152,13 +168,17 @@ term.setPromptline = function(){
         n += 40;
     }
     if (mod){
-        term.promptline += "(" + term.toBold(term.toMagenta(mod.name)) + ")"
+        term.promptline += "(" + term.toBold(term.toMagenta(mod.name)) + ")";
+        n += 20;
+    }
+    if (handler){
+        term.promptline += "(" + term.toBold(term.toYellow(handler.name)) + ")";
         n += 20;
     }
     if(imp){
         term.promptline += term.toRed(imp.username) + "@" + term.toRed(imp.hostname) + ": "+ path;
         n += 40;
-    }else if(!mod) {
+    }else if(!mod && !handler) {
         term.promptline += "|"+term.toBold(term.toBlue('Nuages'));
         n += 20;
     }

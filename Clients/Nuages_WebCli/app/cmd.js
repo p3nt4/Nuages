@@ -33,15 +33,20 @@ function executeCommand(cmd){
     if(cmdArray.length == 0){
         return;
     }
-    if(cmdArray[0].toLowerCase() == "!implant"){
+    else if(cmdArray[0].toLowerCase() == "!implant"){
         cmdArray.splice(1, 0, nuages.vars.globalOptions.implant);
         cmdArray[0]="!implants";
     }
-    if(cmdArray[0].toLowerCase() == "!shell"){
+    else if(cmdArray[0].toLowerCase() == "!shell"){
         cmdArray.splice(1, 0, "implant");
         cmdArray[0]="!setg";
     }
-    if (cmdArray[0].toLowerCase() == "cd"){
+    if (cmdArray[0].toLowerCase() == "!login" && cmdArray.length > 1){
+        term.passwordMode = true;
+        term.setPromptline();
+        nuages.vars.user = {email: cmdArray[1]};
+    }
+    else if (cmdArray[0].toLowerCase() == "cd"){
         if(nuages.vars.implants[nuages.vars.globalOptions.implant.substring(0.6)].supportedPayloads.includes("cd")){
             nuages.createJob(nuages.vars.globalOptions.implant, {type:"cd", options:{ path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)], dir:cmdArray.slice(1).join(" ")}});
         }
@@ -70,14 +75,91 @@ function executeCommand(cmd){
             }
         }
     }
-    else if(cmdArray[0] == "!run"){
-        if(nuages.vars.modules[nuages.vars.module]){
-            nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions, autorun: false}).catch((err) => {
+    else if (cmdArray[0].toLowerCase() == "!handlers"){
+        if(cmdArray.length == 1){
+            nuages.getHandlers();	
+        }
+        else if(cmdArray.length > 2 && cmdArray[1].toLowerCase() == "load"){
+            nuages.handloadService.create({handlerPath:cmdArray[2]}).catch((err) => {
+                term.printError(err.message);
+            });
+        }
+        else if(cmdArray.length > 2 && cmdArray[2].toLowerCase() == "del"){
+            if(nuages.vars.handlers[cmdArray[1].toLowerCase()]){
+                    nuages.handlerService.remove(nuages.vars.handlers[cmdArray[1].toLowerCase()]._id).catch((err) => {
                     term.printError(err.message);
                 });
             }else{
-                term.logError("Module not set");
+                term.printError("Handler not found");
             }
+        }
+    }else if (cmdArray[0].toLowerCase() == "!listeners"){
+        if(cmdArray.length == 1){
+            nuages.getListeners();	
+        }
+        else if(cmdArray.length > 2 && cmdArray[2].toLowerCase() == "del"){
+            if(nuages.vars.listeners[cmdArray[1]]){
+                    nuages.listenerService.remove(nuages.vars.listeners[cmdArray[1]]._id).catch((err) => {
+                    term.printError(err.message);
+                });
+            }else{
+                term.printError("Listener not found");
+            }
+        }
+        else if(cmdArray.length > 2 && cmdArray[2].toLowerCase() == "stop"){
+            if(nuages.vars.listeners[cmdArray[1]]){
+                nuages.listenerStartService.create({id:nuages.vars.listeners[cmdArray[1]]._id, wantedStatus: 2}).catch((err) => {
+                    term.printError(err.message);
+                });
+            }else{
+                term.printError("Listener not found");
+            }
+        }
+        else if(cmdArray.length > 2 && cmdArray[2].toLowerCase() == "start"){
+            if(nuages.vars.listeners[cmdArray[1]]){
+                nuages.listenerStartService.create({id:nuages.vars.listeners[cmdArray[1]]._id, wantedStatus: 3}).catch((err) => {
+                    term.printError(err.message);
+                });
+            }else{
+                term.printError("Listener not found");
+            }
+        }
+        else if(cmdArray.length == 2){
+            if(nuages.vars.listeners[cmdArray[1]]){
+                    console.log(nuages.printListeners({mod:nuages.vars.listeners[cmdArray[1]]}));
+                    nuages.printModuleOptions("handler",nuages.vars.listeners[cmdArray[1]].options);
+            }else{
+                term.printError("Listener not found");
+            }
+        }
+    }
+    else if(cmdArray[0] == "!run"){
+        if(nuages.vars.moduletype=="module"){
+            if(nuages.vars.modules[nuages.vars.module]){
+                nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions, autorun: false}).catch((err) => {
+                        term.printError(err.message);
+                    });
+                }else{
+                    term.printError("Module not set");
+                }
+            }
+        else if(nuages.vars.moduletype=="handler"){
+            if(nuages.vars.handlers[nuages.vars.module]){
+                nuages.listenerService.create({handlerId: nuages.vars.handlers[nuages.vars.module]._id, options: nuages.vars.moduleOptions}).then((run)=>{
+                    nuages.listenerStartService.create({id:run._id, wantedStatus: 3}).catch((err) => {
+                        term.printError(err.message);
+                    });
+
+                }).catch((err) => {
+                        term.printError(err.message);
+                    });
+                }else{
+                    term.printError("Handler not set");
+                }
+            }
+        else{
+            term.printError("You have nothing to run!");
+        }
     }
     else if(cmdArray[0] == "!autorun"){
         if(nuages.vars.modules[nuages.vars.module]){
@@ -105,8 +187,13 @@ function executeCommand(cmd){
                 if(nuages.vars.moduleOptions.implant && nuages.vars.implants[nuages.vars.globalOptions.implant]){
                     nuages.vars.moduleOptions.implant.value = nuages.vars.implants[nuages.vars.globalOptions.implant]._id;
                 }
-                term.setPromptline();
-            }else{
+                nuages.vars.moduletype = "module";
+            }else if(nuages.vars.handlers[cmdArray[1].toLowerCase()] !== undefined){
+                nuages.vars.module = cmdArray[1].toLowerCase();
+                nuages.vars.moduleOptions = nuages.vars.handlers[cmdArray[1].toLowerCase()].options;
+                nuages.vars.moduletype = "handler";
+            }
+            else{
                 term.logError("Module not found, did you load modules with '!modules load' ?");
             }	
         }
@@ -117,13 +204,6 @@ function executeCommand(cmd){
         arr = filename.split("/");
         filename = arr[arr.length-1];
         nuages.createJobWithUpload(nuages.vars.globalOptions.implant, {type:"upload", options:{ file: cmdArray[1], chunkSize: parseInt(nuages.vars.globalOptions.chunksize), path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)]}}, filename);
-    }
-    
-    else if (cmdArray[0].toLowerCase() == "!login" && cmdArray.length > 1){
-        term.passwordMode = true;
-        term.setPromptline();
-        console.log(term.promptline);
-        nuages.vars.user = {email: cmdArray[1]};
     }
     else if (cmdArray[0].toLowerCase() == "!put"){
         if(nuages.vars.files[cmdArray[1]] != undefined ||  cmdArray.length < 2){
@@ -136,8 +216,8 @@ function executeCommand(cmd){
     else if (cmdArray[0].toLowerCase() == "!files"){
         if(cmdArray.length < 2){
             nuages.getFiles();
-        }else if(cmdArray[1].toLowerCase() == "upload"){
-            document.querySelector('input[type=file]').click();
+        }else if(cmdArray[1].toLowerCase() == "upload" && cmdArray.length > 2){
+            nuages.loadFile(cmdArray[2]); 
         }
         else if(cmdArray.length == 2){
             if (nuages.vars.files[cmdArray[1]] != undefined){
@@ -155,12 +235,8 @@ function executeCommand(cmd){
                 term.writeln("\r\n File not found");
                 term.prompt();
             }
-        }else if(cmdArray[2] == "download"){
-            if (nuages.vars.files[cmdArray[1]] != undefined){
-                nuages.downloadFile(cmdArray[1]);
-            }else{
-                term.writeln("\r\n File not found");
-            }
+        }else if(cmdArray[2] == "download" && cmdArray.length > 3){
+            nuages.downloadFile(cmdArray[1],cmdArray[3]);
         }
     }else if (cmdArray[0].toLowerCase() == "!jobs"){
         if(cmdArray.length < 2){
@@ -198,10 +274,7 @@ function executeCommand(cmd){
             
         }
         else if(cmdArray.length == 2){
-            if(cmdArray[1].toLowerCase() === "clear"){
-                nuages.clearImplants();
-            }
-            else if (nuages.vars.implants[cmdArray[1]] != undefined){
+            if (nuages.vars.implants[cmdArray[1]] != undefined){
                 term.writeln("\r\n" + nuages.printImplants({imp:nuages.vars.implants[cmdArray[1]]}));
             }else{
                 term.printError("Implant not found");
@@ -236,9 +309,9 @@ function executeCommand(cmd){
             }
         }else{
             nuages.vars.globalOptions[cmdArray[1].toLowerCase()] = cmdArray[2];
-        }         
+        }     
     }
-else if (cmdArray[0].toLowerCase() == "!unsetg" && cmdArray.length > 1){
+    else if (cmdArray[0].toLowerCase() == "!unsetg" && cmdArray.length > 1){
         nuages.vars.globalOptions[cmdArray[1].toLowerCase()] = "";
     }
     else if (cmdArray[0].toLowerCase() == "!unset" && cmdArray.length > 1){
@@ -248,7 +321,7 @@ else if (cmdArray[0].toLowerCase() == "!unsetg" && cmdArray.length > 1){
             term.printError("Option does not exist");
         }   
     }
-else if (cmdArray[0].toLowerCase() == "!set" && cmdArray.length > 2){
+    else if (cmdArray[0].toLowerCase() == "!set" && cmdArray.length > 2){
         if(nuages.vars.moduleOptions[cmdArray[1].toLowerCase()] !== undefined){
             if(cmdArray[1].toLowerCase() == "implant"){
                 if(nuages.vars.implants[cmdArray[2]]){
@@ -269,13 +342,14 @@ else if (cmdArray[0].toLowerCase() == "!set" && cmdArray.length > 2){
         }else{
             nuages.vars.moduleOptions[cmdArray[1].toLowerCase()] = {value: cmdArray[2], required: false};
         }     
-}
-    else if (cmdArray[0].toLowerCase() == "!back"){
-        nuages.vars.globalOptions["implant"]= "";     
     }
+    else if (cmdArray[0].toLowerCase() == "!back"){
+            nuages.vars.globalOptions["implant"]= "";     
+        }
     else if(cmdArray[0].length > 0 && cmd[0] != "!"){
-        nuages.createJob(nuages.vars.globalOptions.implant, {type:"Command", options:{ path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)], cmd: cmd}});
+        nuages.createJob(nuages.vars.globalOptions.implant, {type:"command", options:{ path: nuages.vars.paths[nuages.vars.globalOptions.implant.substring(0.6)], cmd: cmd}});
     }else{
         term.printError("Invalid command, type !help for assistance");
     }
+    return;
 }

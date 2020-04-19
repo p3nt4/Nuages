@@ -4,13 +4,17 @@
 // eslint-disable-next-line no-unused-vars
 
 // This method updates a file object after the chunks have been uploaded
+
+const { NotFound} = require('@feathersjs/errors');
+
+
 module.exports = function (options = {}) {
   return async context => {
 
     const file = await context.app.service('/fs/files').get(context.id);  
 
 		if(file === undefined){
-			throw error.NotFound("File not found");
+			throw new NotFound("File not found");
 		}
 		
 		// Find the last chunk of the file if not provided

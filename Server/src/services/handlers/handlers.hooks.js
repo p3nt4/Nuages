@@ -1,15 +1,11 @@
 const { authenticate } = require('@feathersjs/authentication').hooks;
 
-const beforeCreateModuleRun = require('../../hooks/before-create-modules-run');
-
-const afterCreateModuleRun = require('../../hooks/after-create-modules-run');
-
 module.exports = {
   before: {
     all: [ authenticate('jwt') ],
     find: [],
     get: [],
-    create: [beforeCreateModuleRun()],
+    create: [],
     update: [],
     patch: [],
     remove: []
@@ -19,7 +15,7 @@ module.exports = {
     all: [],
     find: [],
     get: [],
-    create: [afterCreateModuleRun()],
+    create: [],
     update: [],
     patch: [],
     remove: []

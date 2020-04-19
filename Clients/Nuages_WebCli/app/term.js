@@ -41,6 +41,10 @@ term.toGreen = (text) => {
     return "\u001b[32m"+text+"\u001b[39m";
 };
 
+term.toYellow = (text) => {
+    return "\u001b[33m"+text+"\u001b[39m";
+};
+
 term.toBlue = (text) => {
     return "\u001b[34m"+text+"\u001b[39m";
 };
@@ -96,8 +100,9 @@ term.setPromptline = function(){
         return;
     }
     var imp = nuages.vars.implants[nuages.vars.globalOptions.implant];
-    var path = nuages.vars.paths[nuages.vars.globalOptions.implant];
     var mod = nuages.vars.modules[nuages.vars.module];
+    var handler = nuages.vars.handlers[nuages.vars.module];
+    var path = nuages.vars.paths[nuages.vars.globalOptions.implant];
     term.promptline = "";
     var n = 0;
     if(imp){
@@ -105,13 +110,17 @@ term.setPromptline = function(){
         n += 40;
     }
     if (mod){
-        term.promptline += "(" + term.toBold(term.toMagenta(mod.name)) + ")"
+        term.promptline += "(" + term.toBold(term.toMagenta(mod.name)) + ")";
+        n += 20;
+    }
+    if (handler){
+        term.promptline += "(" + term.toBold(term.toYellow(handler.name)) + ")";
         n += 20;
     }
     if(imp){
         term.promptline += term.toRed(imp.username) + "@" + term.toRed(imp.hostname) + ": "+ path;
         n += 40;
-    }else if(!mod) {
+    }else if(!mod && !handler) {
         term.promptline += "|"+term.toBold(term.toBlue('Nuages'));
         n += 20;
     }
