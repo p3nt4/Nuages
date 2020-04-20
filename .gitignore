@@ -436,3 +436,4 @@ public
 .tern-port
 Server/config/production.json
 Server/config/default.json
+Server/config/production.js
