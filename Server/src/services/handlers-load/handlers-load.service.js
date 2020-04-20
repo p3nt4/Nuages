@@ -1,5 +1,5 @@
 // Initializes the `handlers-load` service on path `/handlers/load`
-const { HandlersLoad } = require('./handlers-load.class');
+const createService  = require('./handlers-load.class');
 const hooks = require('./handlers-load.hooks');
 
 module.exports = function (app) {
@@ -8,7 +8,7 @@ module.exports = function (app) {
   };
 
   // Initialize our service with any options it requires
-  app.use('/handlers/load', new HandlersLoad(options, app));
+  app.use('/handlers/load', new createService(options, app));
 
   // Get our initialized service so that we can register hooks
   const service = app.service('handlers/load');

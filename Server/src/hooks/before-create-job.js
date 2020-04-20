@@ -30,6 +30,8 @@ module.exports = function (options = {}) {
 
     data2.moduleRun = context.data.moduleRun ? context.data.moduleRun : undefined;
 
+    data2.pipe_id = context.data.pipe_id ? context.data.pipe_id : undefined;
+
     if(!context.data.payload){
       throw error.BadRequest("A payload is needed");
     } else{

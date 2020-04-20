@@ -15,6 +15,10 @@ const handlers = require('./handlers/handlers.service.js');
 const handlersLoad = require('./handlers-load/handlers-load.service.js');
 const listeners = require('./listeners/listeners.service.js');
 const listenersStartstop = require('./listeners-startstop/listeners-startstop.service.js');
+const tunnels = require('./tunnels/tunnels.service.js');
+const pipes = require('./pipes/pipes.service.js');
+const pipesIo = require('./pipes-io/pipes-io.service.js');
+const implantsIo = require('./implant-io/implant-io.service.js');
 // eslint-disable-next-line no-unused-vars
 module.exports = function (app) {
   app.configure(implants);
@@ -34,4 +38,8 @@ module.exports = function (app) {
   app.configure(handlersLoad);
   app.configure(listeners);
   app.configure(listenersStartstop);
+  app.configure(tunnels);
+  app.configure(pipes);
+  app.configure(pipesIo);
+  app.configure(implantsIo);
 };

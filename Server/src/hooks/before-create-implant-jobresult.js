@@ -33,7 +33,12 @@ module.exports = function (options = {}) {
         context.app.service("/fs").patch(file._id,{path: context.data.result, uploadedBy: job.implantId, lastChunk: n});	
         }
     }
-    
+
+    //Delete pipe if this job had a pipe
+    if(job.pipe_id){
+      context.app.service("pipes").remove(job.pipe_id);	
+    }
+
 	  // Append the result
 	  job.result += context.data.result;
 

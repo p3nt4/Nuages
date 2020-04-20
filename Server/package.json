@@ -48,6 +48,7 @@
     "gridfs-stream": "^1.1.1",
     "helmet": "^3.22.0",
     "inquirer": "^7.1.0",
+    "memorystream": "^0.3.1",
     "mongodb": "^3.5.6",
     "mongodb-core": "^3.2.7",
     "secure-random-string": "^1.1.3",
