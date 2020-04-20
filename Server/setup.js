@@ -30,7 +30,7 @@ function hasher (password) {
 };
 
 const sourceFileName = './config/template.json';
-const destinationFileName = './config/default.json';
+const destinationFileName = './config/production.json';
 const sourceFile = require(sourceFileName);
 
 nuagesUser = {}
