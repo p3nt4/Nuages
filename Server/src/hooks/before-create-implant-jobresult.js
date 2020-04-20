@@ -34,15 +34,11 @@ module.exports = function (options = {}) {
         }
     }
 
-    //Delete pipe if this job had a pipe
-    if(job.pipe_id){
-      context.app.service("pipes").remove(job.pipe_id);	
-    }
 
 	  // Append the result
 	  job.result += context.data.result;
 
-    // Status 2 = Error
+    // Status 4 = Error
     if(context.data.error){
       job.jobStatus = 4;
     }
@@ -58,6 +54,11 @@ module.exports = function (options = {}) {
     }
     
     job.lastUpdated = Date.now();
+
+    //Delete pipe if this job had a pipe
+    if(job.pipe_id && job.jobStatus > 2){
+      context.app.service("pipes").remove(job.pipe_id);	
+    }
 
     //Update the job with the new data
     context.app.service('jobs').patch(job._id, job); 

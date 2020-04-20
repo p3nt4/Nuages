@@ -2,9 +2,10 @@ const { authenticate } = require('@feathersjs/authentication').hooks;
 
 const beforeCreateListener = require('../../hooks/before-create-listener');
 
-const beforePatchListener = require('../../hooks/before-patch-listener');
-
 const beforeRemoveListener = require('../../hooks/before-remove-listener');
+
+
+const {disallow} = require('feathers-hooks-common');
 
 module.exports = {
   before: {
@@ -12,8 +13,8 @@ module.exports = {
     find: [],
     get: [],
     create: [beforeCreateListener()],
-    update: [],
-    patch: [beforePatchListener()],
+    update: [disallow("external")],
+    patch: [disallow("external")],
     remove: [beforeRemoveListener()]
   },
 
