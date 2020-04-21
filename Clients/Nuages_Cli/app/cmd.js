@@ -140,7 +140,7 @@ executeCommand = function(cmd){
         else if(cmdArray.length == 2){
             if(nuages.vars.listeners[cmdArray[1]]){
                     console.log(nuages.printListeners({mod:nuages.vars.listeners[cmdArray[1]]}));
-                    nuages.printModuleOptions("handler",nuages.vars.listeners[cmdArray[1]].options);
+                    console.log(nuages.printModuleOptions("handler",nuages.vars.listeners[cmdArray[1]].options));
             }else{
                 nuages.term.printError("Listener not found");
             }
