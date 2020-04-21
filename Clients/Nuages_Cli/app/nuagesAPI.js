@@ -2,14 +2,11 @@
 const table = require('table').table;
 const getBorderCharacters = require('table').getBorderCharacters;
 const feathers = require('@feathersjs/client');
-//const socketio = require('@feathersjs/socketio-client');
 var path = require("path");
 var fs = require("fs");
 const io = require('socket.io-client');
-var Table = require('cli-table');
 var endpoint = process.argv[2] ? process.argv[2]  : "http://127.0.0.1:3030";
 const socket = io(endpoint);
-//const term = require("./term").term;
 const app = feathers();
 
 var nuages = {};
