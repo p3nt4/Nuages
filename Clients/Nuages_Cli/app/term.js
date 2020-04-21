@@ -75,7 +75,7 @@ function getTerm(){
             var completions = 'clear'.split(' ');
         }
         else if(words.length==1){ 
-            var completions = '!login !implant !implants !shell !put !get !files !options !setg !unsetg !set !unset !modules !use !run !autorun !autoruns !jobs !handlers !listeners !channels !tunnels !interactive !help'.split(' ');
+            var completions = '!login !implant !implants !shell !put !get !files !options !setg !unsetg !set !unset !modules !use !run !autorun !autoruns !jobs !handlers !listeners !channels !tunnels !interactive !back !help'.split(' ');
         }else{
         return[[],line];
         }       

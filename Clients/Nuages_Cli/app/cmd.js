@@ -416,7 +416,6 @@ executeCommand = function(cmd){
         nuages.vars.module = "";    
     }
     else if (cmdArray[0].toLowerCase() == "!test"){
-        console.log(nuages.toTable(null,null));
     }
     else if (cmdArray[0].toLowerCase() == "!quit" || cmdArray[0].toLowerCase() == "!exit" ){
         process.exit(0);  
