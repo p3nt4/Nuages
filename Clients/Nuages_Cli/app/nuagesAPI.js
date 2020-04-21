@@ -362,7 +362,7 @@ nuages.printListeners = function(modules){
 nuages.printPipes = function(modules){
     var modules = Object.values(modules);
     if(modules.length == 0 ){return "";}
-    result = "\r\n ID    | Type                | Implant | Target    \r\n";
+    result = "\r\n ID    | Type                | Implant | Destination    \r\n";
     result += "".padEnd(60,"-") + "\r\n";
     var string = "";
     for (var i=0; i < modules.length; i ++){
@@ -378,10 +378,10 @@ nuages.printPipes = function(modules){
             if(mod.implantId){
                 string+= " " + mod.implantId.toString().substring(0,6)+ "  |"
             }else{
-                string+= " ".padEnd(10) + "|"
+                string+= " ".padEnd(9) + "|"
             }
-            if(mod.filename){
-                string+= " " + mod.filename;
+            if(mod.destination){
+                string+= " " + mod.target;
             }
             string+= "\r\n";
             result+=string;
@@ -723,7 +723,7 @@ nuages.printListenerLog  = function (modRun){
 
 nuages.createImplantInteractiveChannel = function(implant, filename) {
     if(nuages.vars.implants[implant]){
-        nuages.pipeService.create({bufferSize:4096,implantId:nuages.vars.implants[implant]._id,type:"interactive",filename:filename}).then((pipe)=>{
+        nuages.pipeService.create({bufferSize:4096,implantId:nuages.vars.implants[implant]._id,type:"interactive",target:filename}).then((pipe)=>{
             try{
                 nuages.createJobWithPipe(implant, 
                     {type:"interactive", 

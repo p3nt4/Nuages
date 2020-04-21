@@ -14,8 +14,15 @@ module.exports = (options = {}) => {
         let buff = Buffer.from(context.data.in, 'base64');
         pipe.out.write(buff);
       }
-      if(pipe.in.readableLength>pipe.bufferSize){
-        var buff = pipe.in.read(pipe.bufferSize);
+      if(context.data.maxSize){
+        var bufferSize = Math.min(pipe.bufferSize, context.data.maxSize);
+      }else{
+        var bufferSize = pipe.bufferSize;
+      }
+      if(bufferSize ==0){
+      }
+      else if(pipe.in.readableLength>bufferSize){
+        var buff = pipe.in.read(bufferSize);
       }else{
         var buff = pipe.in.read();
       }

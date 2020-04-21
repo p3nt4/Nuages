@@ -353,8 +353,14 @@ executeCommand = function(cmd){
             nuages.vars.moduleOptions[cmdArray[1].toLowerCase()] = {value: cmdArray[2], required: false};
         }     
     }
-    else if (cmdArray[0].toLowerCase() == "!tunnels" && cmdArray.length > 1){
-        nuages.tunnelService.create({port:cmdArray[1]}).then(() => {}).catch((err) => {
+    else if (cmdArray[0].toLowerCase() == "!socks" && cmdArray.length > 1){
+        nuages.tunnelService.create({
+            port:cmdArray[1], 
+            bufferSize: 32768, 
+            type:"socks", 
+            implantId: nuages.vars.implants[nuages.vars.globalOptions.implant]._id,
+            jobOptions:{refreshRate:200}
+        }).then(() => {}).catch((err) => {
             nuages.term.printError(err.message);
         });
     }

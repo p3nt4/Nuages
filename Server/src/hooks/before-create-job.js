@@ -4,6 +4,8 @@
 // eslint-disable-next-line no-unused-vars
 const srs = require('secure-random-string');
 
+const error = require('@feathersjs/errors');
+
 module.exports = function (options = {}) {
   return async context => {
     

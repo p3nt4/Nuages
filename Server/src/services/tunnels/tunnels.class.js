@@ -1,11 +1,5 @@
-const { Service } = require('feathers-mongodb');
+const { Service } = require('feathers-memory');
 
 exports.Tunnels = class Tunnels extends Service {
-  constructor(options, app) {
-    super(options);
-    
-    app.get('mongoClient').then(db => {
-      this.Model = db.collection('tunnels');
-    });
-  }
+  
 };

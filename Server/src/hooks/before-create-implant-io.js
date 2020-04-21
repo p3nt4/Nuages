@@ -13,8 +13,15 @@ module.exports = (options = {}) => {
         let buff = Buffer.from(context.data.in, 'base64');
         pipe.in.write(buff);
       }
-      if(pipe.out.readableLength>pipe.bufferSize){
-        var buff = pipe.out.read(pipe.bufferSize);
+      if(context.data.maxSize){
+        var bufferSize = Math.min(pipe.bufferSize, context.data.maxSize);
+      }else{
+        var bufferSize = pipe.bufferSize;
+      }
+      if(bufferSize ==0){
+      }
+      else if(pipe.out.readableLength>bufferSize){
+        var buff = pipe.out.read(bufferSize);
       }else{
         var buff = pipe.out.read();
       }
@@ -24,7 +31,7 @@ module.exports = (options = {}) => {
         context.result = {out:""};
       }
     }else{
-      throw new NotFound("Pipe not found");
+      throw new NotFound("Pipe not found: " + context.data.pipe_id);
     }
     return context;
   };

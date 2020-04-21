@@ -19,9 +19,9 @@ module.exports = (options = {}) => {
 
       data.implantId = context.data.implantId;
 
-      data.type = context.data.type;
+      data.type = context.data.type ? context.data.type : "";
 
-      data.filename = context.data.filename;
+      data.destination = context.data.destination ? context.data.destination : "";
 
       data.bufferSize = parseInt(context.data.bufferSize) ? parseInt(context.data.bufferSize) : 4096;
 
