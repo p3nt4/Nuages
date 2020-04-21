@@ -2,6 +2,10 @@ const { authenticate } = require('@feathersjs/authentication').hooks;
 
 const beforeCreateTunnel = require('../../hooks/before-create-tunnel');
 
+const beforeRemoveTunnel = require('../../hooks/before-remove-tunnel');
+
+const afterFindTunnels = require('../../hooks/after-find-tunnels');
+
 module.exports = {
   before: {
     all: [ authenticate('jwt') ],
@@ -10,12 +14,12 @@ module.exports = {
     create: [beforeCreateTunnel()],
     update: [],
     patch: [],
-    remove: []
+    remove: [beforeRemoveTunnel()]
   },
 
   after: {
     all: [],
-    find: [],
+    find: [afterFindTunnels()],
     get: [],
     create: [],
     update: [],

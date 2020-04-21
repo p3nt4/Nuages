@@ -44,10 +44,27 @@ nuages.vars = {
 };
 
 nuages.vars.globalOptions = {
-        implant: 0,
+        implant: {
+            value: "",
+            description: "The implant to interact with"
+        },
         //path : ".",
-        chunksize: 2400000,
-        timeout: "1",
+        chunksize: {
+            value: 2400000,
+            description: "The size of the file chunks for uploads and downloads"
+        },
+        timeout:{
+            value: 1,
+            description: "The job timeout, in minutes"
+        },
+        buffersize:{
+            value: 65536,
+            description: "The size of the buffer for created channels"
+        },
+        refreshrate:{
+            value: 100,
+            description: "The channel refresh rate in ms"
+        }
 };
     
 nuages.vars.moduleOptions = {};
@@ -72,6 +89,10 @@ nuages.printHelp = function (){
     string += " !channels <id>                          - Show channel details\r\n";
     string += " !channels <id> interact                 - Interact with channel\r\n";
     string += " !channels <id> del                      - Delete channel\r\n";
+    string += " !tunnels                                - List active tunnels\r\n";
+    string += " !tunnels <id>                           - Show tunnel details\r\n";
+    string += " !tunnels socks <port> [ip]              - Create a new tunnel\r\n";
+    string += " !tunnels <id> del                       - Delete tunnel\r\n";
     string += " !files                                  - List files\r\n";
     string += " !files upload <path>                    - Upload a file from the local client\r\n";
     string += " !files <id> download <path>             - Download a file to the local client\r\n";
@@ -102,11 +123,11 @@ nuages.printHelp = function (){
     nuages.term.printInfo(string, "Help")
 }
 nuages.loadFile = async function(filePath) {
-    var CHUNK_SIZE = parseInt(nuages.vars.globalOptions.chunksize) * 3/4;
+    var CHUNK_SIZE = parseInt(nuages.vars.globalOptions.chunksize.value) * 3/4;
     buffer = new Buffer(CHUNK_SIZE);
     fs.open(filePath, 'r', async function(err, fd) {
         if (err) {nuages.term.logError(err.message); return};
-        var file = await nuages.fileService.create({filename: path.basename(filePath), chunkSize: parseInt(nuages.vars.globalOptions.chunksize) , length: 0, metadata:{path:"N/A"}}).catch((err) => {
+        var file = await nuages.fileService.create({filename: path.basename(filePath), chunkSize: parseInt(nuages.vars.globalOptions.chunksize.value) , length: 0, metadata:{path:"N/A"}}).catch((err) => {
             nuages.term.logError(err.message);
         });
         if (!file){return;}
@@ -210,6 +231,7 @@ nuages.login = async function(user,password){
         nuages.getFiles(false);
         nuages.getListeners(false);
         nuages.getPipes(false);
+        nuages.getTunnels(false);
         nuages.vars.session = makeid(32);
     } catch(error) {
     // If we got an error, show the login page
@@ -381,7 +403,47 @@ nuages.printPipes = function(modules){
                 string+= " ".padEnd(9) + "|"
             }
             if(mod.destination){
-                string+= " " + mod.target;
+                string+= " " + mod.destination;
+            }
+            string+= "\r\n";
+            result+=string;
+           }catch(e){
+            console.log(e);
+        };
+    }
+    return result;
+}
+
+nuages.printTunnels = function(modules){
+    var modules = Object.values(modules);
+    if(modules.length == 0 ){return "";}
+    result = "\r\n ID    | Type                | Port    | Implant | Destination         | Channels     \r\n";
+    result += "".padEnd(85,"-") + "\r\n";
+    var string = "";
+    for (var i=0; i < modules.length; i ++){
+        try{
+            mod = modules[i];
+            string = "";
+            string += mod._id.toString().substring(0,6) + " |";
+            if(mod.type){
+                string += " " + mod.type.substring(0,20).padEnd(20, ' ') + "|";
+            }else{
+                string += " ".padEnd(20, ' ') + "|";
+            }if(mod.port){
+                string += " " + mod.port.toString().padEnd(8, ' ') + "|";
+            }else{
+                string += " ".padEnd(8, ' ') + "|";
+            }
+            if(mod.implantId){
+                string+= " " + mod.implantId.toString().substring(0,6)+ "  |"
+            }
+            if(mod.destination){
+                string+= " " + mod.destination.padEnd(20, ' ') + "|";;
+            }else{
+                string += " ".padEnd(20, ' ') + "|";
+            }
+            if(mod.pipeNo !== undefined){
+                string+= " " + mod.pipeNo.toString();
             }
             string+= "\r\n";
             result+=string;
@@ -431,15 +493,13 @@ nuages.printJobs = function(jobs){
 
 nuages.printOptions = function(){
     string = "\r\n ["+nuages.term.toBold(nuages.term.toBlue("Global"))+"]"
-    string += "\r\n Name          | Value          \r\n"
-    string += "".padEnd(60,"-") + "\r\n";
-    string += " Implant       | " + nuages.vars.globalOptions.implant.toString() +"\r\n";
-    string += " Chunk Size    | " + nuages.vars.globalOptions.chunksize.toString() +"\r\n";
-    string += " Timeout (min) | " + nuages.vars.globalOptions.timeout.toString() +"\r\n";
-    nuages.term.writeln(string);
-    if(nuages.vars.modules[nuages.vars.module]!=undefined || nuages.vars.handlers[nuages.vars.module]!=undefined){
-        nuages.printModuleOptions();
+    string += "\r\n Name             |   Value              | Description \r\n"
+    string += "".padEnd(80,"-") + "\r\n";
+    var optionKeys = Object.keys(nuages.vars.globalOptions);
+    for(var i = 0; i < optionKeys.length; i++){
+        string += " " +optionKeys[i].substr(0,16).padEnd(17," ")+"| " + nuages.vars.globalOptions[optionKeys[i]].value.toString().substr(0,20).padEnd(21," ")+"| " + nuages.vars.globalOptions[optionKeys[i]].description + "\r\n";
     }
+    nuages.term.writeln(string);	
 }
 
 nuages.printModuleOptions = function(moduletype = nuages.vars.moduletype, options = nuages.vars.moduleOptions){
@@ -526,6 +586,20 @@ nuages.getPipes = function(print = true){
         });
 }
 
+nuages.getTunnels = function(print = true){
+    nuages.vars.tunnels = {};
+    nuages.tunnelService.find({query: {$limit: 200}}).then(items => {
+        for(var i = 0; i< items.data.length; i++){
+            nuages.vars.tunnels[items.data[i]._id.substring(0,6)] = items.data[i];
+        }; 
+            if(print){
+                nuages.term.logInfo("Tunnels:\r\n" + nuages.printTunnels(items.data)); 
+            }
+        }).catch((err) => {
+            nuages.term.logError(err.message);
+        });
+}
+
 nuages.getFiles = async function(print = true){
     nuages.vars.files = {};
     try{
@@ -589,7 +663,7 @@ nuages.getJobs = async function(query){
 }
 
 nuages.createJob = function (implant, payload){
-    var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout) * 60000;
+    var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout.value) * 60000;
     if (nuages.vars.implants[implant] != undefined){
         nuages.jobService.create({
             implantId: nuages.vars.implants[implant]._id,
@@ -604,8 +678,8 @@ nuages.createJob = function (implant, payload){
 }
 
 nuages.createJobWithUpload = function (implant, payload, filename){
-    var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout) * 60000;
-    var chunkSize = parseInt(nuages.vars.globalOptions.chunksize);
+    var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout.value) * 60000;
+    var chunkSize = parseInt(nuages.vars.globalOptions.value.chunksize);
     if (nuages.vars.implants[implant] != undefined){
         nuages.jobService.create({
             implantId: nuages.vars.implants[implant]._id,
@@ -622,7 +696,7 @@ nuages.createJobWithUpload = function (implant, payload, filename){
     }
 }
 nuages.createJobWithPipe = function (implant, payload, pipe_id){
-    var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout) * 60000;
+    var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout.value) * 60000;
     if (nuages.vars.implants[implant] != undefined){
         nuages.jobService.create({
             implantId: nuages.vars.implants[implant]._id,
@@ -723,7 +797,7 @@ nuages.printListenerLog  = function (modRun){
 
 nuages.createImplantInteractiveChannel = function(implant, filename) {
     if(nuages.vars.implants[implant]){
-        nuages.pipeService.create({bufferSize:4096,implantId:nuages.vars.implants[implant]._id,type:"interactive",target:filename}).then((pipe)=>{
+        nuages.pipeService.create({bufferSize:parseInt(nuages.vars.globalOptions.buffersize.value),implantId:nuages.vars.implants[implant]._id,type:"interactive",destination:filename}).then((pipe)=>{
             try{
                 nuages.createJobWithPipe(implant, 
                     {type:"interactive", 
@@ -732,8 +806,8 @@ nuages.createImplantInteractiveChannel = function(implant, filename) {
                         filename: filename,
                         pipe_id: pipe._id,
                         args: "",
-                        bufferSize: 4096,
-                        refreshRate: 100
+                        bufferSize: parseInt(nuages.vars.globalOptions.buffersize.value),
+                        refreshRate: parseInt(nuages.vars.globalOptions.refreshrate.value)
                     }
                     },pipe._id);
                 }catch(e){nuages.term.logError(e);}
@@ -758,7 +832,7 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
                     clearInterval(interval);
                     term.logInfo("Putting channel in the background");
                     nuages.term.setPromptline();
-                    nuages.term.prompt();
+                    nuages.term.prompt(true);
                     return;
                 }
                 var data = await nuages.ioService.create({pipe_id:pipe_id,in:input.toString('base64')});
@@ -776,7 +850,7 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
             clearInterval(interval);
             term.logInfo("Lost connection to channel");
             nuages.term.setPromptline();
-            nuages.term.prompt();
+            nuages.term.prompt(true);
             return;
         }
     }
@@ -805,5 +879,6 @@ nuages.modrunService.on('patched', function(run){nuages.printModRunLog(run)});
 nuages.listenerService.on('patched', function(run){nuages.printListenerLog(run)});
 nuages.moduleService.on('created', function(mod){nuages.term.logInfo("Module loaded:\r\n" + nuages.printModules({mod: mod}));nuages.vars.modules[mod.name]=mod;});
 nuages.handlerService.on('created', function(mod){nuages.term.logInfo("Handler loaded:\r\n" + nuages.printHandlers({mod: mod}));nuages.vars.handlers[mod.name]=mod;});
-nuages.pipeService.on('created', function(mod){nuages.term.logInfo("Channel created:\r\n" + nuages.printPipes({mod: mod}));nuages.vars.pipes[mod._id.substring(0,6)]=mod;});
+nuages.pipeService.on('created', function(mod){if(mod.type=="interactive"){nuages.term.logInfo("Channel created:\r\n" + nuages.printPipes({mod: mod}));}nuages.vars.pipes[mod._id.substring(0,6)]=mod;});
+nuages.tunnelService.on('created', function(mod){nuages.term.logInfo("Tunnel created:\r\n" + nuages.printTunnels({mod: mod}));nuages.vars.tunnels[mod._id.substring(0,6)]=mod;});
 exports.nuages = nuages;
