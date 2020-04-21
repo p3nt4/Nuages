@@ -161,12 +161,11 @@ nuages.templates.handlers = [
         header: "Name",
         attr: "name",
         process: (e)=>{return term.toYellow(term.toBold(e))},
-        size: 90,
     },
     {   
         header: "Description",
         attr: "description",
-        size: 90
+        size: 70
     },
 ];
 
@@ -396,13 +395,18 @@ nuages.printHelp = function (){
     string += " !set <option> <value>                   - Set a module option\r\n" ;
     string += " !unset <option>                         - Unset a module option\r\n" ;
     string += " !use <path>                             - Select a module or handler\r\n";
+    string += " !modules                                - List loaded modules\r\n";
     string += " !modules load <path>                    - Load a module\r\n";
+    string += " !modules load all                       - Load all modules\r\n";
     string += " !modules <path> del                     - Delete a module\r\n";
     string += " !run                                    - Run the module or handler\r\n";
     string += " !autorun                                - Autorun the module on new implants\r\n";
     string += " !autoruns                               - List module autoruns\r\n";
     string += " !autoruns clear                         - Clear module autoruns\r\n";
-    string += " !handlers                               - List available handlers\r\n";
+    string += " !handlers                               - List loaded handlers\r\n";
+    string += " !handlers load <path>                   - Load a handler\r\n";
+    string += " !handlers load all                      - Load all handler\r\n";
+    string += " !handlers <path> del                    - Delete a handler\r\n";
     string += " !listeners                              - List active handlers\r\n";
     string += " !listeners <id>                         - Show listener details\r\n";
     string += " !listeners <id> start                   - Start listener\r\n";

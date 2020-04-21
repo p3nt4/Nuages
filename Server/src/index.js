@@ -32,6 +32,27 @@ server.on('listening', () =>{
     catch(e){
         console.error(e);
     }
+
+    try{
+      app.service("/modules").find().then((data)=>{
+          if(data.total == 0){
+            app.service("/modules/load").create({modulePath:"all"});
+          }
+      });
+    } 
+    catch(e){
+        console.error(e);
+    }
+    try{
+      app.service("/handlers").find().then((data)=>{
+          if(data.total == 0){
+            app.service("/handlers/load").create({handlerPath:"all"});
+          }
+      });
+    } 
+    catch(e){
+        console.error(e);
+    }
   });
 });
 
