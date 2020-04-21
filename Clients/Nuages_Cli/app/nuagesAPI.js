@@ -1,8 +1,12 @@
+
+const table = require('table').table;
+const getBorderCharacters = require('table').getBorderCharacters;
 const feathers = require('@feathersjs/client');
-const socketio = require('@feathersjs/socketio-client');
+//const socketio = require('@feathersjs/socketio-client');
 var path = require("path");
 var fs = require("fs");
 const io = require('socket.io-client');
+var Table = require('cli-table');
 var endpoint = process.argv[2] ? process.argv[2]  : "http://127.0.0.1:3030";
 const socket = io(endpoint);
 //const term = require("./term").term;
@@ -68,6 +72,298 @@ nuages.vars.globalOptions = {
 };
     
 nuages.vars.moduleOptions = {};
+
+nuages.templates={};
+
+nuages.templates.implants = [
+    {   
+        header: "ID",
+        attr: "_id",
+        process: (e)=>{return term.toBold(term.toBlue(e.substring(0,6)))},
+        size: 8,
+    },
+    {   
+        header: "OS",
+        attr: "os",
+    },
+    {   
+        header: "Hostname",
+        attr: "hostname",
+    },
+    {   
+        header: "Username",
+        attr: "username",
+    },
+    {   
+        header: "Local IP",
+        attr: "localIp",
+    },
+    {   
+        header: "Handler",
+        attr: "handler",
+    },
+    {   
+        header: "Last Seen",
+        attr: "lastSeen",
+        process: (e)=>{return nuages.formatImplantLastSeen(e)}
+    },
+
+];
+
+
+nuages.templates.modules = [
+    {   
+        header: "Name",
+        attr: "name",
+        process: (e)=>{return term.toBold(term.toMagenta(e))},
+    },
+    {   
+        header: "Description",
+        attr: "description",
+        size: 70
+    },
+];
+
+nuages.templates.globalOptions = [
+    {   
+        header: "Name",
+        attr: "name",
+        process: (e)=>{return term.toBold(e)},
+    },
+    {   
+        header: "Value",
+        attr: "value",
+    },
+    {   
+        header: "Description",
+        attr: "description",
+    }
+];
+nuages.templates.moduleOptions = [
+    {   
+        header: "Name",
+        attr: "name",
+        process: (e)=>{return term.toBold(e)},
+    },
+    {   
+        header: "Required",
+        attr: "required",
+    },
+    {   
+        header: "Value",
+        attr: "value",
+    },
+    {   
+        header: "Description",
+        attr: "description",
+    }
+];
+
+nuages.templates.handlers = [
+    {   
+        header: "Name",
+        attr: "name",
+        process: (e)=>{return term.toYellow(term.toBold(e))},
+        size: 90,
+    },
+    {   
+        header: "Description",
+        attr: "description",
+        size: 90
+    },
+];
+
+nuages.templates.listeners = [
+    {   
+        header: "ID",
+        attr: "_id",
+        process: (e)=>{return term.toBold(e.substring(0,6))},
+        size: 8,
+    },
+    {   
+        header: "Type",
+        attr: "handlerName",
+        process: (e)=>{return term.toYellow(term.toBold(e))},
+    },
+    {   
+        header: "PID",
+        attr: "pid"
+    },
+    {   
+        header: "Status",
+        attr: "runStatus",
+        process: (e)=>{var statusCodes = ["","Submitted", nuages.term.toRed(term.toBold("Stopped")), nuages.term.toGreen(term.toBold("Running")), nuages.term.toRed(term.toBold("Failed"))]; return statusCodes[e]},
+    },
+];
+
+
+nuages.templates.files = [
+    {   
+        header: "ID",
+        attr: "_id",
+        process: (e)=>{return term.toBold((e.substring(0,6)))},
+    },
+    {   
+        header: "Size",
+        attr: "length",
+        process: (e)=>{return nuages.humanFileSize(Math.floor(e*3/4))}
+    },
+    {   
+        header: "Chunk Size",
+        attr: "chunkSize",
+    },
+    {   
+        header: "Uploaded By",
+        attr: "metadata",
+        process: (e)=>{return e.uploadedBy.substring(0,6)}
+    },
+    {   
+        header: "Upload Date",
+        attr: "uploadDate",
+        process: (e)=>{return nuages.humanDate(e)}
+    },
+    {   
+        header: "Name",
+        attr: "filename",
+    },
+];
+nuages.templates.pipes = [
+    {   
+        header: "ID",
+        attr: "_id",
+        process: (e)=>{return term.toBold((e.substring(0,6)))},
+    },
+    {   
+        header: "Type",
+        attr: "type",
+    },
+    {   
+        header: "Implant",
+        attr: "implantId",
+        process: (e)=>{return term.toBold(term.toBlue(e.substring(0,6)))},
+    },
+    {   
+        header: "Destination",
+        attr: "destination",
+    }
+];
+
+nuages.templates.tunnels = [
+    {   
+        header: "ID",
+        attr: "_id",
+        process: (e)=>{return term.toBold((e.substring(0,6)))},
+    },
+    {   
+        header: "Type",
+        attr: "type",
+    },
+    {   
+        header: "Bind Address",
+        attr: "bindIP",
+    },
+    {   
+        header: "Port",
+        attr: "port",
+    },
+    {   
+        header: "Implant",
+        attr: "implantId",
+        process: (e)=>{return term.toBold(term.toBlue(e.substring(0,6)))},
+    },
+    {   
+        header: "Destination",
+        attr: "destination",
+    },
+    {   
+        header: "Channels",
+        attr: "pipeNo",
+    },
+    {   
+        header: "Max Channels",
+        attr: "maxPipes",
+    }
+];
+
+nuages.templates.jobs = [
+    {   
+        header: "ID",
+        attr: "_id",
+        process: (e)=>{return term.toBold((e.substring(0,6)))},
+    },
+    {   
+        header: "Implant",
+        attr: "implantId",
+        process: (e)=>{return term.toBold(term.toBlue(e.substring(0,6)))},
+    },
+    {   
+        header: "Status",
+        attr: "jobStatus",
+        process: (e)=>{var statusCodes = ["Pending ", "Received", "Running", nuages.term.toGreen(nuages.term.toBold("Success")), nuages.term.toRed(nuages.term.toBold("Failed"))]; return statusCodes[e]},
+    },
+    {   
+        header: "Type",
+        attr: "payload",
+        process: (e)=>{return e.type},
+    },
+    {   
+        header: "Options",
+        attr: "payload",
+        process: (e)=>{return nuages.printJobOptions(e)},
+        size: 10
+    },
+    {   
+        header: "Result",
+        attr: "result",
+        size: 40,
+        process: (e)=>{return e.replace(/\n|\r/g, "").substring(0,115);}
+    }
+];
+
+nuages.toTable = function (template, objects){
+    // instantiate
+    //template = nuages.templates.implant;
+    //var objects = nuages.vars.implants;
+    objects = Object.values(objects);
+    //console.log('Terminal size: ' + process.stdout.columns + 'x' + process.stdout.rows);
+    
+    var Headers = [];
+
+    var data = [Headers];
+
+    var config = {
+        border: getBorderCharacters("honeywell"),
+        columns: {}
+      };
+
+    for(var i=0; i< template.length; i++){
+        var el = template[i];
+        Headers.push(term.toBold(el.header));
+        config.columns[i] = {};
+        if(el.size){
+            config.columns[i].width = el.size;
+        }
+    }
+    objects.forEach(obj =>{
+        var row = [];
+        template.forEach(col=>{
+            if(col.process){
+                try{
+                    var value = col.process(obj[col.attr]);
+                }catch{
+                    var value = "";
+                }
+            }else{
+                var value = obj[col.attr];
+            }
+            row.push(value);
+        });
+        data.push(row);
+    });
+
+       
+      return table(data, config).toString();
+}
 
 nuages.printHelp = function (){
     var string = "\r\n";
@@ -247,37 +543,14 @@ nuages.formatImplantLastSeen = function(timestamp){
         difference -= hoursDifference*1000*60*60;
         var minutesDifference = Math.floor(difference/1000/60);
         difference -= minutesDifference*1000*60;
-        
-        var final = new Date(timestamp).toLocaleDateString('en-GB', {day : 'numeric', month : 'numeric', hour: 'numeric', minute: "numeric", second: "numeric"});
+        var final = nuages.humanDate(timestamp);
         if (daysDifference > 1) {return (nuages.term.toBold(nuages.term.toRed(final)));}
         if (minutesDifference <= 5 && hoursDifference < 1) {return (nuages.term.toBold(nuages.term.toGreen(final)));}
         return final;
 }
 
 nuages.printImplants= function (imp){
-    var imps = Object.values(imp);
-    if(imps.length == 0 ){return;}
-    var result = "\r\n ID     | OS      | Hostname       | Username      | Local IP       | Handler    | Last Seen\r\n";
-    result += "".padEnd(101,"-") + "\r\n";
-    var implant;
-    var string;
-    for (var i=0; i < imps.length; i ++){
-        string = ""
-        try{
-            implant = imps[i];
-            string += " " + nuages.term.toBold(nuages.term.toBlue(implant._id.toString().substring(0,6).padEnd(7, ' '))) + "| ";
-            string += implant.os.substring(0, 7).padEnd(8, ' ') + "| ";
-            string += implant.hostname.substring(0,14).padEnd(15, ' ') + "| ";
-            string += implant.username.substring(0,13).padEnd(14, ' ') + "| ";
-            string += implant.localIp.substring(0,14).padEnd(15, ' ') + "| ";
-            string += implant.handler.substring(0,10).padEnd(11, ' ') + "| ";
-            string += nuages.formatImplantLastSeen(implant.lastSeen);
-        }catch(e){
-            console.error(e)
-        }
-        result+=string+"\r\n";
-    }
-    return result;
+    return nuages.toTable(nuages.templates.implants, imp);
 }
 
 nuages.humanFileSize = function(size) {
@@ -288,232 +561,78 @@ nuages.humanFileSize = function(size) {
     return ( size / Math.pow(1024, i) ).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
 };
 
-nuages.printFiles = function(files){
-    var files = Object.values(files);
-    if(files.length == 0 ){return "";}
-    result = "\r\n ID     | Size      | ChunkSize | Uploaded By | Upload Date      | Name \r\n";
-    result += "".padEnd(90,"-") + "\r\n";
-    var file;
-    var string = "";
-    for (var i=0; i < files.length; i ++){
-        try{
-            file = files[i];
-            string = "";
-            var uploadedBy = file.metadata.uploadedBy ? file.metadata.uploadedBy.substring(0,6) : "";
-            string += " " + file._id.toString().substring(0,6).padEnd(7, ' ') + "| ";
-            string += nuages.humanFileSize(Math.floor(file.length*3/4)).padEnd(10, ' ') + "| ";
-            string += file.chunkSize.toString().substring(0,9).padEnd(10, ' ') + "| ";
-            string += " " + uploadedBy.padEnd(11, ' ') + "| ";
-            string += new Date(file.uploadDate).toLocaleDateString('en-GB', {day : 'numeric', month : 'numeric', hour: 'numeric', minute: "numeric", second: "numeric"}) + " | ";
-            string += file.filename.substring(0,30)+"\r\n";
-            result+=string;
-        }catch(e){
-        };
+nuages.printJobOptions = function(payload) {
+    if(payload.type == "command"){
+        return payload.options.cmd;
     }
-    return result;
+    if(payload.type == "upload" || payload.type == "download"){
+        return payload.options.file;
+    }
+    if(payload.type == "cd"){
+        return payload.options.dir;
+    }
+    if(payload.type == "configure"){
+        return payload.options.config;
+    }
+    if(payload.type == "interactive"){
+        return payload.options.filename;
+    }
+    if(payload.type == "socks"){
+        return payload.options.pipe_id.substring(0,6);
+    }
+    return "";
+};
+
+nuages.humanDate = function(ts) {
+    return new Date(ts).toLocaleDateString('en-GB', {day : 'numeric', month : 'numeric', hour: 'numeric', minute: "numeric", second: "numeric"});
+}; 
+nuages.printFiles = function(files){
+    return nuages.toTable(nuages.templates.files, files);
 }
 
 nuages.printModules = function(modules){
-    var modules = Object.values(modules);
-    if(modules.length == 0 ){return "";}
-    result = "\r\n Name                                              | Required OS         | Description \r\n";
-    result += "".padEnd(90,"-") + "\r\n";
-    var module;
-    var string = "";
-    for (var i=0; i < modules.length; i ++){
-        try{
-            mod = modules[i];
-            string = "";
-            string += " " + mod.name.substring(0,50).padEnd(50, ' ') + "|";
-            string += " " + mod.supportedOS.join(" ").substring(0,20).padEnd(20, ' ') + "|";
-            string += " " + mod.description.substring(0,40)+"\r\n";
-            result+=string;
-        }catch(e){
-        };
-    }
-    return result;
+    return nuages.toTable(nuages.templates.modules, modules);
 }
 
 
-nuages.printHandlers = function(modules){
-    var modules = Object.values(modules);
-    if(modules.length == 0 ){return "";}
-    result = "\r\n Name                                              | Description \r\n";
-    result += "".padEnd(90,"-") + "\r\n";
-    var string = "";
-    for (var i=0; i < modules.length; i ++){
-        try{
-            mod = modules[i];
-            string = "";
-            string += " " + mod.name.substring(0,50).padEnd(50, ' ') + "|";
-            string += " " + mod.description.substring(0,60)+"\r\n";
-            result+=string;
-        }catch(e){
-        };
-    }
-    return result;
+nuages.printHandlers = function(handlers){
+    return nuages.toTable(nuages.templates.handlers, handlers);
 }
 
-nuages.printListeners = function(modules){
-    var modules = Object.values(modules);
-    if(modules.length == 0 ){return "";}
-    result = "\r\n ID    | Type                                              | PID     | Status    \r\n";
-    result += "".padEnd(90,"-") + "\r\n";
-    var string = "";
-    var statusCodes = ["","Submitted", nuages.term.toRed("Stopped"), nuages.term.toGreen("Running"), nuages.term.toRed("Failed")]
-    for (var i=0; i < modules.length; i ++){
-        try{
-            mod = modules[i];
-            string = "";
-            string += mod._id.toString().substring(0,6) + " |";
-            string += " " + mod.handlerName.substring(0,50).padEnd(50, ' ') + "|";
-            if(mod.pid){
-                string+= " " + mod.pid.toString().padEnd(8) + "|"
-            }else{
-                string+= " ".padEnd(8) + "|"
-            }
-            string+= " " + statusCodes[mod.runStatus].padEnd(14, ' ') + "\r\n"
-            result+=string;
-        }catch(e){
-            console.log(e);
-        };
-    }
-    return result;
+nuages.printListeners = function(listeners){
+    return nuages.toTable(nuages.templates.listeners, listeners);
 }
 
-nuages.printPipes = function(modules){
-    var modules = Object.values(modules);
-    if(modules.length == 0 ){return "";}
-    result = "\r\n ID    | Type                | Implant | Destination    \r\n";
-    result += "".padEnd(60,"-") + "\r\n";
-    var string = "";
-    for (var i=0; i < modules.length; i ++){
-        try{
-            mod = modules[i];
-            string = "";
-            string += mod._id.toString().substring(0,6) + " |";
-            if(mod.type){
-                string += " " + mod.type.substring(0,20).padEnd(20, ' ') + "|";
-            }else{
-                string += " " + mod.type.padEnd(20, ' ') + "|";
-            }
-            if(mod.implantId){
-                string+= " " + mod.implantId.toString().substring(0,6)+ "  |"
-            }else{
-                string+= " ".padEnd(9) + "|"
-            }
-            if(mod.destination){
-                string+= " " + mod.destination;
-            }
-            string+= "\r\n";
-            result+=string;
-           }catch(e){
-            console.log(e);
-        };
-    }
-    return result;
+nuages.printPipes = function(pipes){
+    return nuages.toTable(nuages.templates.pipes, pipes);
 }
 
-nuages.printTunnels = function(modules){
-    var modules = Object.values(modules);
-    if(modules.length == 0 ){return "";}
-    result = "\r\n ID    | Type                | Port    | Implant | Destination         | Channels     \r\n";
-    result += "".padEnd(85,"-") + "\r\n";
-    var string = "";
-    for (var i=0; i < modules.length; i ++){
-        try{
-            mod = modules[i];
-            string = "";
-            string += mod._id.toString().substring(0,6) + " |";
-            if(mod.type){
-                string += " " + mod.type.substring(0,20).padEnd(20, ' ') + "|";
-            }else{
-                string += " ".padEnd(20, ' ') + "|";
-            }if(mod.port){
-                string += " " + mod.port.toString().padEnd(8, ' ') + "|";
-            }else{
-                string += " ".padEnd(8, ' ') + "|";
-            }
-            if(mod.implantId){
-                string+= " " + mod.implantId.toString().substring(0,6)+ "  |"
-            }
-            if(mod.destination){
-                string+= " " + mod.destination.padEnd(20, ' ') + "|";;
-            }else{
-                string += " ".padEnd(20, ' ') + "|";
-            }
-            if(mod.pipeNo !== undefined){
-                string+= " " + mod.pipeNo.toString();
-            }
-            string+= "\r\n";
-            result+=string;
-           }catch(e){
-            console.log(e);
-        };
-    }
-    return result;
+nuages.printTunnels = function(tunnels){
+    return nuages.toTable(nuages.templates.tunnels, tunnels);
 }
 
 nuages.printJobs = function(jobs){
-    const statusCodes = ["Pending  ", "Received ", "Running  ", nuages.term.toGreen("Success  "), nuages.term.toRed("Failed   ")];
-    var jobs = Object.values(jobs);
-    if(jobs.length == 0 ){return;}
-    result = "\r\n Implant | ID     | Status   | Last Updated      | Type      | Options                   | Result \r\n";
-    result += "".padEnd(100,"-") + "\r\n";
-    var job;
-    var dispOption = "";
-    var string;
-    for (var i=0; i < jobs.length; i ++){
-        try{
-            string = ""
-            job = jobs[i];
-            if(job.payload.type == "Command"){
-                dispOption = job.payload.options.cmd;
-            }else if (job.payload.type == "Upload" || job.payload.type == "Download"){
-                dispOption = job.payload.options.file;
-            }else if (job.payload.type == "Configure"){
-                dispOption = JSON.stringify(job.payload.options.config);
-            }else{
-                dispOption = JSON.stringify(job.payload.options);
-            }
-            string += " " + nuages.term.toBlue(job.implantId.toString().substring(0,6)) + "  | ";
-            string += job._id.toString().substring(0,6) + " | ";
-            string += statusCodes[job.jobStatus] + "| ";
-            string += new Date(job.lastUpdated).toLocaleDateString('en-GB', {day : 'numeric', month : 'numeric', hour: 'numeric', minute: "numeric", second: "numeric"}).padEnd(18," ") + "|";
-            string += " " + job.payload.type.toString().substring(0,9).padEnd(10, ' ')+"|";
-            string += " " + dispOption.substring(0,25).padEnd(26, ' ')+"|";
-            string += " " + job.result.replace(/\n|\r/g, "").substring(0,28)+"\r\n";
-            result += string;
-        }catch(e){
-            console.error(e);
-        }
-    }
-    return result;
+    return nuages.toTable(nuages.templates.jobs , jobs);
 }
 
 nuages.printOptions = function(){
-    string = "\r\n ["+nuages.term.toBold(nuages.term.toBlue("Global"))+"]"
-    string += "\r\n Name             |   Value              | Description \r\n"
-    string += "".padEnd(80,"-") + "\r\n";
+    string = "\r\n ["+nuages.term.toBold(nuages.term.toBlue("Global"))+"]\r\n" 
     var optionKeys = Object.keys(nuages.vars.globalOptions);
     for(var i = 0; i < optionKeys.length; i++){
-        string += " " +optionKeys[i].substr(0,16).padEnd(17," ")+"| " + nuages.vars.globalOptions[optionKeys[i]].value.toString().substr(0,20).padEnd(21," ")+"| " + nuages.vars.globalOptions[optionKeys[i]].description + "\r\n";
+        nuages.vars.globalOptions[optionKeys[i]].name = optionKeys[i];
     }
-    nuages.term.writeln(string);	
+    return string+=nuages.toTable(nuages.templates.globalOptions , nuages.vars.globalOptions);
 }
 
 nuages.printModuleOptions = function(moduletype = nuages.vars.moduletype, options = nuages.vars.moduleOptions){
-    if(moduletype == "module"){
-        string = "\r\n ["+nuages.term.toBold(nuages.term.toMagenta("Module"))+"]"
-    }else{string = "\r\n ["+nuages.term.toBold(nuages.term.toYellow("Handler"))+"]"}
-    string += "\r\n Name             | Required |   Value                                  | Description \r\n"
-    string += "".padEnd(100,"-") + "\r\n";
     var optionKeys = Object.keys(options);
+    if(moduletype == "module"){
+        var string = "\r\n ["+nuages.term.toBold(nuages.term.toMagenta("Module"))+"]\r\n"
+    }else{var string = "\r\n ["+nuages.term.toBold(nuages.term.toYellow("Handler"))+"]\r\n"}
     for(var i = 0; i < optionKeys.length; i++){
-        string += " " +optionKeys[i].substr(0,16).padEnd(17," ")+"| " + options[optionKeys[i]].required.toString().padEnd(9," ")+"| " + options[optionKeys[i]].value.substr(0,40).padEnd(41," ")+"| " + options[optionKeys[i]].description + "\r\n";
+        options[optionKeys[i]].name = optionKeys[i];
     }
-    nuages.term.writeln(string);	
-    
+    return string+=nuages.toTable(nuages.templates.moduleOptions , options);
 }
 
 nuages.getImplants = async function(){
@@ -536,7 +655,7 @@ nuages.getModules = function(print = true){
             nuages.vars.modules[items.data[i].name] = items.data[i]
         }; 
             if(print){
-                nuages.term.logInfo("Modules:\r\n" + nuages.printHandlers(items.data)); 
+                nuages.term.logInfo("Modules:\r\n" + nuages.printModules(items.data)); 
             }
         }).catch((err) => {
             nuages.term.logError(err.message);
@@ -679,7 +798,7 @@ nuages.createJob = function (implant, payload){
 
 nuages.createJobWithUpload = function (implant, payload, filename){
     var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout.value) * 60000;
-    var chunkSize = parseInt(nuages.vars.globalOptions.value.chunksize);
+    var chunkSize = parseInt(nuages.vars.globalOptions.chunksize.value);
     if (nuages.vars.implants[implant] != undefined){
         nuages.jobService.create({
             implantId: nuages.vars.implants[implant]._id,
@@ -868,6 +987,8 @@ nuages.chunkSubstr  = function (str, size) {
 
     return chunks
   }
+
+
 
 nuages.jobService.on('patched', job => nuages.processJobPatched(job));
 nuages.implantService.on('created', function(implant){nuages.vars.implants[implant._id.substring(0,6)] = implant; nuages.term.logInfo("New Implant:\r\n" + nuages.printImplants({imp: implant}));});

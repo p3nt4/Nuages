@@ -64,7 +64,10 @@ executeCommand = function(cmd){
             nuages.createJob(nuages.vars.globalOptions.implant.value, {type:"command", options:{ path: nuages.vars.paths[nuages.vars.globalOptions.implant.value.substring(0.6)], cmd: "cmd /C \"FOR /F %i IN (\"\""+cmdArray.slice(1).join(" ")+"\"\") DO IF EXIST %~fi (echo %~fi)\"", cd:true}});
     }   }
     else if (cmdArray[0].toLowerCase() == "!options"){
-        nuages.printOptions();
+        console.log(nuages.printOptions());
+        if(nuages.vars.module){
+            console.log(nuages.printModuleOptions());
+        }
     }
     else if (cmdArray[0].toLowerCase() == "!modules"){
         if(cmdArray.length == 1){
@@ -411,6 +414,9 @@ executeCommand = function(cmd){
     else if (cmdArray[0].toLowerCase() == "!back"){
         nuages.vars.globalOptions.implant.value= ""; 
         nuages.vars.module = "";    
+    }
+    else if (cmdArray[0].toLowerCase() == "!test"){
+        console.log(nuages.toTable(null,null));
     }
     else if (cmdArray[0].toLowerCase() == "!quit" || cmdArray[0].toLowerCase() == "!exit" ){
         process.exit(0);  

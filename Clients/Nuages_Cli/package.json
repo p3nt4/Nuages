@@ -11,6 +11,7 @@
   "dependencies": {
     "@feathersjs/client": "^4.5.2",
     "@feathersjs/socketio-client": "^4.5.2",
-    "socket.io-client": "^2.2.0"
+    "socket.io-client": "^2.2.0",
+    "table": "^5.4.6"
   }
 }
