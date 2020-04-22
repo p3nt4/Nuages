@@ -54,6 +54,7 @@ function getTerm(){
         else if((words[0].toLowerCase() == "!tunnels") && words.length == 2){
             var completions = Object.keys(nuages.vars.tunnels);
             completions.push("socks");
+            completions.push("tcp");
         }
         else if((words[0].toLowerCase() == "!use") && words.length == 2){
             var completions = Object.keys(nuages.vars.modules).concat(Object.keys(nuages.vars.handlers));

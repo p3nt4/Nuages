@@ -373,6 +373,22 @@ executeCommand = function(cmd){
         }).then(() => {}).catch((err) => {
             nuages.term.printError(err.message);
         });
+        
+    }
+    else if (cmdArray[0].toLowerCase() == "!tunnels" && cmdArray.length > 4  && cmdArray[1].toLowerCase() == "tcp"){
+        var bindIP = cmdArray.length > 5 ? cmdArray[5].toLowerCase() : "127.0.0.1";
+        if(nuages.vars.globalOptions.implant.value == "" || nuages.vars.globalOptions.implant.value == undefined) {return;}
+        nuages.tunnelService.create({
+            port:cmdArray[4], 
+            bufferSize: parseInt(nuages.vars.globalOptions.buffersize.value), 
+            type:"tcp_fwd",
+            destination: cmdArray[2]+":"+cmdArray[3], 
+            bindIP: bindIP,
+            implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
+            jobOptions:{refreshRate:parseInt(nuages.vars.globalOptions.refreshrate.value), host:cmdArray[2], port:cmdArray[3]}
+        }).then(() => {}).catch((err) => {
+            nuages.term.printError(err.message);
+        });
     }
     else if (cmdArray[0].toLowerCase() == "!tunnels" && cmdArray.length > 1){
         if(nuages.vars.tunnels[cmdArray[1]]){
