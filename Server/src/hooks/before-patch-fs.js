@@ -32,7 +32,7 @@ module.exports = function (options = {}) {
             file.length = lastChunk.n * file.chunkSize + lastChunk.data.length;
             file.complete = true;
         }else{
-            file.length = context.data.lastChunk * (1 + file.chunkSize);
+			file.length = (context.data.lastChunk + 1 ) * file.chunkSize;
             file.complete = false;
         }
 		

@@ -7,8 +7,8 @@ module.exports = (options = {}) => {
     if(context.app.pipe_list){
       var item = context.app.pipe_list[context.id];
       if(item){
-        try{item.in.destroy();}catch{};
-        try{item.out.destroy();}catch{};
+        try{item.in.destroy();}catch(e){};
+        try{item.out.destroy();}catch(e){};
         try{delete context.app.pipe_list[context.id];}catch(e){};
       }
     }
