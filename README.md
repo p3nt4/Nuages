@@ -27,6 +27,8 @@ For testing and refererence, an example implant and handler are provided on this
 - Reflected Assembly Execution
 - Powershell Execution
 
+https://github.com/p3nt4/Nuages/wiki/Job-Payloads
+
 ## Architecture
 ![Nuages](https://user-images.githubusercontent.com/19682240/56617113-ffcfb380-65ec-11e9-99ca-fc0e674d4dcd.PNG)
 
