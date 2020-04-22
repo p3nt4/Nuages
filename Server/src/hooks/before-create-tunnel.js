@@ -87,24 +87,34 @@ module.exports = function (options = {}) {
       }catch(e){console.log(e)};
     });
     
+    server.on('listening',()=>{
+      console.log("Created tcp server on: " + server._connectionKey.replace("4:",""));
+    });
+
+    server.on('error',(err)=>{
+      server.error = err;
+    });
 
     server.listen(parseInt(context.data.port), data.bindIP);
+
+    function sleep(ms) {
+      return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      });
+    }   
+
+    // Dirty I know....
+    await sleep(1000);
+
+    if(server.error){
+      throw server.error;
+    }
 
     if(context.app.server_list == undefined){
       context.app.server_list = {};
     }
 
     context.app.server_list[data._id]=server;
-
-    server.on('listening',()=>{
-      console.log("Created tcp server on: " + server._connectionKey.replace("4:",""));
-    });
-
-    server.on('error',(err)=>{
-      console.log("Server Failed: " + server._connectionKey.replace("4:",""));
-      console.log(err);
-      //context.app.services("tunnels").remove(data.id);
-    });
 
     context.data = data;
   
