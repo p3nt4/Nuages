@@ -4,7 +4,7 @@ Nuages is a modular C2 framework.
 
 Refer to the [Wiki](https://github.com/p3nt4/Nuages/wiki) for documentation, do not hesitate to open issues for help, bug reports or feature requests
 
-![Nuages_Cli - Copy](https://user-images.githubusercontent.com/19682240/57589042-1da57f80-74ec-11e9-9662-0e79268ff702.PNG)
+![Nuages_Cli - Copy](https://user-images.githubusercontent.com/19682240/80042728-afc05100-84cd-11ea-9002-0c0871748f29.png)
 
 
 ## Introduction
