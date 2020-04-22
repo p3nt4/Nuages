@@ -346,7 +346,7 @@ nuages.toTable = function (template, objects){
             if(col.process){
                 try{
                     var value = col.process(obj[col.attr]);
-                }catch{
+                }catch(e){
                     var value = "";
                 }
             }else{
