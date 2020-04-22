@@ -4,7 +4,7 @@ Nuages is a modular C2 framework.
 
 Refer to the [Wiki](https://github.com/p3nt4/Nuages/wiki) for documentation, do not hesitate to open issues for help, bug reports or feature requests
 
-![Nuages_Cli - Copy](https://user-images.githubusercontent.com/19682240/57589042-1da57f80-74ec-11e9-9662-0e79268ff702.PNG)
+![Nuages_Cli - Copy](https://user-images.githubusercontent.com/19682240/80042830-104f8e00-84ce-11ea-90bc-233acc646f11.png)
 
 
 ## Introduction
@@ -13,9 +13,21 @@ Nuages aims at being a C2 framework in which back end elements are open source, 
 
 This design hopes to facilitate penetration testing by facilitating the development of custom implants and reducing the likelihood of implants being detected by defensive solutions.
 
-Although Nuages is functioning, it is still a work in progress and contribution are welcome, whether it is solely testing, or development of new modules and compatible clients.
+Contribution are welcome, whether it is solely testing, or development of new modules and compatible clients.
 
 For testing and refererence, an example implant and handler are provided on this repo.
+
+## Capabilities
+
+- Command Execution
+- Interactive Channels
+- File Upload/Download
+- TCP Forwarding
+- Socks Tunneling
+- Reflected Assembly Execution
+- Powershell Execution
+
+https://github.com/p3nt4/Nuages/wiki/Job-Payloads
 
 ## Architecture
 ![Nuages](https://user-images.githubusercontent.com/19682240/56617113-ffcfb380-65ec-11e9-99ca-fc0e674d4dcd.PNG)
@@ -27,6 +39,7 @@ For testing and refererence, an example implant and handler are provided on this
 **Handlers:** Custom code acting as a proxy between Implants and the Nuages API, to implemenet custom communication protocols (DNS tunneling, domain fronting, IRC etc...).
 
 **Clients:** Clients rely on the Nuages API and can be implemented in any form such as cli or web application.
+
 
 ## Disclaimer
 This project is intended for security researchers and penetration testers and should not be used for any illegal activities.
