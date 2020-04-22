@@ -13,7 +13,7 @@ Nuages aims at being a C2 framework in which back end elements are open source, 
 
 This design hopes to facilitate penetration testing by facilitating the development of custom implants and reducing the likelihood of implants being detected by defensive solutions.
 
-Although Nuages is functioning, it is still a work in progress and contribution are welcome, whether it is solely testing, or development of new modules and compatible clients.
+Contribution are welcome, whether it is solely testing, or development of new modules and compatible clients.
 
 For testing and refererence, an example implant and handler are provided on this repo.
 
