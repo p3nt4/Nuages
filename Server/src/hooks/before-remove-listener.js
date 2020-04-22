@@ -6,7 +6,7 @@ module.exports = (options = {}) => {
   return async context => {
     const run = await context.app.service("/listeners").get(context.id);
     if(run.runStatus == 3){
-      context.app.service("/listeners/startstop").create({id:context.id, wantedStatus:2});
+      await context.app.service("/listeners/startstop").create({id:context.id, wantedStatus:2});
     }
     return context;
   };
