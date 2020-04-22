@@ -21,6 +21,7 @@ nuages.fileService = app.service('/fs/files');
 nuages.chunkService = app.service('/fs/chunks');
 nuages.modrunService = app.service('/modules/run');
 nuages.moduleService = app.service('/modules');
+nuages.logService = app.service('/logs');
 nuages.modloadService = app.service('/modules/load');
 nuages.handlerService = app.service('/handlers');
 nuages.listenerService = app.service('/listeners');
@@ -888,31 +889,32 @@ nuages.exportToFile  = function (b64, fileName) {
     document.body.removeChild(element);
 }
 
-nuages.printModRunLog  = function (modRun){
-    if(modRun.log.length > 0){
-        var logEntry = modRun.log[modRun.log.length - 1];
-        if (logEntry.type == 0){
-            nuages.term.logInfo(logEntry.message, modRun.moduleName);
-        }else if(logEntry.type == 1){
-            nuages.term.logError(logEntry.message, modRun.moduleName);
-        }else{
-            nuages.term.logSuccess(logEntry.message, modRun.moduleName);
-        }
-            
+nuages.printLog  = function(log){
+    if (log.type == 0){
+        nuages.term.printInfo(log.message, log.sourceName);
+    }else if(log.type == 1){
+        nuages.term.printError(log.message, log.sourceName);
+    }else{
+        nuages.term.printSuccess(log.message, log.sourceName);
     }
 }
 
-nuages.printListenerLog  = function (modRun){
-    if(modRun.log.length > 0){
-        var logEntry = modRun.log[modRun.log.length - 1];
-        if (logEntry.type == 0){
-            nuages.term.logInfo(logEntry.message, modRun.handlerName);
-        }else if(logEntry.type == 1){
-            nuages.term.logError(logEntry.message, modRun.handlerName);
-        }else{
-            nuages.term.logSuccess(logEntry.message, modRun.handlerName);
+nuages.printModRunPatched  = function (run){
+        if (run.runStatus == 3){
+            nuages.term.logSuccess("Module Completed Successfully", run.moduleName);
+        }else if(run.runStatus == 4){
+            nuages.term.logError("Module Failed", run.moduleName);
         }
-            
+}
+
+nuages.printListenerPatched  = function (listener){
+    if (listener.runStatus == 3){
+        nuages.term.logSuccess("Listener Started", listener.handlerName);
+    }else if(listener.runStatus == 4){
+        nuages.term.logError("Listener Failed", listener.handlerName);
+    }
+    else if(listener.runStatus == 2){
+        nuages.term.logError("Listener Stopped", listener.handlerName);
     }
 }
 
@@ -953,7 +955,7 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
                     clearInterval(interval);
                     term.logInfo("Putting channel in the background");
                     nuages.term.setPromptline();
-                    nuages.term.prompt(true);
+                    nuages.term.cprompt();
                     return;
                 }
                 var data = await nuages.ioService.create({pipe_id:pipe_id,in:input.toString('base64')});
@@ -971,7 +973,7 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
             clearInterval(interval);
             term.logInfo("Lost connection to channel");
             nuages.term.setPromptline();
-            nuages.term.prompt(true);
+            nuages.term.cprompt();
             return;
         }
     }
@@ -998,8 +1000,9 @@ nuages.implantService.on('patched', function(implant){nuages.vars.implants[impla
 nuages.implantService.on('removed', function(implant){delete nuages.vars.implants[implant._id.substring(0,6)]; nuages.term.logInfo("Deleted Implant:\r\n" + nuages.printImplants({imp: implant}));});
 nuages.fsService.on('patched', function(file){nuages.vars.files[file._id.substring(0,6)] = file; if(file.complete){nuages.term.logInfo("New File:\r\n" + nuages.printFiles({imp: file}));}});
 nuages.fsService.on('removed', function(file){nuages.term.logInfo("Deleted file:\r\n" + nuages.printFiles({imp: nuages.vars.files[file.id.substring(0,6)]}));delete nuages.vars.files[file.id.substring(0,6)];});
-nuages.modrunService.on('patched', function(run){nuages.printModRunLog(run)});
-nuages.listenerService.on('patched', function(run){nuages.printListenerLog(run)});
+nuages.modrunService.on('patched', function(run){nuages.printModRunPatched(run)});
+nuages.logService.on('created', function(log){nuages.printLog(log)});
+nuages.listenerService.on('patched', function(run){nuages.printListenerPatched(run)});
 nuages.moduleService.on('created', function(mod){nuages.term.logInfo("Module loaded:\r\n" + nuages.printModules({mod: mod}));nuages.vars.modules[mod.name]=mod;});
 nuages.handlerService.on('created', function(mod){nuages.term.logInfo("Handler loaded:\r\n" + nuages.printHandlers({mod: mod}));nuages.vars.handlers[mod.name]=mod;});
 nuages.pipeService.on('created', function(mod){if(mod.type=="interactive"){nuages.term.logInfo("Channel created:\r\n" + nuages.printPipes({mod: mod}));}nuages.vars.pipes[mod._id.substring(0,6)]=mod;});

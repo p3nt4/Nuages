@@ -1,57 +1,56 @@
 // This function ads an [Info] event to the log
-exports.logInfo = function (run, message) {
+exports.logInfo = function (app, run, message) {
     logEntry = {
         type: 0,
         message: message,
-        time: Date.now()
+        sourceId: run._id,
+        sourceType: "handler",
+        sourceName: run.handlerName
     };
-    run.log.push(logEntry);
+    app.service("/logs").create(logEntry);
 };
 
 // This function ads a [Success] event to the log
-exports.logSuccess = function (run, message) {
+exports.logSuccess = function (app, run, message) {
     logEntry = {
         type: 2,
         message: message,
-        time: Date.now()
+        sourceId: run._id,
+        sourceType: "handler",
+        sourceName: run.handlerName
     };
-    run.log.push(logEntry);
+    app.service("/logs").create(logEntry);
 };
 
 // This function ads an [Error] event to the log
-exports.logError = function (run, message) {
+exports.logError = function (app, run, message) {
     logEntry = {
         type: 1,
         message: message,
-        time: Date.now()
+        sourceId: run._id,
+        sourceType: "handler",
+        sourceName: run.handlerName
     };
-    run.log.push(logEntry);
-};
-
-// This function updates the current Run, it should be called after the run is changed otherwise changes wont be saved.
-exports.patch = function (app, run) {
-    app.service("listeners").patch(run._id, run);
+    app.service("/logs").create(logEntry);
 };
 
 
 // This function fails the handler run
-exports.fail = function (run) {
+exports.fail = function (app, run) {
     run.runStatus = 4;
+    app.service("listeners").patch(run._id, run);
 };
 
 // This function marks the run running
-exports.running = function (run) {
+exports.running = function (app, run) {
     run.runStatus = 3;
+    app.service("listeners").patch(run._id, run);
 };
 
 // This function marks the run as stopped
-exports.stopped = function (run) {
+exports.stopped = function (app, run){
     run.runStatus = 2;
-};
-
-// This function marks the run as submitted
-exports.pause = function (run) {
-    run.runStatus = 2;
+    app.service("listeners").patch(run._id, run);
 };
 
 // This adds the proces to the app child process list

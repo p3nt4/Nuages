@@ -1,36 +1,37 @@
 // This function ads an [Info] event to the log
-exports.logInfo = function (run, message) {
+exports.logInfo = function (app, run, message) {
     logEntry = {
         type: 0,
         message: message,
-        time: Date.now()
+        sourceId: run._id,
+        sourceType: "module",
+        sourceName: run.moduleName
     };
-    run.log.push(logEntry);
+    app.service("/logs").create(logEntry);
 };
 
 // This function ads a [Success] event to the log
-exports.logSuccess = function (run, message) {
+exports.logSuccess = function (app, run, message) {
     logEntry = {
         type: 2,
         message: message,
-        time: Date.now()
+        sourceId: run._id,
+        sourceType: "module",
+        sourceName: run.moduleName
     };
-    run.log.push(logEntry);
+    app.service("/logs").create(logEntry);
 };
 
 // This function ads an [Error] event to the log
-exports.logError = function (run, message) {
+exports.logError = function (app, run, message) {
     logEntry = {
         type: 1,
         message: message,
-        time: Date.now()
+        sourceId: run._id,
+        sourceType: "module",
+        sourceName: run.moduleName
     };
-    run.log.push(logEntry);
-};
-
-// This function updates the current Run, it should be called after the run is changed otherwise changes wont be saved.
-exports.patch = function (app, run) {
-    app.service("/modules/run").patch(run._id, run);
+    app.service("/logs").create(logEntry);
 };
 
 // This function creates a job for the module
@@ -44,16 +45,19 @@ exports.createJob = async function (app, run, callback, payload) {
 };
 
 // This function fails the run
-exports.fail = function (run) {
+exports.fail = function (app, run) {
     run.runStatus = 4;
+    app.service("/modules/run").patch(run._id, run);
 };
 
 // This function marks the run as succeeded
-exports.success = function (run) {
+exports.success = function (app, run) {
     run.runStatus = 3;
+    app.service("/modules/run").patch(run._id, run);
 };
 
 // This function marks the run as in progrss
-exports.inProgress = function (run) {
+exports.inProgress = function (app, run) {
     run.runStatus = 2;
+    app.service("/modules/run").patch(run._id, run);
 };

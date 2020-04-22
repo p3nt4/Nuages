@@ -32,12 +32,11 @@ exports.load = function (app) {
 
 // This is the first function to be called when the module is run
 exports.run = async function (app, run) {
-    if (run.options.file.value != "" && run.options.file.value != " "){
+    if (app, run.options.file.value != "" && run.options.file.value != " "){
         var file = await app.service("/fs/files").get(run.options.file.value).catch(() => {});
         if (!file){
-            moduleHelper.logError(run, "File not found");
-            moduleHelper.fail(run);
-            moduleHelper.patch(app,run);
+            moduleHelper.logError(app, run, "File not found");
+            moduleHelper.fail(app, run);
             return;
         }
         var job = await moduleHelper.createJob(app,run,"afterExecute",{type:"posh_in_mem", options:{file_id: file._id, length: file.length, chunkSize: file.chunkSize, command: run.options.command.value}}).catch(() => {});
@@ -48,25 +47,23 @@ exports.run = async function (app, run) {
     // Creating the job and setting the callback
     
     if(!job){
-        moduleHelper.logError(run, "Error Creating posh_in_mem Job");
-        moduleHelper.fail(run);
-        moduleHelper.patch(app,run);
+        moduleHelper.logError(app, run, "Error Creating posh_in_mem Job");
+        moduleHelper.fail(app, run);
         return;
     }
-    moduleHelper.logInfo(run, "Job submitted");
-    moduleHelper.inProgress(run);
-    moduleHelper.patch(app,run);
+    moduleHelper.logInfo(app, run, "Job submitted");
+    moduleHelper.inProgress(app, run);
 };
 
 // There are callback than can be executed once jobs are completed
 exports.afterExecute = async function (app, run, job) {
     // If job failed
     if(job.jobStatus == 4 ){
-        moduleHelper.logError(run, "Error during script: \r\n" + job.result);
-        moduleHelper.fail(run);
+        moduleHelper.logError(app, run, "Error during script: \r\n" + job.result);
+        moduleHelper.fail(app, run);
     }else{
-        moduleHelper.logSuccess(run, "Successfully executed script: \r\n" + job.result);
-        moduleHelper.success(run);
+        moduleHelper.logSuccess(app, run, "Successfully executed script: \r\n" + job.result);
+        moduleHelper.success(app, run);
     }
-    moduleHelper.patch(app,run);
+
 };

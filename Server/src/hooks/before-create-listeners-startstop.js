@@ -14,15 +14,15 @@ module.exports = (options = {}) => {
     const run = await runService.get(context.data.id);
 
     if(run === undefined){
-      throw new NotFound("Handler run not found");
+      throw new NotFound("Listener not found");
     }
 
     if(context.data.wantedStatus == run.runStatus && context.data.force != true){
       if(run.runStatus == 2){
-        throw new Forbidden("Handler is already stopped");
+        throw new Forbidden("Listener is already stopped");
       }
       else if(run.runStatus == 3){
-        throw new Forbidden("Handler is already running");
+        throw new Forbidden("Listener is already running");
       }
     }
 
@@ -31,13 +31,15 @@ module.exports = (options = {}) => {
 
       handlerFile.run(context.app, run).catch((e) => {
         run.runStatus = 4; // 4 is Failed
-        run.log.push({
+        logEntry = {
           type: 1,
-          message: e.message,
-          time: Date.now()}
-        );
-          runService.patch(run._id, run);
-          throw e
+          message: message,
+          sourceId: run._id,
+          sourceType: "handler",
+          sourceName: run.handlerName
+      };
+        app.service("/logs").create(logEntry);
+        throw e
       });
   }
 
@@ -45,13 +47,15 @@ module.exports = (options = {}) => {
     handlerFile = require("../../handlers/"+run.handlerName);
 
     handlerFile.stop(context.app, run).catch((e) => {
-      run.log.push({
-        type: 1,
-        message: e.message,
-        time: Date.now()}
-      );
-        runService.patch(run._id, run);
-        throw e
+      logEntry = {
+          type: 1,
+          message: message,
+          sourceId: run._id,
+          sourceType: "handler",
+          sourceName: run.handlerName
+      };
+      app.service("/logs").create(logEntry);
+      throw e
     });
 }
 

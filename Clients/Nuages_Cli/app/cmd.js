@@ -75,16 +75,16 @@ executeCommand = function(cmd){
         }
         else if(cmdArray.length > 2 && cmdArray[1].toLowerCase() == "load"){
             nuages.modloadService.create({modulePath:cmdArray[2]}).catch((err) => {
-                nuages.term.printError(err.message);
+                nuages.term.logError(err.message);
             });
         }
         else if(cmdArray.length > 2 && cmdArray[2].toLowerCase() == "del"){
             if(nuages.vars.modules[cmdArray[1].toLowerCase()]){
                     nuages.moduleService.remove(nuages.vars.modules[cmdArray[1].toLowerCase()]._id).catch((err) => {
-                    nuages.term.printError(err.message);
+                    nuages.term.logError(err.message);
                 });
             }else{
-                nuages.term.printError("Module not found");
+                nuages.term.logError("Module not found");
             }
         }
     }
@@ -94,16 +94,16 @@ executeCommand = function(cmd){
         }
         else if(cmdArray.length > 2 && cmdArray[1].toLowerCase() == "load"){
             nuages.handloadService.create({handlerPath:cmdArray[2]}).catch((err) => {
-                nuages.term.printError(err.message);
+                nuages.term.logError(err.message);
             });
         }
         else if(cmdArray.length > 2 && cmdArray[2].toLowerCase() == "del"){
             if(nuages.vars.handlers[cmdArray[1].toLowerCase()]){
                     nuages.handlerService.remove(nuages.vars.handlers[cmdArray[1].toLowerCase()]._id).catch((err) => {
-                    nuages.term.printError(err.message);
+                    nuages.term.logError(err.message);
                 });
             }else{
-                nuages.term.printError("Handler not found");
+                nuages.term.logError("Handler not found");
             }
         }
     }else if (cmdArray[0].toLowerCase() == "!listeners"){
@@ -113,28 +113,28 @@ executeCommand = function(cmd){
         else if(cmdArray.length > 2 && cmdArray[2].toLowerCase() == "del"){
             if(nuages.vars.listeners[cmdArray[1]]){
                     nuages.listenerService.remove(nuages.vars.listeners[cmdArray[1]]._id).catch((err) => {
-                    nuages.term.printError(err.message);
+                    nuages.term.logError(err.message);
                 });
             }else{
-                nuages.term.printError("Listener not found");
+                nuages.term.logError("Listener not found");
             }
         }
         else if(cmdArray.length > 2 && cmdArray[2].toLowerCase() == "stop"){
             if(nuages.vars.listeners[cmdArray[1]]){
                 nuages.listenerStartService.create({id:nuages.vars.listeners[cmdArray[1]]._id, wantedStatus: 2}).catch((err) => {
-                    nuages.term.printError(err.message);
+                    nuages.term.logError(err.message);
                 });
             }else{
-                nuages.term.printError("Listener not found");
+                nuages.term.logError("Listener not found");
             }
         }
         else if(cmdArray.length > 2 && cmdArray[2].toLowerCase() == "start"){
             if(nuages.vars.listeners[cmdArray[1]]){
                 nuages.listenerStartService.create({id:nuages.vars.listeners[cmdArray[1]]._id, wantedStatus: 3}).catch((err) => {
-                    nuages.term.printError(err.message);
+                    nuages.term.logError(err.message);
                 });
             }else{
-                nuages.term.printError("Listener not found");
+                nuages.term.logError("Listener not found");
             }
         }
         else if(cmdArray.length == 2){
@@ -142,7 +142,7 @@ executeCommand = function(cmd){
                     console.log(nuages.printListeners({mod:nuages.vars.listeners[cmdArray[1]]}));
                     console.log(nuages.printModuleOptions("handler",nuages.vars.listeners[cmdArray[1]].options));
             }else{
-                nuages.term.printError("Listener not found");
+                nuages.term.logError("Listener not found");
             }
         }
     }
@@ -150,34 +150,34 @@ executeCommand = function(cmd){
         if(nuages.vars.moduletype=="module"){
             if(nuages.vars.modules[nuages.vars.module]){
                 nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions, autorun: false}).catch((err) => {
-                        nuages.term.printError(err.message);
+                        nuages.term.logError(err.message);
                     });
                 }else{
-                    nuages.term.printError("Module not set");
+                    nuages.term.logError("Module not set");
                 }
             }
         else if(nuages.vars.moduletype=="handler"){
             if(nuages.vars.handlers[nuages.vars.module]){
                 nuages.listenerService.create({handlerId: nuages.vars.handlers[nuages.vars.module]._id, options: nuages.vars.moduleOptions}).then((run)=>{
                     nuages.listenerStartService.create({id:run._id, wantedStatus: 3}).catch((err) => {
-                        nuages.term.printError(err.message);
+                        nuages.term.logError(err.message);
                     });
 
                 }).catch((err) => {
-                        nuages.term.printError(err.message);
+                        nuages.term.logError(err.message);
                     });
                 }else{
-                    nuages.term.printError("Handler not set");
+                    nuages.term.logError("Handler not set");
                 }
             }
         else{
-            nuages.term.printError("You have nothing to run!");
+            nuages.term.logError("You have nothing to run!");
         }
     }
     else if(cmdArray[0] == "!autorun"){
         if(nuages.vars.modules[nuages.vars.module]){
                 nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions, autorun: true}).then(items => {nuages.getAutoruns()}).catch((err) => {
-                    nuages.term.printError(err.message);
+                    nuages.term.logError(err.message);
                 });
             }else{
                 nuages.term.logError("Module not set");
@@ -223,7 +223,7 @@ executeCommand = function(cmd){
             var file = cmdArray[2] ? cmdArray[2] : nuages.vars.files[cmdArray[1]].filename;
             nuages.createJob(nuages.vars.globalOptions.implant.value, {type:"download", options:{ file: file, filename: nuages.vars.files[cmdArray[1]].filename, file_id: nuages.vars.files[cmdArray[1]]._id, length: nuages.vars.files[cmdArray[1]].length, chunkSize: nuages.vars.files[cmdArray[1]].chunkSize, path: nuages.vars.paths[nuages.vars.globalOptions.implant.value.substring(0.6)]}});
         }else{
-            nuages.term.printError("\r\n File not found");
+            nuages.term.logError("\r\n File not found");
         }
     }
     else if (cmdArray[0].toLowerCase() == "!files"){
@@ -267,7 +267,7 @@ executeCommand = function(cmd){
                 }
 
             }else{
-                nuages.term.printError("Job not found");
+                nuages.term.logError("Job not found");
             }
         }
     }
@@ -282,7 +282,7 @@ executeCommand = function(cmd){
                     executeCommand(cmdArray.join(" "));
                 }
             }).catch(err=>{
-                nuages.term.printError(err);
+                nuages.term.logError(err);
             });
             
         }
@@ -290,11 +290,11 @@ executeCommand = function(cmd){
             if (nuages.vars.implants[cmdArray[1]] != undefined){
                 nuages.term.writeln("\r\n" + nuages.printImplants({imp:nuages.vars.implants[cmdArray[1]]}));
             }else{
-                nuages.term.printError("Implant not found");
+                nuages.term.logError("Implant not found");
             }
         }
         else if(nuages.vars.implants[cmdArray[1]] == undefined){
-            nuages.term.printError("Implant not found");
+            nuages.term.logError("Implant not found");
         }
         else if(cmdArray[2] == "del"){
             nuages.implantService.remove(nuages.vars.implants[cmdArray[1]]._id);
@@ -318,7 +318,7 @@ executeCommand = function(cmd){
                     nuages.vars.paths[cmdArray[2]] = ".";
                 }
             }else{
-                nuages.term.printError("Implant not found");
+                nuages.term.logError("Implant not found");
             }
         }else{
             nuages.vars.globalOptions[cmdArray[1].toLowerCase()].value = cmdArray[2];
@@ -331,7 +331,7 @@ executeCommand = function(cmd){
         if(nuages.vars.moduleOptions[cmdArray[1].toLowerCase()] !== undefined){
                 nuages.vars.moduleOptions[cmdArray[1].toLowerCase()].value = "";
         }else{
-            nuages.term.printError("Option does not exist");
+            nuages.term.logError("Option does not exist");
         }   
     }
     else if (cmdArray[0].toLowerCase() == "!set" && cmdArray.length > 2){
@@ -340,13 +340,13 @@ executeCommand = function(cmd){
                 if(nuages.vars.implants[cmdArray[2]]){
                     nuages.vars.moduleOptions["implant"].value = nuages.vars.implants[cmdArray[2]]._id;
                 }else{
-                    nuages.term.printError("Implant not found");
+                    nuages.term.logError("Implant not found");
                 }
             }else if(cmdArray[1].toLowerCase() == "file"){
                 if(nuages.vars.files[cmdArray[2]]){
                     nuages.vars.moduleOptions["file"].value = nuages.vars.files[cmdArray[2]]._id;
                 }else{
-                    nuages.term.printError("File not found");
+                    nuages.term.logError("File not found");
                 }
             }
             else{
@@ -371,7 +371,7 @@ executeCommand = function(cmd){
             implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
             jobOptions:{refreshRate:parseInt(nuages.vars.globalOptions.refreshrate.value)}
         }).then(() => {}).catch((err) => {
-            nuages.term.printError(err.message);
+            nuages.term.logError(err.message);
         });
         
     }
@@ -387,7 +387,7 @@ executeCommand = function(cmd){
             implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
             jobOptions:{refreshRate:parseInt(nuages.vars.globalOptions.refreshrate.value), host:cmdArray[2], port:cmdArray[3]}
         }).then(() => {}).catch((err) => {
-            nuages.term.printError(err.message);
+            nuages.term.logError(err.message);
         });
     }
     else if (cmdArray[0].toLowerCase() == "!tunnels" && cmdArray.length > 1){
@@ -399,7 +399,7 @@ executeCommand = function(cmd){
                 nuages.tunnelService.remove(nuages.vars.tunnels[cmdArray[1]]._id).catch((e)=>{});
             }
         }else{
-            nuages.term.printError("Tunnel not found");
+            nuages.term.logError("Tunnel not found");
         }
     }
     else if (cmdArray[0].toLowerCase() == "!channels" && cmdArray.length == 1){
@@ -420,7 +420,7 @@ executeCommand = function(cmd){
                 nuages.pipeService.remove(nuages.vars.pipes[cmdArray[1]]._id).catch((e)=>{});
             }
         }else{
-            nuages.term.printError("Channel not found");
+            nuages.term.logError("Channel not found");
         }
     }
     else if (cmdArray[0].toLowerCase() == "!interactive"){
@@ -440,7 +440,7 @@ executeCommand = function(cmd){
         if(nuages.vars.globalOptions.implant.value == "" || nuages.vars.globalOptions.implant.value == undefined) {return;}
         nuages.createJob(nuages.vars.globalOptions.implant.value, {type:"command", options:{ path: nuages.vars.paths[nuages.vars.globalOptions.implant.value.substring(0.6)], cmd: cmd}});
     }else{
-        nuages.term.printError("Invalid command, type !help for assistance");
+        nuages.term.logError("Invalid command, type !help for assistance");
     }
     return;
 }

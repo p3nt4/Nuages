@@ -107,6 +107,11 @@ function getTerm(){
 
     term.reprompt = ()=>{
         term.setPromptline();
+        term.lastPrint = false;
+        term.prompt(true);
+    }
+    term.cprompt = ()=>{
+        term.lastPrint = false;
         term.prompt(true);
     }
     term.toGreen = (text) => {
@@ -134,51 +139,72 @@ function getTerm(){
     };
 
     term.logError = (text, special) => {
-        var special = special ? special : "Error"
-        term.writeln("\r\n ["+term.toBold(term.toRed(special)) + "] " + text);
-        term.prompt(true);
+        var special = special ? special : "Error";
+        if(!term.lastPrint){
+            console.log();
+        }
+        term.writeln(" ["+term.toBold(term.toRed(special)) + "] " + text);
+        term.cprompt();
     };
 
     term.logInfo = (text, special) => {
-        var special = special ? special : "Info"
-        term.writeln("\r\n ["+term.toBold(term.toBlue(special)) + "] " + text);
-        term.prompt(true);
+        var special = special ? special : "Info";
+        if(!term.lastPrint){
+            console.log();
+        }
+        term.writeln(" ["+term.toBold(term.toBlue(special)) + "] " + text);
+        term.cprompt();
     };
 
     term.logSuccess = (text, special) => {
-        var special = special ? special : "Success"
-        term.writeln("\r\n ["+term.toBold(term.toGreen(special)) + "] " + text);
-        term.prompt(true);
+        var special = special ? special : "Success";
+        if(!term.lastPrint){
+            console.log();
+        }
+        term.writeln(" ["+term.toBold(term.toGreen(special)) + "] " + text);
+        term.cprompt();
     };
     term.printError = (text, special) => {
-        var special = special ? special : "Error"
-        term.writeln("\r\n ["+term.toBold(term.toRed(special)) + "] " + text);
+        var special = special ? special : "Error";
+        if(!term.lastPrint){
+            console.log();
+        }
+        term.lastPrint = true;
+        term.writeln(" ["+term.toBold(term.toRed(special)) + "] " + text);
     };
 
     term.printInfo = (text, special) => {
-        var special = special ? special : "Info"
-        term.writeln("\r\n ["+term.toBold(term.toBlue(special)) + "] " + text);
+        var special = special ? special : "Info";
+        if(!term.lastPrint){
+            console.log();
+        }
+        term.lastPrint = true;
+        term.writeln(" ["+term.toBold(term.toBlue(special)) + "] " + text);
     };
 
     term.printSuccess = (text, special) => {
-        var special = special ? special : "Success"
-        term.writeln("\r\n ["+term.toBold(term.toGreen(special)) + "] " + text);
+        var special = special ? special : "Success";
+        if(!term.lastPrint){
+            console.log();
+        }
+        term.lastPrint = true;
+        term.writeln(" ["+term.toBold(term.toGreen(special)) + "] " + text);
     };
 
 
     term.setPromptline = function(){
         if (term.passwordMode){
             console.log("Password: ");
-            term.promptline = "";
-            term.promptLength = term.promptline.length;
-            term.setPrompt(term.promptline);
+            term.cpromptline = "";
+            term.cpromptLength = term.cpromptline.length;
+            term.setPrompt(term.cpromptline);
             term.stdoutMuted = true;
             return;
         }
         if (term.channelMode){
-            term.promptline = "";
-            term.promptLength = term.promptline.length;
-            term.setPrompt(term.promptline);
+            term.cpromptline = "";
+            term.cpromptLength = term.cpromptline.length;
+            term.setPrompt(term.cpromptline);
             return;
         }
         term.stdoutMuted = false;
@@ -186,30 +212,30 @@ function getTerm(){
         var mod = nuages.vars.modules[nuages.vars.module];
         var handler = nuages.vars.handlers[nuages.vars.module];
         var path = nuages.vars.paths[nuages.vars.globalOptions.implant.value];
-        term.promptline = "";
+        term.cpromptline = "";
         var n = 0;
         if(imp){
-            term.promptline += "["+term.toBold(term.toBlue(nuages.vars.globalOptions.implant.value))+"]";
+            term.cpromptline += "["+term.toBold(term.toBlue(nuages.vars.globalOptions.implant.value))+"]";
             n += 40;
         }
         if (mod){
-            term.promptline += "(" + term.toBold(term.toMagenta(mod.name)) + ")";
+            term.cpromptline += "(" + term.toBold(term.toMagenta(mod.name)) + ")";
             n += 20;
         }
         if (handler){
-            term.promptline += "(" + term.toBold(term.toYellow(handler.name)) + ")";
+            term.cpromptline += "(" + term.toBold(term.toYellow(handler.name)) + ")";
             n += 20;
         }
         if(imp){
-            term.promptline += term.toRed(imp.username) + "@" + term.toRed(imp.hostname) + ": "+ path;
+            term.cpromptline += term.toRed(imp.username) + "@" + term.toRed(imp.hostname) + ": "+ path;
             n += 40;
         }else if(!mod && !handler) {
-            term.promptline += "|"+term.toBold(term.toBlue('Nuages'));
+            term.cpromptline += "|"+term.toBold(term.toBlue('Nuages'));
             n += 20;
         }
-        term.promptline += "> "
-        term.setPrompt(term.promptline);
-        term.promptLength = term.promptline.length - n;
+        term.cpromptline += "> "
+        term.setPrompt(term.cpromptline);
+        term.cpromptLength = term.cpromptline.length - n;
     }
 
     term.setBufferLocation = function(x,y){
@@ -226,5 +252,5 @@ function getTerm(){
 
     return term;
 };
-//term.prompt = function(){};
+//term.cprompt = function(){};
 exports.getTerm = getTerm;
