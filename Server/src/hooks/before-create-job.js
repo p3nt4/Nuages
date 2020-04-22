@@ -54,7 +54,7 @@ module.exports = function (options = {}) {
       if(!context.data.chunkSize){
         throw error.BadRequest("A chunk size is required for file upload jobs");
       }
-      const file = await context.app.service('/fs/files').create({filename: context.data.fileName, chunkSize: parseInt(context.data.chunksize), length: 0, metadata:{ uploadedBy: data2.implantId }});
+      const file = await context.app.service('/fs/files').create({filename: context.data.fileName, chunkSize: parseInt(context.data.chunkSize), length: 0, metadata:{ uploadedBy: data2.implantId }});
       
       data2.fileId = file._id;
     }

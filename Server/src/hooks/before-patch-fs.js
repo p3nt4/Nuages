@@ -28,8 +28,8 @@ module.exports = function (options = {}) {
 			    }
 		      }
 	        });
-		    const lastChunk = query.data[0];
-            file.length = lastChunk.n * file.chunkSize + lastChunk.data.length;
+			const lastChunk = query.data[0];
+			file.length = lastChunk.n * file.chunkSize + lastChunk.data.length;
             file.complete = true;
         }else{
 			file.length = (context.data.lastChunk + 1 ) * file.chunkSize;
