@@ -17,6 +17,16 @@ Contribution are welcome, whether it is solely testing, or development of new mo
 
 For testing and refererence, an example implant and handler are provided on this repo.
 
+## Capabilities
+
+- Command Execution
+- Interactive Channels
+- File Upload/Download
+- TCP Forwarding
+- Socks Tunneling
+- Reflected Assembly Execution
+- Powershell Execution
+
 ## Architecture
 ![Nuages](https://user-images.githubusercontent.com/19682240/56617113-ffcfb380-65ec-11e9-99ca-fc0e674d4dcd.PNG)
 
@@ -27,6 +37,7 @@ For testing and refererence, an example implant and handler are provided on this
 **Handlers:** Custom code acting as a proxy between Implants and the Nuages API, to implemenet custom communication protocols (DNS tunneling, domain fronting, IRC etc...).
 
 **Clients:** Clients rely on the Nuages API and can be implemented in any form such as cli or web application.
+
 
 ## Disclaimer
 This project is intended for security researchers and penetration testers and should not be used for any illegal activities.
