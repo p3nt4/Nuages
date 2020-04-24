@@ -7,6 +7,8 @@ var path = require('path');
 
 var fs = require('fs');
 
+const error = require('@feathersjs/errors');
+
 function recFindByExt(base,ext,files,result) 
 {
     files = files || fs.readdirSync(base) 
