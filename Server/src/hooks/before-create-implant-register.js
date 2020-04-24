@@ -38,6 +38,8 @@ module.exports = function (options = {}) {
     data2.createdAt = Date.now();
 
     data2.lastSeen = data2.createdAt;
+
+    data2.listener = context.params.headers.listener ? context.params.headers.listener: "";
    
     // Actually create the implant
     const implant = await context.app.service('implants').create(data2);

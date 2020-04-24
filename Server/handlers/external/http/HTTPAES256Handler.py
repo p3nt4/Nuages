@@ -84,6 +84,9 @@ class S(SimpleHTTPRequestHandler):
 
     def POST(self, url, body):
         headers = {'Content-type': 'application/json; charset=utf-8'}
+        if(args.id):
+            headers["listener"] = args.id
+        
         response = requests.post(connectionString + url, data = body.encode('utf-8'), verify=True, headers=headers)
         if(response.ok):
             return response.content
@@ -146,6 +149,7 @@ if __name__ == "__main__":
     parser.add_argument("-k", "--key", required=True, help="The seed for the encryption key")
     parser.add_argument("-u", "--uri", default="http://127.0.0.1:3030", help="The URI of the Nuages API")
     parser.add_argument("-d", "--directory", help="Directory to serve for GET requests")
+    parser.add_argument("-i", "--id", help="The listener ID for listener tracking")
     parser.add_argument("-q", "--quiet", action='store_true', help="Hide logs")
     args = parser.parse_args() 
     # The encryption password

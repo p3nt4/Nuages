@@ -7,6 +7,8 @@ const beforeRemoveListener = require('../../hooks/before-remove-listener');
 
 const {disallow} = require('feathers-hooks-common');
 
+const afterFindListeners = require('../../hooks/after-find-listeners');
+
 module.exports = {
   before: {
     all: [ authenticate('jwt') ],
@@ -20,7 +22,7 @@ module.exports = {
 
   after: {
     all: [],
-    find: [],
+    find: [afterFindListeners()],
     get: [],
     create: [],
     update: [],

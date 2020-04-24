@@ -53,7 +53,7 @@ exports.run = async function (app, run) {
 
     var script = path.join(__dirname,"HTTPAES256Handler.py");
 
-    var command = script +" -p " + run.options.port.value + " -k " + run.options.key.value;
+    var command = script +" -p " + run.options.port.value + " -k " + run.options.key.value + " -i " + run._id;
 
     if(app, run.options.uri.value && run.options.uri.value != ""){
         run.options.uri.value = run.options.uri.value.replace(/[`~!@#$%^&*()_|\-=?;'",<>\{\}\[\]]/gi, '');

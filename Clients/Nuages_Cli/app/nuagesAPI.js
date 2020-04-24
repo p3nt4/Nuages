@@ -101,6 +101,11 @@ nuages.templates.implants = [
         attr: "handler",
     },
     {   
+        header: "Listener",
+        attr: "listener",
+        process: (e)=>{return term.toBold(term.toYellow(e.substring(0,6)))}
+    },
+    {   
         header: "Last Seen",
         attr: "lastSeen",
         process: (e)=>{return nuages.formatImplantLastSeen(e)}
@@ -181,6 +186,10 @@ nuages.templates.listeners = [
         header: "Type",
         attr: "handlerName",
         process: (e)=>{return term.toYellow(term.toBold(e))},
+    },
+    {   
+        header: "Implants",
+        attr: "implantNo"
     },
     {   
         header: "PID",

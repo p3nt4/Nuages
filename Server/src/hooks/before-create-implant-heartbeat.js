@@ -15,7 +15,8 @@ module.exports = function (options = {}) {
     
     // Set the implant lastseen
     try {
-      await context.app.service('implants').patch(context.data.id, {lastSeen: Date.now()});
+      listener = context.params.headers.listener ? context.params.headers.listener: "";
+      await context.app.service('implants').patch(context.data.id, {lastSeen: Date.now(), listener: listener});
     }catch(e){
       throw(e);
     }
