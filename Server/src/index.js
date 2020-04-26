@@ -17,6 +17,13 @@ process.on('unhandledRejection', (reason, p) =>
 
 server.on('listening', () =>{
   logger.info('Nuages C2 started on http://%s:%d', app.get('host'), port);
+
+  // Initialize pipe list
+  app.pipe_list = {};
+
+  // Initialize proces list
+  app.child_process_list = {};
+  
   // Sleep one second for the app to get ready
   sleep(1000).then(()=>{
     try{

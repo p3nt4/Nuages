@@ -4,11 +4,17 @@ const { authenticate } = require('@feathersjs/authentication').hooks;
 
 const {disallow} = require('feathers-hooks-common');
 
+const afterFindFsFiles = require('../../hooks/after-find-fs-files');
+
+const afterRemoveFsFiles = require('../../hooks/after-remove-fs-files');
+
+const beforeGetFsFiles = require('../../hooks/before-get-fs-files');
+
 module.exports = {
   before: {
     all: [authenticate('jwt')],
     find: [],
-    get: [],
+    get: [beforeGetFsFiles()],
     create: [beforeCreateFsFiles()],
     update: [disallow('external')],
     patch: [disallow('external')],
@@ -17,12 +23,12 @@ module.exports = {
 
   after: {
     all: [],
-    find: [],
+    find: [afterFindFsFiles()],
     get: [],
     create: [],
     update: [],
     patch: [],
-    remove: []
+    remove: [afterRemoveFsFiles()]
   },
 
   error: {

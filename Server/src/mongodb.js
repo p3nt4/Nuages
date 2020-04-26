@@ -14,8 +14,10 @@ module.exports = function (app) {
     const dbName = parse(config, () => {});
 
     const db = client.db(dbName);
-    var gridFS = new mongodb.GridFSBucket(db);
-    app.set('gridFS', gridFS);
+
+    // Initialize gridFS bucket
+    app.gridFS = new mongodb.GridFSBucket(db);
+    
     return client.db(dbName);
   }).catch(error => {
     logger.error(error);

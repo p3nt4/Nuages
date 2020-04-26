@@ -4,11 +4,32 @@
 // eslint-disable-next-line no-unused-vars
 module.exports = (options = {}) => {
   return async context => {
+
+    // Would be nice to work on something like that
+    function closePipeCleanly(pipe){
+      console.log(typeof(pipe));
+      if(typeof(pipe)=="GridFSBucketWriteStream"){
+        pipe.end();
+      }
+    }
+
     if(context.app.pipe_list){
       var item = context.app.pipe_list[context.id];
       if(item){
-        try{item.in.destroy();}catch(e){};
-        try{item.out.destroy();}catch(e){};
+        try{
+          if(item.in){
+            try{item.in.end();}catch{};
+            item.in.destroy();
+            delete item.in;
+          }
+        }catch(e){console.log(e);};
+        try{
+          if(item.out){ 
+            try{item.out.end();}catch{};
+            item.out.destroy();
+            delete item.out;
+          }
+        }catch(e){console.log(e);};
         try{delete context.app.pipe_list[context.id];}catch(e){};
       }
     }

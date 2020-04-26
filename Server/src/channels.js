@@ -40,26 +40,21 @@ module.exports = function(app) {
   app.publish((data, hook) => {
     // Here you can add event publishers to channels set up in `channels.js`
     // To publish only for a specific event use `app.publish(eventname, () => {})`
-	if(hook.path == "fs/chunks"){
-		return;
-  }
   
-  if(hook.path == "implant/heartbeat"){
-		return;
-	}
-	
-	if(hook.path == "fs"){
-		delete data.content;
-	}
-	
-	if(hook.path == "implant/jobResult"){
-    delete data.result;
-    delete data.data;
-	}
-	
-	if(hook.path == "jobs" && data.jobStatus < 3){
-		delete data.result;
-	}
+    // I think this will create a lot of redundant information - better be monitoring the actual objects than API calls
+    if(hook.path.includes("implant/")){
+      return;
+    }
+  
+    // Could be interesting to work on a way to use this instead of manually polling for data
+    if(hook.path == "pipes/io"){
+      return;
+    }
+    
+    // Let's only share the result once its finished
+    if(hook.path == "jobs" && data.jobStatus < 3){
+      delete data.result;
+    }
     //console.log('Publishing all events to all authenticated users. See `channels.js` and https://docs.feathersjs.com/api/channels.html for more information.'); // eslint-disable-line
 	
     // e.g. to publish all service events to all authenticated users use

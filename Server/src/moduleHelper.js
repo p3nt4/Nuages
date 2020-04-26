@@ -44,6 +44,17 @@ exports.createJob = async function (app, run, callback, payload) {
     );
 };
 
+// This function creates a job for the module with an included pipe
+exports.createJobWithPipe = async function (app, run, callback, payload, pipe) {
+    return app.service("jobs").create({
+        moduleRun:{runId: run._id, callback: callback, moduleName: run.moduleName},
+        implantId: run.options.implant.value,
+        pipe: pipe,
+        timeout: Date.now() + 5 * 6000,
+        payload: payload}
+    );
+};
+
 // This function fails the run
 exports.fail = function (app, run) {
     run.runStatus = 4;

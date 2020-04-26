@@ -1,27 +1,22 @@
 
-
-const beforeCreateFsChunks = require('../../hooks/before-create-fs-chunks');
-
-const afterFindFsChunks = require('../../hooks/after-find-fs-chunks');
-
 const {disallow} = require('feathers-hooks-common');
 
 const { authenticate } = require('@feathersjs/authentication').hooks;
 
 module.exports = {
   before: {
-    all: [authenticate('jwt')],
+    all: [disallow('external'), authenticate('jwt')],
     find: [],
     get: [],
-    create: [beforeCreateFsChunks()],
-    update: [disallow('external')],
-    patch: [disallow('external')],
+    create: [],
+    update: [],
+    patch: [],
     remove: []
   },
 
   after: {
     all: [],
-    find: [afterFindFsChunks()],
+    find: [],
     get: [],
     create: [],
     update: [],

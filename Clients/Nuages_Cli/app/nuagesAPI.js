@@ -12,13 +12,11 @@ const app = feathers();
 var nuages = {};
 
 app.configure(feathers.authentication({}));
-
 app.configure(feathers.socketio(socket));
+
 nuages.implantService = app.service('implants');
 nuages.jobService = app.service('jobs');
-nuages.fsService = app.service('fs');
 nuages.fileService = app.service('/fs/files');
-nuages.chunkService = app.service('/fs/chunks');
 nuages.modrunService = app.service('/modules/run');
 nuages.moduleService = app.service('/modules');
 nuages.logService = app.service('/logs');
@@ -30,8 +28,6 @@ nuages.handloadService = app.service('/handlers/load');
 nuages.tunnelService = app.service('/tunnels');
 nuages.pipeService = app.service('/pipes');
 nuages.ioService = app.service('/pipes/io');
-nuages.fsService.timeout = 20000000;
-nuages.chunkService.timeout = 20000000;
 
 nuages.vars = { 
     implants: {},
@@ -60,11 +56,11 @@ nuages.vars.globalOptions = {
             description: "The job timeout, in minutes"
         },
         buffersize:{
-            value: 65536,
-            description: "The size of the buffer for created channels"
+            value: 261120,
+            description: "The size of the buffer for channels"
         },
         refreshrate:{
-            value: 100,
+            value: 50,
             description: "The channel refresh rate in ms"
         }
 };
@@ -212,7 +208,7 @@ nuages.templates.files = [
     {   
         header: "Size",
         attr: "length",
-        process: (e)=>{return nuages.humanFileSize(Math.floor(e*3/4))}
+        process: (e)=>{return nuages.humanFileSize(Math.floor(e))}
     },
     {   
         header: "Chunk Size",
@@ -220,8 +216,8 @@ nuages.templates.files = [
     },
     {   
         header: "Uploaded By",
-        attr: "metadata",
-        process: (e)=>{return e.uploadedBy.substring(0,6)}
+        attr: "uploadedBy",
+        process: (e)=>{return e.substring(0,6)}
     },
     {   
         header: "Upload Date",
@@ -230,7 +226,7 @@ nuages.templates.files = [
     },
     {   
         header: "Name",
-        attr: "filename",
+        attr: "filename"
     },
 ];
 nuages.templates.pipes = [
@@ -244,6 +240,11 @@ nuages.templates.pipes = [
         attr: "type",
     },
     {   
+        header: "Source",
+        attr: "source",
+        process: (e,o)=>{if(o.type == "download"){return e.substring(0,6)}else{return e}},
+    },
+    {   
         header: "Implant",
         attr: "implantId",
         process: (e)=>{return term.toBold(term.toBlue(e.substring(0,6)))},
@@ -251,6 +252,7 @@ nuages.templates.pipes = [
     {   
         header: "Destination",
         attr: "destination",
+        process: (e,o)=>{if(o.type == "upload"){return e.substring(0,6)}else{return e}},
     }
 ];
 
@@ -355,7 +357,7 @@ nuages.toTable = function (template, objects){
         template.forEach(col=>{
             if(col.process){
                 try{
-                    var value = col.process(obj[col.attr]);
+                    var value = col.process(obj[col.attr], obj);
                 }catch(e){
                     var value = "";
                 }
@@ -430,78 +432,88 @@ nuages.printHelp = function (){
     string += " !help                                      - Print this message\r\n";
     nuages.term.printInfo(string, "Help")
 }
-nuages.loadFile = async function(filePath) {
-    var CHUNK_SIZE = parseInt(nuages.vars.globalOptions.chunksize.value) * 3/4;
-    buffer = new Buffer(CHUNK_SIZE);
+
+nuages.uploadFile = async function(filePath) {
+    if(fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()){
+        nuages.term.logError("This is a directory"); return
+    }
+    var CHUNK_SIZE = parseInt(nuages.vars.globalOptions.buffersize.value);
+    buffer = new Buffer.alloc(CHUNK_SIZE);
     fs.open(filePath, 'r', async function(err, fd) {
         if (err) {nuages.term.logError(err.message); return};
-        var file = await nuages.fileService.create({filename: path.basename(filePath), chunkSize: parseInt(nuages.vars.globalOptions.chunksize.value) , length: 0, metadata:{path:"N/A"}}).catch((err) => {
-            nuages.term.logError(err.message);
-        });
-        if (!file){return;}
-        var n = 0;
+        var pipe = await nuages.pipeService.create({type:"upload", source: filePath, filename: path.basename(filePath)});
+        if (!pipe){nuages.term.logError("Error creating pipe"); return}
         async function readNextChunk() {
           fs.read(fd, buffer, 0, CHUNK_SIZE, null, async function(err, nread) {
-            if (err) throw err;
-            if (nread === 0) {
-                nuages.fsService.patch(file._id,{}).catch((err) => {
+            if (err || nread === 0) {
+                nuages.pipeService.remove(pipe._id).catch((err) => {
                     nuages.term.logError(err.message);
                 });	
                 fs.close(fd, function(err) {
                     if (err) throw err;
                 });
+                if(err){
+                    nuages.term.logError(err.message);
+                }
+                term.logSuccess("Uploaded: "+ filePath)
                 return;
-            }
+            };
             var data;
             if (nread < CHUNK_SIZE)
               data = buffer.slice(0, nread);
             else
               data = buffer;
-              // We dont really have to wait but lets spare the server
-              await nuages.chunkService.create({files_id: file._id, n: n, data:data.toString('base64')}).catch((err) => {
+              try{
+                // We dont really have to wait but lets spare the server
+                await nuages.ioService.create({pipe_id: pipe._id, in:data.toString('base64')});
+              }catch(err){
                 nuages.term.logError(err.message);
                 return;
-            });	
-            n++;
+              }
             readNextChunk();
           });
-
         }
-        readNextChunk();
+        readNextChunk()
       });
 }
 
+nuages.sleep = function(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+};  
 nuages.downloadFile = async function(fileId, filePath){
+    filePath = !(fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()) ? filePath : path.resolve(filePath, nuages.vars.files[fileId].filename);
     if (nuages.vars.files[fileId] != undefined){
-        nuages.fileService.get(nuages.vars.files[fileId]._id).then(async function(result) {
-            try{
-            var arraySize = Math.floor(result.length/result.chunkSize);
-            if (result.length != arraySize * result.chunkSize){
-                arraySize++;
-            }
-            filePath = !(fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()) ? filePath : path.resolve(filePath, result.filename);
+        try{
+            var pipe = await nuages.pipeService.create({type:"download", source: nuages.vars.files[fileId]._id, destination: filePath, bufferSize: nuages.vars.globalOptions.buffersize.value});
             var writeStream = fs.createWriteStream(filePath);
-            for(var i = 0; i < arraySize; i ++){
-                await nuages.chunkService.find({query: {
-                    n: i,
-                    files_id: nuages.vars.files[fileId]._id
-                    }}).then( function(result) {
-                        var buf = Buffer.from(result.data[0].data, 'base64');
-                        writeStream.write(buf);
-                    }).catch((e) =>{
-                        nuages.term.logError(e.message);
-                        writeStream.close();
-                        return;
-                    });
+            var dlBytes = 0;
+            while(dlBytes < nuages.vars.files[fileId].length){
+                await nuages.sleep(nuages.vars.globalOptions.refreshrate.value);
+                var data = await this.ioService.create({pipe_id: pipe._id});
+                if(data.out && data.out.length > 0){
+                    var buff = Buffer.from(data.out, 'base64');
+                    dlBytes+=buff.length;
+                    data = writeStream.write(buff);
+                }
             }
-            writeStream.close();
-            nuages.term.logInfo(filePath + " downloaded");
-        }catch(e){nuages.term.logError(e.message);}
-        });
-    }else{
-        nuages.term.logError("File not found");
+            term.logSuccess("Downloaded: "+ filePath);
+        }catch(err){
+            nuages.term.logError(err.message);
+        }
+        finally{
+            if(writeStream){
+                writeStream.close();
+            }if(pipe){
+                nuages.pipeService.remove(pipe._id).catch((err) => {
+                    nuages.term.logError(err.message);
+                });
+            }
+        }
     }
 };
+
 
 nuages.saveTextToFile = async function(text, filePath){
     try{
@@ -808,32 +820,15 @@ nuages.createJob = function (implant, payload){
     }
 }
 
-nuages.createJobWithUpload = function (implant, payload, filename){
+nuages.createJobWithPipe = function (implant, payload, pipe){
     var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout.value) * 60000;
-    var chunkSize = parseInt(nuages.vars.globalOptions.chunksize.value);
+    pipe.implantId = nuages.vars.implants[implant]._id;
     if (nuages.vars.implants[implant] != undefined){
         nuages.jobService.create({
             implantId: nuages.vars.implants[implant]._id,
             timeout: timeout,
             vars: {session: nuages.vars.session},
-            fileUpload: true,
-            chunkSize: chunkSize,
-            fileName: filename,
-            payload: payload}
-            ).catch((err) => {
-                nuages.term.logError(err.message);
-            });
-    }else{
-    }
-}
-nuages.createJobWithPipe = function (implant, payload, pipe_id){
-    var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout.value) * 60000;
-    if (nuages.vars.implants[implant] != undefined){
-        nuages.jobService.create({
-            implantId: nuages.vars.implants[implant]._id,
-            timeout: timeout,
-            vars: {session: nuages.vars.session},
-            pipe_id: pipe_id,
+            pipe: pipe,
             payload: payload}
             ).catch((err) => {
                 nuages.term.logError(err.message);
@@ -929,23 +924,21 @@ nuages.printListenerPatched  = function (listener){
 
 nuages.createImplantInteractiveChannel = function(implant, filename) {
     if(nuages.vars.implants[implant]){
-        nuages.pipeService.create({bufferSize:parseInt(nuages.vars.globalOptions.buffersize.value),implantId:nuages.vars.implants[implant]._id,type:"interactive",destination:filename}).then((pipe)=>{
-            try{
-                nuages.createJobWithPipe(implant, 
-                    {type:"interactive", 
-                    options:{ 
-                        path: nuages.vars.paths[implant], 
-                        filename: filename,
-                        pipe_id: pipe._id,
-                        args: "",
-                        bufferSize: parseInt(nuages.vars.globalOptions.buffersize.value),
-                        refreshRate: parseInt(nuages.vars.globalOptions.refreshrate.value)
-                    }
-                    },pipe._id);
-                }catch(e){nuages.term.logError(e);}
-        }).catch((err)=>{
-            nuages.term.logError(err);
-        });
+        nuages.createJobWithPipe(implant, 
+            {type:"interactive", 
+            options:{ 
+                path: nuages.vars.paths[implant], 
+                filename: filename,
+                args: ""
+            }
+            },
+            {
+                destination: filename,
+                type:"interactive",
+                source: "Nuages_Cli"
+            }
+            );
+    
     }else{
         nuages.term.printError("Implant not found");
     }
@@ -987,7 +980,7 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
         }
     }
     stdin.on('data', function(chunk) {syncIO(nuages,pipe_id,chunk,stdout) });
-    var interval = setInterval(syncIO, 100, nuages,pipe_id,undefined,stdout);
+    var interval = setInterval(syncIO, nuages.vars.globalOptions.refreshrate.value, nuages, pipe_id, undefined, stdout);
 }
 
 nuages.chunkSubstr  = function (str, size) {
@@ -1007,8 +1000,6 @@ nuages.jobService.on('patched', job => nuages.processJobPatched(job));
 nuages.implantService.on('created', function(implant){nuages.vars.implants[implant._id.substring(0,6)] = implant; nuages.term.logInfo("New Implant:\r\n" + nuages.printImplants({imp: implant}));});
 nuages.implantService.on('patched', function(implant){nuages.vars.implants[implant._id.substring(0,6)] = implant});
 nuages.implantService.on('removed', function(implant){delete nuages.vars.implants[implant._id.substring(0,6)]; nuages.term.logInfo("Deleted Implant:\r\n" + nuages.printImplants({imp: implant}));});
-nuages.fsService.on('patched', function(file){nuages.vars.files[file._id.substring(0,6)] = file; if(file.complete){nuages.term.logInfo("New File:\r\n" + nuages.printFiles({imp: file}));}});
-nuages.fsService.on('removed', function(file){nuages.term.logInfo("Deleted file:\r\n" + nuages.printFiles({imp: nuages.vars.files[file.id.substring(0,6)]}));delete nuages.vars.files[file.id.substring(0,6)];});
 nuages.modrunService.on('patched', function(run){nuages.printModRunPatched(run)});
 nuages.logService.on('created', function(log){nuages.printLog(log)});
 nuages.listenerService.on('patched', function(run){nuages.printListenerPatched(run)});

@@ -2,12 +2,11 @@
 // For more information on hooks see: http://docs.feathersjs.com/api/hooks.html
 
 // eslint-disable-next-line no-unused-vars
-
-const Binary = require('mongodb').Binary;
-
-module.exports = function (options = {}) {
+module.exports = (options = {}) => {
   return async context => {
-	context.data.data = new Binary(context.data.data);
+    var files = await context.app.service("/fs/files").find({query:{filename:context.id}});
+    if (files.count == 0) throw error.NotFound("File not found")
+    else context.result = files.data[0];
     return context;
   };
 };

@@ -32,17 +32,15 @@ module.exports = function (options = {}) {
 
     data.bindIP = context.data.bindIP ? context.data.bindIP : "127.0.0.1";
 
-    data.maxPipes = context.data.maxPipes ? parseInt(context.data.maxPipes) : 10;
+    data.maxPipes = context.data.maxPipes ? parseInt(context.data.maxPipes) : 20;
 
     var server = net.createServer(async function(socket) {
       try{
         pipe_id = srs({length: 32, alphanumeric: true});
         socket.on('error', function(e) {
-          //console.log("SOCKET ERROR  " + pipe_id);
         });
         socket.on('end', function(e) {
           try{
-              //console.log("SOCKET END  " + pipe_id);
               context.app.service('pipes').remove(pipe_id).catch((err) => {});
           }catch(e){};
         });
@@ -51,25 +49,21 @@ module.exports = function (options = {}) {
           console.log("Too many pipes on tunnel: " + data._id);
           socket.destroy();
         }else{
-          if(context.app.pipe_list == undefined){
-            context.app.pipe_list = {};
-          }
           context.app.pipe_list[pipe_id]={
             bufferSize : data.bufferSize,
             in: socket, 
-            out: socket
+            out: socket,
+            canRead: true,
+            canWrite: true
           };
           var jobOptions = data.jobOptions;
-
           jobOptions.pipe_id=pipe_id;
-
-          jobOptions.bufferSize=data.bufferSize;
-
           context.app.service('pipes').create({
             tunnelId:data._id, 
             _id:pipe_id, 
             type: data.type,
-            implantId: data.implantId, 
+            implantId: data.implantId,
+            source: ":" + data.port.toString(),
             destination: data.destination, 
             bufferSize: data.bufferSize
           }).then((pipe)=>{

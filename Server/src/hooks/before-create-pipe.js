@@ -2,7 +2,7 @@
 // For more information on hooks see: http://docs.feathersjs.com/api/hooks.html
 
 // eslint-disable-next-line no-unused-vars
-const { Forbidden} = require('@feathersjs/errors');
+const error = require('@feathersjs/errors');
 
 const srs = require('secure-random-string');
 
@@ -10,38 +10,128 @@ var MemoryStream = require('memorystream');
 
 module.exports = (options = {}) => {
   return async context => {
-    if(context.params.user != undefined){
+
+    // These pipes are used to communicate between implants and clients directly
+    if(context.data.type == "interactive" || context.data.type == "bidirectional"){
       var data = {};
-
       data.id = srs({length: 32, alphanumeric: true});
-
       data._id = data.id;
-
       data.implantId = context.data.implantId;
-
       data.type = context.data.type ? context.data.type : "";
-
       data.destination = context.data.destination ? context.data.destination : "";
+      data.source = context.data.source ? context.data.source : "";
+      data.canRead = true;
+      data.canWrite = true;
+      // This is a max buffer size
+      data.bufferSize = parseInt(context.data.bufferSize) ? parseInt(context.data.bufferSize) : 261120;
 
-      data.bufferSize = parseInt(context.data.bufferSize) ? parseInt(context.data.bufferSize) : 4096;
-
-      if(context.app.pipe_list == undefined){
-        context.app.pipe_list = {};
-      }
       context.app.pipe_list[data._id]={
         bufferSize : data.bufferSize,
-        in: new MemoryStream(), 
-        out: new MemoryStream()
+        in: new MemoryStream(), // in is towards implants
+        out: new MemoryStream(), // out is towards clients
+        canRead: true,
+        canWrite: true
       };
+    }
+    // This is a file upload
+    else if(context.data.type == "upload"){
+      var data = {};
+      data.id = srs({length: 32, alphanumeric: true});
+      data._id = data.id;
+      data.implantId = context.data.implantId;
+      data.type = context.data.type ? context.data.type : "";
+      data.source = context.data.source ? context.data.source : "";
+      data.filename = context.data.filename;
+      uploadedBy = context.params.user ? context.params.user.email : data.implantId;
+      if(data.filename === undefined){
+        throw error.BadRequest("A filename is required");
+      }
+      data.canRead = false;
+      data.canWrite = true;
+      // This is a max buffer size
+      data.bufferSize = parseInt(context.data.bufferSize) ? parseInt(context.data.bufferSize) : 65536;
+      // Let's open a GridFS stream
+      file_id = srs({length: 32, alphanumeric: true});
+      data.destination = file_id;
+      stream = context.app.gridFS.openUploadStream(file_id,{metadata:{filename:data.filename,uploadedBy:uploadedBy}});
+      stream.on('error', function(err) {
+        console.log(err);
+      });
+      if(data.implantId){
+        context.app.pipe_list[data._id]={
+          bufferSize : data.bufferSize,
+          out: stream, 
+          canRead: false,
+          canWrite: true
+        };
+      }else{
+        context.app.pipe_list[data._id]={
+          bufferSize : data.bufferSize,
+          in: stream,
+          canRead: false,
+          canWrite: true
+        };
+      }
+    }
+
+    // This is a file download
+    else if(context.data.type == "download"){
+      var data = {};
+      data.id = srs({length: 32, alphanumeric: true});
+      data._id = data.id;
+      data.implantId = context.data.implantId;
+      data.type = context.data.type ? context.data.type : "";
+      data.destination = context.data.destination ? context.data.destination : "";
+      data.source = context.data.source;
+      if(data.source === undefined){
+        throw error.BadRequest("A source is required");
+      }
+      data.canRead = true;
+      data.canWrite = false;
+      // This is a max buffer size
+      data.bufferSize = parseInt(context.data.bufferSize) ? parseInt(context.data.bufferSize) : 65536;
+      // Let's open a GridFS stream
+      stream = context.app.gridFS.openDownloadStreamByName(data.source);
+      stream.on('error', function(err) {
+        console.log(err);
+      });
+      
+      //I dont know why this is needed...
+      //Time to buffer the stream into memory?
+      stream.read();
+
+      if(data.implantId){
+        context.app.pipe_list[data._id]={
+          bufferSize : data.bufferSize,
+          in: stream, 
+          canRead: true,
+          canWrite: false
+        };
+      }else{
+        context.app.pipe_list[data._id]={
+          bufferSize : data.bufferSize,
+          out: stream,
+          canRead: true,
+          canWrite: false
+        };
+      }
+    }
+    // If the id is already defined this pipe has already been created by a tunnel object and only needs to be saved
+    else if(context.data._id){
+      var data = {};
+      // Using the both _id and id for consistency (id is used by feathers memory instead of _id)
+      data.id = context.data._id;
+      data._id = context.data._id;
+      data.tunnelId = context.data.tunnelId;
+      data.implantId = context.data.implantId;
+      data.destination = context.data.destination;
+      data.type = context.data.type;
+      data.source = context.data.source;
+      data.bufferSize = parseInt(context.data.bufferSize) ? parseInt(context.data.bufferSize) : 65536;
+    }
 
     context.data = data;
 
-    }else{
-
-      context.data.id = context.data._id ? context.data._id : srs({length: 32, alphanumeric: true});
-
-      context.data._id = context.data.id;
-    }
     return context;
   };
 };

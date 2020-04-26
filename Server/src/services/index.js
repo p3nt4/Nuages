@@ -5,7 +5,6 @@ const implantHeartbeat = require('./implant-heartbeat/implant-heartbeat.service.
 const implantJobresult = require('./implant-jobresult/implant-jobresult.service.js');
 const fsFiles = require('./fs.files/fs.files.service.js');
 const fsChunks = require('./fs.chunks/fs.chunks.service.js');
-const fs = require('./fs/fs.service.js');
 const implantChunks = require('./implant-chunks/implant-chunks.service.js');
 const users = require('./users/users.service.js');
 const modules = require('./modules/modules.service.js');
@@ -29,7 +28,6 @@ module.exports = function (app) {
   app.configure(implantJobresult);
   app.configure(fsFiles);
   app.configure(fsChunks);
-  app.configure(fs);
   app.configure(implantChunks);
   app.configure(users);
   app.configure(modules);

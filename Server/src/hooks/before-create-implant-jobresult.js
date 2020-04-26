@@ -19,20 +19,20 @@ module.exports = function (options = {}) {
     }
 
     // Special treatment for upload jobs
-    if (job.fileUpload === true && context.data.error != true){
-      const n = context.data.n ? context.data.n : 0;
-      var file = await context.app.service('/fs/files').get(job.fileId);
-      if (file === undefined){
-          throw error.NotFound("File not found");
-       }
-      await context.app.service("/fs/chunks").create({files_id: file._id, n: parseInt(n), data: context.data.data});
-      if(!context.data.moreData){
-        context.app.service("/fs").patch(file._id,{path: context.data.result, uploadedBy: job.implantId});	
-      }
-      else{
-        context.app.service("/fs").patch(file._id,{path: context.data.result, uploadedBy: job.implantId, lastChunk: n});	
-        }
-    }
+    //if (job.fileUpload === true && context.data.error != true){
+    //  const n = context.data.n ? context.data.n : 0;
+    //  var file = await context.app.service('/fs/files').get(job.fileId);
+    //  if (file === undefined){
+    //     throw error.NotFound("File not found");
+    //   }
+    //  await context.app.service("/fs/chunks").create({files_id: file._id, n: parseInt(n), data: context.data.data});
+     // if(!context.data.moreData){
+    //    context.app.service("/fs").patch(file._id,{path: context.data.result, uploadedBy: job.implantId});	
+    //  }
+    //  else{
+    //    context.app.service("/fs").patch(file._id,{path: context.data.result, uploadedBy: job.implantId, lastChunk: n});	
+    //    }
+    //}
 
 
 	  // Append the result

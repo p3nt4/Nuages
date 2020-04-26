@@ -37,22 +37,43 @@ exports.load = function (app) {
 
 // This is the first function to be called when the module is ran
 exports.run = async function (app, run) {
-    var file = await app.service("/fs/files").get(run.options.file.value).catch(() => {});
-    if (!file){
-        moduleHelper.logError(app,run, "File not found");
-        moduleHelper.fail(app, run);
-        return;
-    }
+    try{
+        var file = await app.service("/fs/files").get(run.options.file.value).catch(() => {});
+        if (!file){
+            moduleHelper.logError(app,run, "File not found");
+            moduleHelper.fail(app, run);
+            return;
+        }
 
-    // Creating the job and setting the callback
-    var job = await moduleHelper.createJob(app,run,"afterDownload" ,{type:"download", options:{ file: file.filename, file_id: file._id, length: file.length, chunkSize: file.chunkSize, path: run.options.path.value}}).catch(() => {});
-    if(!job){
-        moduleHelper.logError(app, run, "Error Creating Download Job");
+        // Creating the job and setting the callback
+        var job = await moduleHelper.createJobWithPipe(app,run,"afterDownload" ,
+            {type:"download", 
+            options:{ 
+                file: file.filename, 
+                filename: file.filename,
+                length: file.length, 
+                path: run.options.path.value
+                }
+            },
+            {type: "download",
+                    source: file._id, 
+                    destination: file,
+                    implantId: run.options.implant.value
+            });
+
+        if(!job){
+            moduleHelper.logError(app, run, "Error Creating Download Job");
+            moduleHelper.fail(app, run);
+            return;
+        }
+        moduleHelper.logInfo(app, run, "Requested the download of: " + file.filename);
+        moduleHelper.inProgress(app, run);
+    }catch(err){
+        console.log(err);
+        moduleHelper.logError(app,run,err.message);
         moduleHelper.fail(app, run);
         return;
     }
-    moduleHelper.logInfo(app, run, "Requested the download of: " + file.filename);
-    moduleHelper.inProgress(app, run);
 };
 
 // There are callback than can be executed once jobs are completed
@@ -72,6 +93,9 @@ exports.afterDownload = async function (app, run, job) {
         return;
     }
     moduleHelper.logSuccess(app, run, "Download succeeded, executing: " + job.result + " " + run.options.arguments.value);
+
+    // Let's remember to save the run (to save the variables)
+    moduleHelper.inProgress(app, run);
 };
 
 // There are callback than can be executed once jobs are completed
@@ -95,7 +119,7 @@ exports.afterExecute = async function (app, run, job) {
 exports.afterDelete = async function (app, run, job) {
     // If job failed
     if(job.jobStatus == 4 ){
-        moduleHelper.logError(app, run, "Error during delete, file must be deleted manually");
+        moduleHelper.logError(app, run, "Error during delete, file must be deleted manually: \r\n"+ job.result);
         moduleHelper.fail(app, run);
     }else{
         moduleHelper.logSuccess(app, run, "Successfully deleted file");

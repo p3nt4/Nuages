@@ -39,7 +39,21 @@ exports.run = async function (app, run) {
             moduleHelper.fail(app, run);
             return;
         }
-        var job = await moduleHelper.createJob(app,run,"afterExecute",{type:"posh_in_mem", options:{file_id: file._id, length: file.length, chunkSize: file.chunkSize, command: run.options.command.value}}).catch(() => {});
+        var job = await moduleHelper.createJobWithPipe(app,run,"afterExecute",
+        {
+            type:"posh_in_mem", 
+            options:
+            {
+                length: file.length, 
+                command: run.options.command.value
+            }
+        },
+        {type: "download",
+            source: file._id, 
+            destination: "memory",
+            length: file.length, 
+            implantId: run.options.implant.value
+        }).catch(() => {});
     }else{
     var job = await moduleHelper.createJob(app,run,"afterExecute",{type:"posh_in_mem", options:{command: run.options.command.value}}).catch(() => {});
     }

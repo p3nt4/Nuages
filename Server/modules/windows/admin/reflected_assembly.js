@@ -42,26 +42,45 @@ exports.load = function (app) {
 
 // This is the first function to be called when the module is run
 exports.run = async function (app, run) {
-    if (app,run.options.file.value != "" && run.options.file.value != " "){
+    try{
         var file = await app.service("/fs/files").get(run.options.file.value).catch(() => {});
         if (!file){
             moduleHelper.logError(app,run, "File not found");
             moduleHelper.fail(app,run);
             return;
         }
-        var job = await moduleHelper.createJob(app,run,"afterExecute",{type:"reflected_assembly", options:{file_id: file._id, length: file.length, chunkSize: file.chunkSize, class: run.options.class.value, method: run.options.method.value, arguments: run.options.arguments.value}}).catch(() => {});
-    }else{
-    var job = await moduleHelper.createJob(app,run,"afterExecute",{type:"reflected_assembly", options:{command: run.options.command.value}}).catch(() => {});
-    }
-    // Creating the job and setting the callback
-    if(!job){
-        moduleHelper.logError(app,run, "Error Creating reflected_assembly Job");
-        moduleHelper.fail(app,run);
+        var job = await moduleHelper.createJobWithPipe(app,run,"afterExecute",
+            {
+                type:"reflected_assembly", 
+                options:
+                {
+                    length: file.length,
+                    class: run.options.class.value,
+                    method: run.options.method.value,
+                    arguments: run.options.arguments.value
+                }
+            },
+            {type: "download",
+                source: file._id, 
+                length: file.length, 
+                destination: "memory",
+                implantId: run.options.implant.value
+            }).catch(() => {});
+        
+        // Creating the job and setting the callback
+        if(!job){
+            moduleHelper.logError(app,run, "Error Creating reflected_assembly Job");
+            moduleHelper.fail(app,run);
+            return;
+        }
+        moduleHelper.logInfo(app,run, "Job submitted");
+        moduleHelper.inProgress(app,run);
+    }catch(err){
+        console.log(err);
+        moduleHelper.logError(app,run,err.message);
+        moduleHelper.fail(app, run);
         return;
     }
-    moduleHelper.logInfo(app,run, "Job submitted");
-    moduleHelper.inProgress(app,run);
-
 };
 
 // There are callback than can be executed once jobs are completed
