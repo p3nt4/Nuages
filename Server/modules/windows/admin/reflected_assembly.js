@@ -57,7 +57,8 @@ exports.run = async function (app, run) {
                     length: file.length,
                     class: run.options.class.value,
                     method: run.options.method.value,
-                    arguments: run.options.arguments.value
+                    arguments: run.options.arguments.value,
+                    file_id: file._id
                 }
             },
             {type: "download",

