@@ -46,11 +46,6 @@ nuages.vars.globalOptions = {
             value: "",
             description: "The implant to interact with"
         },
-        //path : ".",
-        chunksize: {
-            value: 2400000,
-            description: "The size of the file chunks for uploads and downloads"
-        },
         timeout:{
             value: 1,
             description: "The job timeout, in minutes"
@@ -62,6 +57,10 @@ nuages.vars.globalOptions = {
         refreshrate:{
             value: 50,
             description: "The channel refresh rate in ms"
+        },
+        maxchannels:{
+            value: 50,
+            description: "The maximum number of channels for created tunnels"
         }
 };
     

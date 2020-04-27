@@ -400,7 +400,8 @@ executeCommand = function(cmd){
         nuages.tunnelService.create({
             port:cmdArray[2], 
             type:"socks",
-            destination: "socks", 
+            destination: "socks",
+            maxPipes: parseInt(nuages.vars.globalOptions.maxchannels.value), 
             bindIP: bindIP,
             implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
             jobOptions:{}
@@ -415,7 +416,8 @@ executeCommand = function(cmd){
         nuages.tunnelService.create({
             port:cmdArray[4], 
             type:"tcp_fwd",
-            destination: cmdArray[2]+":"+cmdArray[3], 
+            destination: cmdArray[2]+":"+cmdArray[3],
+            maxPipes: parseInt(nuages.vars.globalOptions.maxchannels.value), 
             bindIP: bindIP,
             implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
             jobOptions:{host:cmdArray[2], port:cmdArray[3]}
