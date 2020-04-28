@@ -18,14 +18,14 @@ module.exports = (options = {}) => {
       if(item){
         try{
           if(item.in){
-            try{item.in.end();}catch{};
+            try{item.in.end();}catch(e){};
             item.in.destroy();
             delete item.in;
           }
         }catch(e){console.log(e);};
         try{
           if(item.out){ 
-            try{item.out.end();}catch{};
+            try{item.out.end();}catch(e){};
             item.out.destroy();
             delete item.out;
           }
