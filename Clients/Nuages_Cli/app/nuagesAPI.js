@@ -76,6 +76,10 @@ nuages.templates.implants = [
         size: 8,
     },
     {   
+        header: "Type",
+        attr: "implantType",
+    },
+    {   
         header: "OS",
         attr: "os",
     },
@@ -90,10 +94,6 @@ nuages.templates.implants = [
     {   
         header: "Local IP",
         attr: "localIp",
-    },
-    {   
-        header: "Handler",
-        attr: "handler",
     },
     {   
         header: "Listener",
@@ -208,10 +208,6 @@ nuages.templates.files = [
         header: "Size",
         attr: "length",
         process: (e)=>{return nuages.humanFileSize(Math.floor(e))}
-    },
-    {   
-        header: "Chunk Size",
-        attr: "chunkSize",
     },
     {   
         header: "Uploaded By",

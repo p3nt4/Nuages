@@ -29,7 +29,7 @@ module.exports = function (options = {}) {
 
     data2.implantType = data.implantType ? data.implantType.substring(0,30) : "";
 
-    data2.options = data.options ? data.options : {};
+    data2.config = data.config ? data.config : {};
 
     data2.supportedPayloads = data.supportedPayloads ? data.supportedPayloads : ["Unknown"];
 

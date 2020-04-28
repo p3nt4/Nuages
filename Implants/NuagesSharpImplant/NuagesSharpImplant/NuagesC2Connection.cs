@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NuagesSharpImplant
+﻿namespace NuagesSharpImplant
 {
     public interface NuagesC2Connection
     {
@@ -17,5 +11,9 @@ namespace NuagesSharpImplant
         int getBufferSize();
 
         int getRefreshRate();
+
+        void setRefreshRate(int refreshrate);
+
+        void setBufferSize(int buffersize);
     }
 }
