@@ -18,30 +18,30 @@ or
 ## Reference
 
 ```
- !login <username>                       - Login to Nuages
- !implants                               - List implants
- !implants <id>                          - Show an implant
- !implants <id> del                      - Delete an implant
- !implants <id> kill                     - Kill an implant
- !implants <id> config                   - Get the configuration from the implant
- !implants <id> config <option> <value>  - Reconfigure the implant
- !implant [Command..]                    - Apply the command to the current implant
- !shell <implant>                        - Start interracting with an implant
- !put <fileId> [path]                    - Start a download job on the current implant
- !get <path>                             - Start an upload job on the current implant
- cd <path>                               - Change path on the current implant
- !files                                  - List files
- !files upload <path>                    - Upload a file from the local client
- !files <id> download <path>             - Download a file to the local client
- !files <id> del                         - Delete a file
- !options                                - Show options
- !setg <option> <value>                  - Set a global option
- !set <option> <value>                   - Set a module option
- !use <path>                             - Select a module
- !modules load <path>                    - Load a module
- !modules <path> del                     - Delete a module
- !jobs                                   - Display the last jobs
- !jobs  <id>                             - Display a job and its result
- !help                                   - Print this message
+ Commands:
+  !login <username>             Login to Nuages
+  !implants [options] [id]      Manage implants
+  !implant [options]            Apply the !implants command to the current implant
+  !shell <id>                   Interact with implant
+  !interactive                  Create an interactive channel on the implant
+  !put <id> [path]              Start a download job on the current implant
+  !get <path>                   Start an upload job on the current implant
+  !files [options] [id]         Manage files
+  !options [options]            Show options
+  !set [options] [key] [value]  Set an option
+  !unset [options] [key]        Unset an option
+  !use <name>                   Select a module or handler
+  !modules [options] [name]     Manage modules
+  !run                          Run the module or handler
+  !autorun                      Autorun this module on new implants
+  !autoruns                     Manage autoruns
+  !handlers [options] [name]    Manage handlers
+  !jobs [options] [id]          Manage jobs
+  !listeners [id]               Manage listeners
+  !tunnels [options] [id]       Manage Tunnels
+  !channels [options] [id]      Manage channels
+  !back                         Exit implant, module and handler
+  !exit|!quit                   Exit the program
+  !help [command]               Show help
 
 ```
