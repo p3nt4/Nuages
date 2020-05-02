@@ -9,9 +9,13 @@ npm install
 To run the client: 
 
 ```
-./nuages_cli.sh  - Connect to http://localhost:3030
-or
-./nuages_cli.sh http(s)://host:port - Connect to a remote host
+Usage: node nuages_cli.js [options]
+
+Options:
+  -V, --version    output the version number
+  -u, --url <url>  The Nuages API URI (default: "http://127.0.0.1:3030")
+  --ASCII          Use ASCII tables
+  -h, --help       display help for command
 
 ```
 
