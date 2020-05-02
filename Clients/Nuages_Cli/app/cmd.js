@@ -262,7 +262,7 @@ nuages.commands["!implants"]= new Command()
     .action(function (name, cmdObj) {
         if(!name){
             if(cmdObj.load){
-                nuages.modloadService.create({modulePath:path}).catch((err) => {
+                nuages.modloadService.create({modulePath:cmdObj.load}).catch((err) => {
                 nuages.term.logError(err.message);
             });
             }else nuages.getModules();
@@ -334,12 +334,12 @@ nuages.commands["!implants"]= new Command()
     .arguments('[name]')
     .description('Manage handlers')
     .exitOverride()
-    .option('-l, --load <path/all>', 'Load a handler or all handlers')
+    .option('-l, --load <path/name>', 'Load a handler or all handlers')
     .option('-r, --remove', 'Remove the handler')
     .action(function (name, cmdObj) {
     if(!name){
         if(cmdObj.load){
-            nuages.handloadService.create({handlerPath:path}).catch((err) => {
+            nuages.handloadService.create({handlerPath:cmdObj.load}).catch((err) => {
                 nuages.term.logError(err.message);
             });
         }
