@@ -438,3 +438,4 @@ Server/config/production.json
 Server/config/default.json
 Server/config/production.js
 Server/modules/windows/powersploit/enumeration/keylogger.js
+.vscode/settings.json

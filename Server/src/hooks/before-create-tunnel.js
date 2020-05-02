@@ -38,6 +38,9 @@ module.exports = function (options = {}) {
       try{
         pipe_id = srs({length: 32, alphanumeric: true});
         socket.on('error', function(e) {
+          try{
+            context.app.service('pipes').remove(pipe_id).catch((err) => {});
+        }catch(e){};
         });
         socket.on('end', function(e) {
           try{

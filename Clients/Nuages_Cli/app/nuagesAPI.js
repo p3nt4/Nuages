@@ -1,3 +1,15 @@
+const { Command } = require('commander');
+
+nuages = {}
+nuages.program = new Command();
+nuages.program.version('0.2.0');
+nuages.program.name == "Nuages Cli"
+
+nuages.program
+  .option('-u, --url <url>', 'The Nuages API URI', "http://127.0.0.1:3030")
+  .option('--ASCII', 'Use ASCII tables')
+
+nuages.program.parse(process.argv);
 
 const table = require('table').table;
 const getBorderCharacters = require('table').getBorderCharacters;
@@ -5,11 +17,9 @@ const feathers = require('@feathersjs/client');
 var path = require("path");
 var fs = require("fs");
 const io = require('socket.io-client');
-var endpoint = process.argv[2] ? process.argv[2]  : "http://127.0.0.1:3030";
-const socket = io(endpoint);
+//var endpoint = process.argv[2] ? process.argv[2]  : "http://127.0.0.1:3030";
+const socket = io(nuages.program.url);
 const app = feathers();
-
-var nuages = {};
 
 app.configure(feathers.authentication({}));
 app.configure(feathers.socketio(socket));
@@ -61,6 +71,10 @@ nuages.vars.globalOptions = {
         maxchannels:{
             value: 50,
             description: "The maximum number of channels for created tunnels"
+        },
+        newlinemode:{
+            value: "Windows",
+            description: "The newline mode for interactive channels (Windows/Posix)"
         }
 };
     
@@ -319,7 +333,7 @@ nuages.templates.jobs = [
         header: "Result",
         attr: "result",
         size: 40,
-        process: (e)=>{return e.replace(/\n|\r/g, "").substring(0,115);}
+        process: (e)=>{return e.replace(/[\u0001-\u0006\u0008-\u0009\u000B-\u001A]/g, "").substring(0,115);}
     }
 ];
 
@@ -335,7 +349,7 @@ nuages.toTable = function (template, objects){
     var data = [Headers];
 
     var config = {
-        border: getBorderCharacters("honeywell"),
+        border: (nuages.program.ASCII? getBorderCharacters("ramac"):getBorderCharacters("honeywell")),
         columns: {}
       };
 
@@ -366,66 +380,6 @@ nuages.toTable = function (template, objects){
 
        
       return table(data, config).toString();
-}
-
-nuages.printHelp = function (){
-    var string = "\r\n";
-    string += " !login <username>                          - Login to Nuages\r\n" ;
-    string += " !implants                                  - List implants\r\n";
-    string += " !implants <id>                             - Show an implant\r\n";
-    string += " !implants <id> del                         - Delete an implant\r\n";
-    string += " !implants <id> kill                        - Kill an implant\r\n";
-    string += " !implants <id> config                      - Get the configuration from the implant\r\n";
-    string += " !implants <id> config <option> <value> - Reconfigure the implant\r\n";
-    string += " !implants all [Command..]                  - Apply the command to all implants\r\n";
-    string += " !implant [Command..]                       - Apply the command to the current implant\r\n";
-    string += " !shell <implant>                           - Start interracting with an implant\r\n" ;
-    string += " !put <fileId> [path]                       - Start a download job on the current implant\r\n";
-    string += " !get <path>                                - Start an upload job on the current implant\r\n";
-    string += " cd <path>                                  - Change path on the current implant\r\n";
-    string += " !interact [program]                        - Start an interactive channel\r\n";
-    string += " !channels                                  - List interactive channels\r\n";
-    string += " !channels <id>                             - Show channel details\r\n";
-    string += " !channels <id> interact                    - Interact with channel\r\n";
-    string += " !channels <id> del                         - Delete channel\r\n";
-    string += " !tunnels                                   - List active tunnels\r\n";
-    string += " !tunnels <id>                              - Show tunnel details\r\n";
-    string += " !tunnels socks <port> [ip]                 - Create a new socks tunnel\r\n";
-    string += " !tunnels tcp <rhost> <rport> <lport> [lip] - Create a new tcp tunnel\r\n";
-    string += " !tunnels <id> del                          - Delete tunnel\r\n";
-    string += " !files                                     - List files\r\n";
-    string += " !files upload <path>                       - Upload a file from the local client\r\n";
-    string += " !files <id> download <path>                - Download a file to the local client\r\n";
-    string += " !files <id> del                            - Delete a file\r\n";
-    string += " !options                                   - Show options\r\n" ;
-    string += " !setg <option> <value>                     - Set a global option\r\n" ;
-    string += " !unsetg <option>                           - Unset a global option\r\n" ;
-    string += " !set <option> <value>                      - Set a module option\r\n" ;
-    string += " !unset <option>                            - Unset a module option\r\n" ;
-    string += " !use <path>                                - Select a module or handler\r\n";
-    string += " !modules                                   - List loaded modules\r\n";
-    string += " !modules load <path>                       - Load a module\r\n";
-    string += " !modules load all                          - Load all modules\r\n";
-    string += " !modules <path> del                        - Delete a module\r\n";
-    string += " !run                                       - Run the module or handler\r\n";
-    string += " !autorun                                   - Autorun the module on new implants\r\n";
-    string += " !autoruns                                  - List module autoruns\r\n";
-    string += " !autoruns clear                            - Clear module autoruns\r\n";
-    string += " !handlers                                  - List loaded handlers\r\n";
-    string += " !handlers load <path>                      - Load a handler\r\n";
-    string += " !handlers load all                         - Load all handler\r\n";
-    string += " !handlers <path> del                       - Delete a handler\r\n";
-    string += " !listeners                                 - List active handlers\r\n";
-    string += " !listeners <id>                            - Show listener details\r\n";
-    string += " !listeners <id> start                      - Start listener\r\n";
-    string += " !listeners <id> stop                       - Stop listener\r\n";
-    string += " !listeners <id> del                        - Delete listener\r\n";
-    string += " !jobs                                      - Display the last jobs\r\n";
-    string += " !jobs <id>                                 - Display a job and its result\r\n";
-    string += " !jobs <id> save <path>                     - Save the job result to the local client\r\n";
-    string += " !jobs search <command>                     - Search jobs by command\r\n";
-    string += " !help                                      - Print this message\r\n";
-    nuages.term.printInfo(string, "Help")
 }
 
 nuages.uploadFile = async function(filePath) {
@@ -791,7 +745,7 @@ nuages.getJobs = async function(query){
         if(query == undefined){
            items = await nuages.jobService.find({query: {$limit: 20, $sort: { lastUpdated: -1 }}});
         }else{
-           items = await nuages.jobService.find({query: {$limit: 20, $sort: { lastUpdated: -1 }, "payload.options.cmd": query}});
+           items = await nuages.jobService.find({query: query});
         }
         }catch(e){nuages.term.printError(e);}
     for(var i = 0; i< items.data.length; i++){
@@ -819,15 +773,13 @@ nuages.createJobWithPipe = function (implant, payload, pipe){
     var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout.value) * 60000;
     pipe.implantId = nuages.vars.implants[implant]._id;
     if (nuages.vars.implants[implant] != undefined){
-        nuages.jobService.create({
+        return nuages.jobService.create({
             implantId: nuages.vars.implants[implant]._id,
             timeout: timeout,
             vars: {session: nuages.vars.session},
             pipe: pipe,
             payload: payload}
-            ).catch((err) => {
-                nuages.term.logError(err.message);
-            });
+            );
     }else{
     }
 }
@@ -876,6 +828,21 @@ nuages.dataURLtoBlob  = function (dataurl) {
     return new Blob([u8arr], {type:mime});
 }
 
+nuages.interactWithImplant  = function (implant) {
+    if(nuages.vars.implants[implant]){
+        nuages.vars.globalOptions.implant.value = implant;
+        if(nuages.vars.moduleOptions && nuages.vars.moduleOptions.implant){
+            nuages.vars.moduleOptions.implant.value = nuages.vars.implants[implant]._id;
+        }
+        if(nuages.vars.paths[implant] == undefined){
+            nuages.vars.paths[implant] = ".";
+        }
+    }else{
+        nuages.term.logError("Implant not found");
+    }
+}
+
+
 nuages.exportToFile  = function (b64, fileName) {
     //const u8arr = new TextEncoder('utf-8').encode(JSON.stringify(jsonData, null, 2));
     const url = window.URL.createObjectURL(nuages.dataURLtoBlob("data:application/octet-stream;base64,"+b64));
@@ -917,14 +884,14 @@ nuages.printListenerPatched  = function (listener){
     }
 }
 
-nuages.createImplantInteractiveChannel = function(implant, filename) {
+nuages.createImplantInteractiveChannel = function(implant, filename, args = "") {
     if(nuages.vars.implants[implant]){
         nuages.createJobWithPipe(implant, 
             {type:"interactive", 
             options:{ 
                 path: nuages.vars.paths[implant], 
                 filename: filename,
-                args: ""
+                args: args
             }
             },
             {
@@ -932,7 +899,18 @@ nuages.createImplantInteractiveChannel = function(implant, filename) {
                 type:"interactive",
                 source: "Nuages_Cli"
             }
-            );
+            ).then((job)=>{
+                if(job.pipe_id){
+                   if(nuages.vars.implants[implant].os.toLowerCase() != "windows"){
+                        nuages.vars.globalOptions.newlinemode.value = "Posix";
+                    }
+                    nuages.sleep(1000).then(()=>{
+                        nuages.term.write("!channels " + job.pipe_id.substring(0,6) + " -i\r\n");
+                    });
+                }
+            }).catch((err) => {
+                nuages.term.logError(err.message);
+            });
     
     }else{
         nuages.term.printError("Implant not found");
@@ -945,35 +923,56 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
     async function syncIO(nuages, pipe_id, input = undefined, stdout = process.stdout){
         try{
             if(input){
+                if(input.toString()=="!switch\r\n"){
+                    if(nuages.vars.globalOptions.newlinemode.value != "Windows"){
+                        term.logInfo("Changing newlinemode to Windows");
+                        nuages.vars.globalOptions.newlinemode.value = "Windows";
+                    }else{
+                        nuages.vars.globalOptions.newlinemode.value = "Posix";
+                        term.logInfo("Changing newlinemode to Posix");
+                    }
+                    return;
+                }
                 if(input.toString()=="!background\r\n"){
                     stdin.removeAllListeners('data');
                     nuages.term = nuages.getTerm();
                     nuages.term.history = nuages.termHistoryBackup;
                     clearInterval(interval);
                     term.logInfo("Putting channel in the background");
+                    nuages.channelMode = false;
                     nuages.term.setPromptline();
                     nuages.term.cprompt();
                     return;
                 }
+                if(nuages.vars.globalOptions.newlinemode.value != "Windows"){
+                    input = input.slice(0, input.length - 1)
+                    input[input.length-1] = 0x0a
+                }
                 var data = await nuages.ioService.create({pipe_id:pipe_id,in:input.toString('base64')});
                 let buff = Buffer.from(data.out, 'base64');
                 stdout.write(buff);
-            }else{
-                var data = await nuages.ioService.create({pipe_id:pipe_id});
-                let buff = Buffer.from(data.out, 'base64');
-                stdout.write(buff);
-            }
+                }else{
+                    var data = await nuages.ioService.create({pipe_id:pipe_id});
+                    let buff = Buffer.from(data.out, 'base64');
+                    stdout.write(buff);
+                }
         }catch(e){
             stdin.removeAllListeners('data');
             nuages.term = nuages.getTerm();
             nuages.term.history = nuages.termHistoryBackup;
             clearInterval(interval);
             term.logInfo("Lost connection to channel");
+            nuages.channelMode = false;
             nuages.term.setPromptline();
             nuages.term.cprompt();
             return;
         }
     }
+    nuages.term.printInfo("Type !background to background the channel");
+    nuages.term.printInfo("Type !switch to switch newline mode");
+    nuages.channelMode = true;
+    nuages.termHistoryBackup = nuages.term.history;
+    nuages.term.close();
     stdin.on('data', function(chunk) {syncIO(nuages,pipe_id,chunk,stdout) });
     var interval = setInterval(syncIO, nuages.vars.globalOptions.refreshrate.value, nuages, pipe_id, undefined, stdout);
 }

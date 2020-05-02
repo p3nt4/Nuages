@@ -2,6 +2,7 @@
 const cmdexec = require("./app/cmd");
 const getTerm = require("./app/term").getTerm;
 nuages = require("./app/nuagesAPI").nuages;
+const { Command } = require('commander');
 
 nuages.getTerm = function(){
 	term = getTerm();
@@ -9,7 +10,7 @@ nuages.getTerm = function(){
 		if(!nuages.term.channelMode){
 			try{
 				cmdexec.execute(line);
-			}catch(e){nuages.term.logError(e.message);}
+			}catch(e){if(e.message!=="(outputHelp)"){nuages.term.logError(e.message);}}
 			nuages.term.setPromptline();
 			nuages.term.cprompt(); 
 		}else{

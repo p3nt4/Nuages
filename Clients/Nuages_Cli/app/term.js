@@ -6,35 +6,19 @@ function getTerm(){
         var targetWord = words[words.length-1];
         if((words[0].toLowerCase() == "!shell" || words[0].toLowerCase() == "!implants" ) && words.length == 2){
             var completions = Object.keys(nuages.vars.implants);
-            completions.push("all");
-        }
-        else if(words[0].toLowerCase() == "!implants" && words.length == 3){
-            var completions = 'config del kill'.split(' ');
-        }
-        else if(words[0].toLowerCase() == "!channels" && words.length == 3){
-            var completions = 'del interact'.split(' ');
-        }
-        else if(words[0].toLowerCase() == "!tunnels" && words.length == 3){
-            var completions = 'del'.split(' ');
         }
         else if((words[0].toLowerCase() == "!files" || words[0].toLowerCase() == "!put")&& words.length == 2){
             var completions = Object.keys(nuages.vars.files);
             if(words[0].toLowerCase() == "!files"){completions.push("upload");}
-        }else if(words[0].toLowerCase() == "!files" && words.length == 3){
-            var completions = 'download del'.split(' ');
-        }else if((words[0].toLowerCase() == "!setg" || words[0].toLowerCase() == "!set" ) && words.length == 3){
+        }else if((words[0].toLowerCase() == "!set" ) && words.length == 3){
             if(words[1].toLowerCase() == "implant"){var completions = Object.keys(nuages.vars.implants);}
             else if(words[1].toLowerCase() == "file"){var completions = Object.keys(nuages.vars.files);}
             else {var completions = [];}
         }
-        else if((words[0].toLowerCase() == "!setg" || words[0].toLowerCase() == "!unsetg") && words.length == 2){
+        else if((words[0].toLowerCase() == "!set" || words[0].toLowerCase() == "!unset")){
             var completions = Object.keys(nuages.vars.globalOptions);
-        }
-        else if((words[0].toLowerCase() == "!set" || words[0].toLowerCase() == "!unset") && words.length == 2){
             if(nuages.vars.modules[nuages.vars.module] || nuages.vars.handlers[nuages.vars.module]){
-                var completions = Object.keys(nuages.vars.moduleOptions);
-            }else{
-                var completions = [];
+                completions.concat(Object.keys(nuages.vars.moduleOptions));
             }
         }
         else if((words[0].toLowerCase() == "!modules") && words.length == 2){
@@ -59,24 +43,18 @@ function getTerm(){
         else if((words[0].toLowerCase() == "!use") && words.length == 2){
             var completions = Object.keys(nuages.vars.modules).concat(Object.keys(nuages.vars.handlers));
         }
-        else if((words[0].toLowerCase() == "!modules" || words[0].toLowerCase() == "!handlers" ) && words.length == 3){
-            var completions = 'del'.split(' ');
-        }
-        else if((words[0].toLowerCase() == "!listeners") && words.length == 3){
-            var completions = 'del start stop'.split(' ');
+        else if((words[0].toLowerCase() == "!listeners") && words.length == 2){
+            var completions = 'start stop'.split(' ');
         }
         else if((words[0].toLowerCase() == "!jobs") && words.length == 2){
             var completions = Object.keys(nuages.vars.jobs);
             completions.push("search");
         }
-        else if((words[0].toLowerCase() == "!jobs") && words.length == 3 && (words[1].toLowerCase() != "search")){
-            var completions = 'save'.split(' ');
-        }
         else if((words[0].toLowerCase() == "!autoruns") && words.length == 2){
             var completions = 'clear'.split(' ');
         }
-        else if(words.length==1){ 
-            var completions = '!login !implant !implants !shell !put !get !files !options !setg !unsetg !set !unset !modules !use !run !autorun !autoruns !jobs !handlers !listeners !channels !tunnels !interactive !back !help'.split(' ');
+        else if(words.length==1 || (words.length==2 && words[0] == "!help")){ 
+            var completions = '!login !implant !implants !shell !put !get !files !options !set !unset !modules !use !run !autorun !autoruns !jobs !handlers !listeners !channels !tunnels !interactive !back !help'.split(' ');
         }else{
         return[[],line];
         }       
@@ -193,18 +171,18 @@ function getTerm(){
 
 
     term.setPromptline = function(){
+        if(nuages.channelMode){
+            term.cpromptline = "";
+            term.cpromptLength = term.cpromptline.length;
+            term.setPrompt(term.cpromptline);
+            return;
+        }
         if (term.passwordMode){
             console.log("Password: ");
             term.cpromptline = "";
             term.cpromptLength = term.cpromptline.length;
             term.setPrompt(term.cpromptline);
             term.stdoutMuted = true;
-            return;
-        }
-        if (term.channelMode){
-            term.cpromptline = "";
-            term.cpromptLength = term.cpromptline.length;
-            term.setPrompt(term.cpromptline);
             return;
         }
         term.stdoutMuted = false;
