@@ -89,7 +89,7 @@ nuages.commands["!implants"]= new Command()
 
     nuages.commands["!interactive"]= new Command()
     .name('!interactive')
-    .arguments('<id>')
+    .arguments('[program] [arguments]')
     .exitOverride()
     .description('Create an interactive channel on the implant')
 
