@@ -160,7 +160,7 @@ nuages.commands["!implants"]= new Command()
         }else if(nuages.vars.files[id] == undefined){
             nuages.term.logError("File not found");
         }else if(cmdObj.remove) {
-            nuages.fileService.remove(nuages.vars.files[id]._id).catch((err) => {
+            nuages.fileService.remove(nuages.vars.files[id].mongoId).catch((err) => {
                 nuages.term.logError(err.message);
             });
         }
