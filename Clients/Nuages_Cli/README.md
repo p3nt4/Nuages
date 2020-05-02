@@ -21,27 +21,24 @@ or
  Commands:
   !login <username>             Login to Nuages
   !implants [options] [id]      Manage implants
-  !implant [options]            Apply the !implants command to the current implant
   !shell <id>                   Interact with implant
-  !interactive                  Create an interactive channel on the implant
+  !interactive <id>             Create an interactive channel on the implant
   !put <id> [path]              Start a download job on the current implant
   !get <path>                   Start an upload job on the current implant
   !files [options] [id]         Manage files
-  !options [options]            Show options
-  !set [options] [key] [value]  Set an option
-  !unset [options] [key]        Unset an option
   !use <name>                   Select a module or handler
   !modules [options] [name]     Manage modules
-  !run                          Run the module or handler
-  !autorun                      Autorun this module on new implants
-  !autoruns                     Manage autoruns
+  !run [options]                Run the module or handler
+  !autoruns [options]           Manage autoruns
   !handlers [options] [name]    Manage handlers
+  !listeners [options] [id]     Manage listeners
   !jobs [options] [id]          Manage jobs
-  !listeners [id]               Manage listeners
   !tunnels [options] [id]       Manage Tunnels
   !channels [options] [id]      Manage channels
+  !options [options]            Show options
+  !set [options] <key> <value>  Set an option
+  !unset [options] <key>        Unset an option
   !back                         Exit implant, module and handler
   !exit|!quit                   Exit the program
-  !help [command]               Show help
-
+  !help [command]               Show help for a command
 ```
