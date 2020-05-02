@@ -945,8 +945,10 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
                     return;
                 }
                 if(nuages.vars.globalOptions.newlinemode.value != "Windows"){
-                    input = input.slice(0, input.length - 1)
-                    input[input.length-1] = 0x0a
+                    if(input[input.length-1] == 0x0d){
+                        input = input.slice(0, input.length - 1);
+                        input[input.length-1] = 0x0a;
+                    }
                 }
                 var data = await nuages.ioService.create({pipe_id:pipe_id,in:input.toString('base64')});
                 let buff = Buffer.from(data.out, 'base64');
