@@ -4,12 +4,21 @@ function getTerm(){
     function completer(line) {
         words = line.split(" ");
         var targetWord = words[words.length-1];
-        if((words[0].toLowerCase() == "!shell" || words[0].toLowerCase() == "!implants" ) && words.length == 2){
+        if((words[0].toLowerCase() == "!shell")){
             var completions = Object.keys(nuages.vars.implants);
+        }
+        else if((words[0].toLowerCase() == "!implants")){
+            var completions = Object.keys(nuages.vars.implants);
+            completions = completions.concat("--config --value --interact --kill --remove".split(' '));
+        }
+        else if((words[0].toLowerCase() == "!implant")){
+            var completions = "--config --value --kill --remove".split(' ');
         }
         else if((words[0].toLowerCase() == "!files" || words[0].toLowerCase() == "!put")&& words.length == 2){
             var completions = Object.keys(nuages.vars.files);
-            if(words[0].toLowerCase() == "!files"){completions.push("upload");}
+            if(words[0].toLowerCase() == "!files"){
+                completions = completions.concat("--save --upload --remove".split(' '));
+            }
         }else if((words[0].toLowerCase() == "!set" ) && words.length == 3){
             if(words[1].toLowerCase() == "implant"){var completions = Object.keys(nuages.vars.implants);}
             else if(words[1].toLowerCase() == "file"){var completions = Object.keys(nuages.vars.files);}
@@ -18,43 +27,41 @@ function getTerm(){
         else if((words[0].toLowerCase() == "!set" || words[0].toLowerCase() == "!unset")){
             var completions = Object.keys(nuages.vars.globalOptions);
             if(nuages.vars.modules[nuages.vars.module] || nuages.vars.handlers[nuages.vars.module]){
-                completions.concat(Object.keys(nuages.vars.moduleOptions));
+                completions = completions.concat(Object.keys(nuages.vars.moduleOptions));
             }
         }
         else if((words[0].toLowerCase() == "!modules") && words.length == 2){
             var completions = Object.keys(nuages.vars.modules)
-            completions.push("load");
+            completions = completions.concat("--load --remove".split(' '));
         }
-        else if((words[0].toLowerCase() == "!handlers") && words.length == 2){
+        else if((words[0].toLowerCase() == "!handlers")){
             var completions = Object.keys(nuages.vars.handlers)
-            completions.push("load");
+            completions = completions.concat("--load --remove".split(' '));
         }
-        else if((words[0].toLowerCase() == "!listeners") && words.length == 2){
+        else if((words[0].toLowerCase() == "!listeners")){
             var completions = Object.keys(nuages.vars.listeners);
+            completions = completions.concat("--start --stop --remove".split(' '));
         }
-        else if((words[0].toLowerCase() == "!channels") && words.length == 2){
+        else if((words[0].toLowerCase() == "!channels")){
             var completions = Object.keys(nuages.vars.pipes);
+            completions = completions.concat("--remove --interact".split(' '));
         }
-        else if((words[0].toLowerCase() == "!tunnels") && words.length == 2){
+        else if(words[0].toLowerCase() == "!tunnels"){
             var completions = Object.keys(nuages.vars.tunnels);
-            completions.push("socks");
-            completions.push("tcp");
+            completions = completions.concat("--socks --tcp --listen --destination --remove".split(' '));
         }
         else if((words[0].toLowerCase() == "!use") && words.length == 2){
             var completions = Object.keys(nuages.vars.modules).concat(Object.keys(nuages.vars.handlers));
         }
-        else if((words[0].toLowerCase() == "!listeners") && words.length == 2){
-            var completions = 'start stop'.split(' ');
-        }
         else if((words[0].toLowerCase() == "!jobs") && words.length == 2){
             var completions = Object.keys(nuages.vars.jobs);
-            completions.push("search");
+            completions = completions.concat("--implant --command --type --max".split(' '));
         }
         else if((words[0].toLowerCase() == "!autoruns") && words.length == 2){
-            var completions = 'clear'.split(' ');
+            var completions = '--clear'.split(' ');
         }
         else if(words.length==1 || (words.length==2 && words[0] == "!help")){ 
-            var completions = '!login !implant !implants !shell !put !get !files !options !set !unset !modules !use !run !autorun !autoruns !jobs !handlers !listeners !channels !tunnels !interactive !back !help'.split(' ');
+            var completions = '!login !implant !implants !shell !put !get !files !options !set !unset !modules !use !run !jobs !handlers !listeners !channels !tunnels !interactive !back !help'.split(' ');
         }else{
         return[[],line];
         }       
@@ -63,11 +70,6 @@ function getTerm(){
     }
 
     var term = rl.createInterface({ input: process.stdin, output: process.stdout, completer});
-
-    //term.on("SIGINT", function () {
-    //    process.emit("SIGINT");
-    // });
-
     term.stdoutMuted = false;
 
     term._writeToOutput = function _writeToOutput(stringToWrite) {

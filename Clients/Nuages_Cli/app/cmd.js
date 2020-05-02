@@ -2,57 +2,101 @@ const term = require("./term").term;
 nuages = require("./nuagesAPI").nuages
 const { Command } = require('commander');
 
-nuages.repl = new Command();
-nuages.repl.name(" ")
-nuages.repl.usage("[command] [options]")
-nuages.repl.exitOverride();
 
-nuages.repl.command('!login <username>')
-  .description("Login to Nuages");
+nuages.commands = {};
 
-nuages.repl
-  .command('!implants [id]')
+nuages.maincommand = new Command();
+nuages.maincommand.name(" ")
+nuages.maincommand.usage("[command] [options]")
+nuages.maincommand.exitOverride();
+
+
+nuages.commands["!login"]= new Command()
+.name("!login")
+.arguments("<username>")
+.description("Login to Nuages");
+
+
+nuages.commands["!implants"]= new Command()
+  .name('!implants')
+  .arguments('[id]')
+  .exitOverride()
   .description('Manage implants')
   .option('-i, --interact', 'Start interacting with the implant')
   .option('-r, --remove', 'Remove the implant')
-  .option('-k, --kill', 'Remove the implant')
   .option('-c, --configure [key]', 'Show or modify the implant configuration')
   .option('-v, --value [value]', 'New configuration value')
+  .option('-k, --kill', 'Remove the implant')
+  .option('--all', 'Apply the command to all implants')
   .action(function (id, cmdObj) {
-    if(!id){
+    if(!id && !cmdObj.all){
         nuages.getImplants();
-    }else if(nuages.vars.implants[id] == undefined){
+    }else if(nuages.vars.implants[id] == undefined && !cmdObj.all){
         nuages.term.logError("Implant not found");
     }
-    else if(cmdObj.interact) {nuages.interactWithImplant(id);}
-    else if(cmdObj.remove) nuages.implantService.remove(nuages.vars.implants[id]._id);
-    else if(cmdObj.kill) nuages.createJob(id, {type: "exit", options: {}});
+    else if(cmdObj.interact) nuages.interactWithImplant(id);
+    else if(cmdObj.remove) {
+        if(cmdObj.all) nuages.implantService.remove(null, {});
+        else nuages.implantService.remove(nuages.vars.implants[id]._id);  
+    }
+    else if(cmdObj.kill) {
+        if(cmdObj.all) {
+            nuages.implantService.find({$limit:500}).then(implants => {
+                for(var i=0; i< implants.data.length; i++){
+                    shortID = implants.data[i]._id.substring(0,6);
+                    nuages.createJob(shortID, {type: "exit", options: {}});
+                }
+            }).catch(err=>{
+                nuages.term.logError(err);
+            });
+        }
+        else nuages.createJob(id, {type: "exit", options: {}});
+    }
     else if(cmdObj.configure){
         var tmpconfig = {};
         if(cmdObj.value){
             tmpconfig[cmdObj.configure] = cmdObj.value
         }
-        nuages.createJob(id, {type: "configure", options: {config:tmpconfig}}); 
+        if(cmdObj.all) {
+            nuages.implantService.find({$limit:500}).then(implants => {
+                for(var i=0; i< implants.data.length; i++){
+                    shortID = implants.data[i]._id.substring(0,6);
+                    nuages.createJob(shortID, {type: "configure", options: {config:tmpconfig}});
+                }
+            }).catch(err=>{
+                nuages.term.logError(err);
+            });
+        }
+        else nuages.createJob(id, {type: "configure", options: {config:tmpconfig}}); 
     }
     else nuages.term.writeln("\r\n" + nuages.printImplants({imp:nuages.vars.implants[id]}));
   })
+ 
+    nuages.commands["!implant"]= new Command()
+    .name('!implant')
+    .arguments('[options]')
+    .exitOverride()
+    .description("Apply the !implants command to the current implant");
 
-  nuages.repl.command('!implant [options]')
-  .description("Apply the !implants command to the current implant");
-
-    nuages.repl
-    .command('!shell <id>')
+    nuages.commands["!shell"]= new Command()
+    .name('!shell')
+    .arguments('<id>')
+    .exitOverride()
     .description('Interact with implant')
     .action(function (id) {
     nuages.interactWithImplant(id);
     });
 
-    nuages.repl
-    .command('!interactive')
+    nuages.commands["!interactive"]= new Command()
+    .name('!interactive')
+    .arguments('<id>')
+    .exitOverride()
     .description('Create an interactive channel on the implant')
 
-    nuages.repl
-    .command('!put <id> [path]')
+    nuages.commands["!put"]= new Command()
+    .name('!put')
+    .arguments('<id> [path]')
+    .exitOverride()
     .description('Start a download job on the current implant')
     .action(function (id, path) {
         if(nuages.vars.files[id] == undefined) throw("File not found")
@@ -75,8 +119,10 @@ nuages.repl
             });
     });
 
-    nuages.repl
-    .command('!get <path>')
+    nuages.commands["!get"]= new Command()
+    .name('!get')
+    .arguments('<path>')
+    .exitOverride()
     .description('Start an upload job on the current implant')
     .action(function (path) {
         var arr = path.split("\\");
@@ -99,37 +145,37 @@ nuages.repl
             });;
     });
 
-nuages.repl
-  .command('!files [id]')
-  .description('Manage files')
-  .option('-r, --remove', 'Remove file')
-  .option('-s, --save <path>', 'Download the file to the local client')
-  .action(function (id, cmdObj) {
-    if(!id){
-        nuages.getFiles();
-    }else if(nuages.vars.files[id] == undefined){
-        nuages.term.logError("File not found");
-    }else if(cmdObj.remove) {
-        nuages.fileService.remove(nuages.vars.files[id]._id).catch((err) => {
-            nuages.term.logError(err.message);
-        });
-    }
-    else if(cmdObj.save) {
-        nuages.downloadFile(id, cmdObj.save);
-    }
-    else{
-        nuages.term.writeln("\r\n" + nuages.printFiles({imp:nuages.vars.files[id]}));
-    }
+    nuages.commands["!files"]= new Command()
+    .name('!files')
+    .arguments('[id]')
+    .exitOverride()
+    .description('Manage files')
+    .option('-r, --remove', 'Remove file')
+    .option('-s, --save <path>', 'Download the file to the local client')
+    .option('-u, --upload <path>', 'Upload a file from the local client')
+    .action(function (id, cmdObj) {
+        if(!id){
+            if (cmdObj.upload) nuages.uploadFile(cmdObj.upload);
+            else nuages.getFiles();
+        }else if(nuages.vars.files[id] == undefined){
+            nuages.term.logError("File not found");
+        }else if(cmdObj.remove) {
+            nuages.fileService.remove(nuages.vars.files[id]._id).catch((err) => {
+                nuages.term.logError(err.message);
+            });
+        }
+        else if(cmdObj.save) {
+            nuages.downloadFile(id, cmdObj.save);
+        }
+        else{
+            nuages.term.writeln("\r\n" + nuages.printFiles({imp:nuages.vars.files[id]}));
+        }
     })
-    .command('upload <path>')
-    .description('Upload a file from the local client')
-    .action((path)=>{
-    nuages.uploadFile(path); 
-  });
 
-    nuages.repl
-    .command('!options')
+    nuages.commands["!options"]= new Command()
+    .name('!options')
     .description('Show options')
+    .exitOverride()
     .option('-g, --global', 'Show global option')
     .action(function (cmdObj) {
         if(cmdObj.global){
@@ -140,9 +186,11 @@ nuages.repl
         }
     });
 
-    nuages.repl
-    .command('!set [key] [value]')
+    nuages.commands["!set"]= new Command()
+    .name('!set')
+    .arguments('<key> <value>')
     .description('Set an option')
+    .exitOverride()
     .option('-g, --global', 'Set a global option')
     .action(function (key, value, cmdObj) {
         var target = cmdObj.global ? nuages.vars.globalOptions : nuages.vars.moduleOptions;
@@ -168,8 +216,10 @@ nuages.repl
         }     
     });
 
-    nuages.repl
-    .command('!unset [key]')
+    nuages.commands["!unset"]= new Command()
+    .name('!unset')
+    .arguments('<key>')
+    .exitOverride()
     .description('Unset an option')
     .option('-g, --global', 'Unset a global option')
     .action(function (key, value, cmdObj) {
@@ -179,8 +229,10 @@ nuages.repl
         }
     });
 
-    nuages.repl
-    .command('!use <name>')
+    nuages.commands["!use"]= new Command()
+    .name('!use')
+    .arguments('<name>')
+    .exitOverride()
     .description('Select a module or handler')
     .action(function (name) {
         if (nuages.vars.modules[name.toLowerCase()] !== undefined){
@@ -200,42 +252,54 @@ nuages.repl
         }
     });
 
-nuages.repl
-  .command('!modules [name]')
-  .description('Manage modules')
-  .option('-r, --remove', 'Remove the module')
-  .action(function (name, cmdObj) {
-    if(!name){
-        nuages.getModules();
-    }else if(nuages.vars.modules[name] == undefined){
-        nuages.term.logError("module not found");
-    }
-    else if(cmdObj.remove) {
-        nuages.moduleService.remove(nuages.vars.modules[name.toLowerCase()]._id).catch((err) => {
-            nuages.term.logError(err.message);
-        });
-    }
-    else nuages.term.writeln("\r\n" + nuages.printModules({imp:nuages.vars.modules[name]}));
-  })
-  .command('load <path>')
-  .description("Load a module or all modules")
-  .action((path)=>{
-    nuages.modloadService.create({modulePath:path}).catch((err) => {
-        nuages.term.logError(err.message);
+    nuages.commands["!modules"]= new Command()
+    .name('!modules')
+    .arguments('[name]')
+    .exitOverride()
+    .description('Manage modules')
+    .option('-l, --load <path/all>', 'Load a module or all modules')
+    .option('-r, --remove', 'Remove the module')
+    .action(function (name, cmdObj) {
+        if(!name){
+            if(cmdObj.load){
+                nuages.modloadService.create({modulePath:path}).catch((err) => {
+                nuages.term.logError(err.message);
+            });
+            }else nuages.getModules();
+        }else if(nuages.vars.modules[name] == undefined){
+            nuages.term.logError("module not found");
+        }
+        else if(cmdObj.remove) {
+            nuages.moduleService.remove(nuages.vars.modules[name.toLowerCase()]._id).catch((err) => {
+                nuages.term.logError(err.message);
+            });
+        }
+        else nuages.term.writeln("\r\n" + nuages.printModules({imp:nuages.vars.modules[name]}));
     });
-  });
-  nuages.repl.command('!run')
+
+  nuages.commands["!run"]= new Command()
+    .name('!run')
+    .exitOverride()
     .description('Run the module or handler')
-    .action(function () {
+    .option('-a, --autorun', 'Autorun the module on new implants')
+    .action(function (cmdObj) {
         if(nuages.vars.moduletype=="module"){
             if(nuages.vars.modules[nuages.vars.module]){
-                nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions, autorun: false}).catch((err) => {
+                if(cmdObj.autorun){
+                    nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions, autorun: true}).then(items => {nuages.getAutoruns()}).catch((err) => {
                         nuages.term.logError(err.message);
                     });
-                }else{
-                    nuages.term.logError("Module not set");
+                }
+                else{
+                    nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions, autorun: false}).catch((err) => {
+                        nuages.term.logError(err.message);
+                    });
                 }
             }
+            else{
+                nuages.term.logError("Module not set");
+            }
+        }
         else if(nuages.vars.moduletype=="handler"){
             if(nuages.vars.handlers[nuages.vars.module]){
                 nuages.listenerService.create({handlerId: nuages.vars.handlers[nuages.vars.module]._id, options: nuages.vars.moduleOptions}).then((run)=>{
@@ -255,35 +319,31 @@ nuages.repl
         }
     });
 
-    nuages.repl.command('!autorun')
-    .description('Autorun this module on new implants')
-    .action(function () {
-        if(nuages.vars.modules[nuages.vars.module]){
-            nuages.modrunService.create({moduleId: nuages.vars.modules[nuages.vars.module]._id, options: nuages.vars.moduleOptions, autorun: true}).then(items => {nuages.getAutoruns()}).catch((err) => {
+    nuages.commands["!autoruns"]= new Command()
+    .name('!autoruns')
+    .exitOverride()
+    .option('-r, --clear', 'Remove all autoruns')
+    .description('Manage autoruns')
+    .action(function (cmdObj) {
+        if (cmdObj.clear) nuages.clearAutoruns();
+        else nuages.getAutoruns();
+    })
+
+    nuages.commands["!handlers"] = new Command()
+    .name('!handlers')
+    .arguments('[name]')
+    .description('Manage handlers')
+    .exitOverride()
+    .option('-l, --load <path/all>', 'Load a handler or all handlers')
+    .option('-r, --remove', 'Remove the handler')
+    .action(function (name, cmdObj) {
+    if(!name){
+        if(cmdObj.load){
+            nuages.handloadService.create({handlerPath:path}).catch((err) => {
                 nuages.term.logError(err.message);
             });
-        }else{
-            nuages.term.logError("No module set!");
         }
-    });
-
-    nuages.repl.command('!autoruns')
-    .description('Manage autoruns')
-    .action(function () {
-        nuages.getAutoruns();
-    })
-    .command('clear')
-    .description("Remove all autoruns")
-    .action(()=>{
-        nuages.clearAutoruns();
-    })
-   nuages.repl
-  .command('!handlers [name]')
-  .description('Manage handlers')
-  .option('-r, --remove', 'Remove the handler')
-  .action(function (name, cmdObj) {
-    if(!name){
-        nuages.getHandlers();
+        else nuages.getHandlers();
     }else if(nuages.vars.handlers[name] == undefined){
         nuages.term.logError("Handler not found");
     }
@@ -293,23 +353,17 @@ nuages.repl
         });
     }
     else nuages.term.writeln("\r\n" + nuages.printHandlers({imp:nuages.vars.handlers[name]}));
-  })
-  .command('load <path>')
-  .description("Load a handler or all handlers")
-  .action((path)=>{
-    nuages.handloadService.create({handlerPath:path}).catch((err) => {
-        nuages.term.logError(err.message);
-    });
-  });
+    })
 
-  listener_command = new Command();
-
-  listener_command
+  nuages.commands["!listeners"] = new Command()
   .name("!listeners")
-  .usage("[start/stop] [id]")
+  .usage("[options] [id]")
   .exitOverride()
   .arguments("[id]")
   .description('Manage listeners')
+  .option('-s, --start', 'Start the listener')
+  .option('-p, --stop', 'Stop the listener')
+  .option('-r, --remove', 'Remove the listener')
   .action(function (name, cmdObj) {
     if(!name){
         nuages.getListeners();
@@ -321,63 +375,103 @@ nuages.repl
             nuages.term.logError(err.message);
         });
     }
+    else if(cmdObj.start) {
+        nuages.listenerStartService.create({id:nuages.vars.listeners[name]._id, wantedStatus: 3}).catch((err) => {
+            nuages.term.logError(err.message);
+        });
+    }
+    else if(cmdObj.stop) {
+            nuages.listenerStartService.create({id:nuages.vars.listeners[name]._id, wantedStatus: 2}).catch((err) => {
+                nuages.term.logError(err.message);
+            });
+    }
     else nuages.term.writeln("\r\n" + nuages.printListeners({imp:nuages.vars.listeners[name]}));
   })
-  .command('start <id>')
-  .description("Start the listener")
-  .action((id)=>{
-    nuages.listenerStartService.create({id:nuages.vars.listeners[id]._id, wantedStatus: 3}).catch((err) => {
-        nuages.term.logError(err.message);
-    });
-  });
-  listener_command.command('stop <id>')
-  .description("Stop the listener")
-  .action((id)=>{
-    nuages.listenerStartService.create({id:nuages.vars.listeners[id]._id, wantedStatus: 2}).catch((err) => {
-        nuages.term.logError(err.message);
-    });
-  });
 
-  nuages.repl
-  .command('!jobs [id]')
+  nuages.commands["!jobs"] = new Command()
+  .name("!jobs")
+  .arguments("[id]")
+  .exitOverride()
   .description('Manage jobs')
-  .option('-o, --output <path>', 'Save job output locally')
+  .option('-s, --save <path>', 'Save job output locally')
+  .option('-c, --command <command>', 'Filter jobs by command')
+  .option('-i, --implant <id>', 'Filter jobs by implant')
+  .option('-t, --type <type>', 'Filter jobs by type')
+  .option('-m, --max <max>', 'Maximum number of results', 10)
   .action(function (id, cmdObj) {
     if(!id){
-        nuages.getJobs();
-    }else if(nuages.vars.jobs[name] == undefined){
+        query = {$limit: cmdObj.max, $sort: { lastUpdated: -1 }}
+        if(cmdObj.implant && nuages.vars.implants[cmdObj.implant]) query["implantId"] = nuages.vars.implants[cmdObj.implant]._id;
+        if(cmdObj.command) query["payload.options.cmd"] = cmdObj.command;
+        if(cmdObj.type) query["payload.type"] = cmdObj.type;
+        nuages.getJobs(query);
+    }else if(nuages.vars.jobs[id] == undefined){
         nuages.term.logError("Job not found");
-    }else if(cmdObj.output){
-        nuages.saveTextToFile(nuages.vars.jobs[id].result,cmdObj.outpout );
+    }else if(cmdObj.save){
+        nuages.saveJobToFile(nuages.vars.jobs[id], cmdObj.save);
     }else{
         nuages.term.writeln("\r\n" + nuages.printJobs({imp:nuages.vars.jobs[id]}));
         nuages.term.writeln("\r\n" + nuages.vars.jobs[id].result);
     }
     })
-    .command('search')
-    .description("Search jobs")
-    .option('-c, --command <command>', 'Filter jobs by command')
-    .option('-i, --implant <id>', 'Filter jobs by implant')
-    .option('-t, --type <type>', 'Filter jobs by type')
-  .action((cmdObj)=>{
-    query = {$limit: 20, $sort: { lastUpdated: -1 }}
-    if(cmdObj.implant && nuages.vars.implantId[cmdObj.implant]) query[implantId] = nuages.vars.implantId[cmdObj.implant]._id;
-    if(cmdObj.command) query["payload.options.cmd"] = cmdObj.command;
-    if(cmdObj.type) query["payload.type"] = cmdObj.type;
-    nuages.getJobs(cmdArray[2]);
-  });
-
-  nuages.repl.addCommand(listener_command)
-  tunnels_command = new Command()
-  tunnels_command.exitOverride();
-  tunnels_command
+    
+  nuages.commands["!tunnels"] = new Command()
   .name("!tunnels")
   .arguments('[id]')
+  .exitOverride()
   .description('Manage Tunnels')
+  .option('--tcp', 'Create a tcp tunnel on the current implant')
+  .option('--socks', 'Create a socks tunnel on the current implant')
+  .option('-l, --listen <address>', 'Listening address [ip:]<port>')
+  .option('-d, --destination <address>', 'Destination address <host>:<port>')
   .option('-r, --remove', 'Remove tunnel')
   .action(function (id, cmdObj) {
     if(!id){
-        nuages.getTunnels();
+        if(cmdObj.socks){
+            if(!cmdObj.listen){ nuages.term.logError("Option -l/--listen is required"); return;}
+            bindAddr = cmdObj.listen.split(":");
+            var bindPort = bindAddr.length > 1 ? bindAddr[1] : bindAddr[0];
+            var bindIP = bindAddr.length > 1 ? bindAddr[0] : "127.0.0.1";
+            if(nuages.vars.globalOptions.implant.value == "" || nuages.vars.globalOptions.implant.value == undefined) {return;}
+            nuages.tunnelService.create({
+                port:bindPort, 
+                type:"socks",
+                destination: "socks",
+                maxPipes: parseInt(nuages.vars.globalOptions.maxchannels.value), 
+                bindIP: bindIP,
+                implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
+                jobOptions:{}
+            }).then(() => {}).catch((err) => {
+                nuages.term.logError(err.message);
+            });
+        }else if(cmdObj.tcp){
+            if(!cmdObj.listen){ nuages.term.logError("Option -l/--listen is required"); return;}
+            if(!cmdObj.destination){ nuages.term.logError("Option -d/--destination is required"); return;}
+            bindAddr = cmdObj.listen.split(":");
+            var bindPort = bindAddr.length > 1 ? bindAddr[1] : bindAddr[0];
+            var bindIP = bindAddr.length > 1 ? bindAddr[0] : "127.0.0.1";
+            destAddr = cmdObj.destination.split(":");
+            if(destAddr.length < 2){
+                nuages.term.logError("Destination should be in the format host:port")
+                return;
+            }
+            var destPort = destAddr[1];
+            var destIP = destAddr[0];
+            if(nuages.vars.globalOptions.implant.value == "" || nuages.vars.globalOptions.implant.value == undefined) {return;}
+            nuages.tunnelService.create({
+                port:bindPort, 
+                type:"tcp_fwd",
+                destination: cmdObj.destination,
+                maxPipes: parseInt(nuages.vars.globalOptions.maxchannels.value), 
+                bindIP: bindIP,
+                implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
+                jobOptions:{host:destIP, port:destPort}
+            }).then(() => {}).catch((err) => {
+                nuages.term.logError(err.message);
+            });
+        
+        }
+        else nuages.getTunnels();
     }else if(nuages.vars.tunnels[id] == undefined){
         nuages.term.logError("File not found");
     }else if(cmdObj.remove) {
@@ -389,124 +483,106 @@ nuages.repl
         nuages.term.writeln("\r\n" + nuages.printTunnels({imp:nuages.vars.tunnels[id]}));
     }
     });
-    tunnels_command.command('socks')
-    .description('Create a socks tunnel on the current implant')
-    .option('-l, --listen <address>', 'Listening address [ip:]<port>')
-    .action((cmdObj)=>{
-        bindAddr = cmdObj.listen.split(":");
-        var bindPort = bindAddr.length > 1 ? bindAddr[1] : bindAddr[0];
-        var bindIP = bindAddr.length > 1 ? bindAddr[0] : "127.0.0.1";
-        if(nuages.vars.globalOptions.implant.value == "" || nuages.vars.globalOptions.implant.value == undefined) {return;}
-        nuages.tunnelService.create({
-            port:bindPort, 
-            type:"socks",
-            destination: "socks",
-            maxPipes: parseInt(nuages.vars.globalOptions.maxchannels.value), 
-            bindIP: bindIP,
-            implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
-            jobOptions:{}
-        }).then(() => {}).catch((err) => {
-            nuages.term.logError(err.message);
-        });
-     });
-    tunnels_command.command('tcp')
-    .description('Create a tcp tunnel on the current implant')
-    .option('-l, --listen <address>', 'Listening address [ip:]<port>')
-    .option('-d, --destination <address>', 'Destination address <host>:<port>')
-    .action((cmdObj)=>{
-        bindAddr = cmdObj.listen.split(":");
-        var bindPort = bindAddr.length > 1 ? bindAddr[1] : bindAddr[0];
-        var bindIP = bindAddr.length > 1 ? bindAddr[0] : "127.0.0.1";
-        destAddr = cmdObj.destination.split(":");
-        if(destAddr.length < 2){
-            nuages.term.logError("Destination should be in the format host:port")
-            return;
+
+    nuages.commands["!channels"] = new Command()
+    .name("!channels")
+    .arguments('[id]')
+    .exitOverride()
+    .description('Manage channels')
+    .option('-r, --remove', 'Remove channel')
+    .option('-i, --interact', 'Interact with the channel')
+    .action(function (id, cmdObj) {
+        if(!id){
+            nuages.getPipes();
+        }else if(nuages.vars.pipes[id] == undefined){
+            nuages.term.logError("Channel not found");
+        }else if(cmdObj.remove) {
+            nuages.pipeService.remove(nuages.vars.pipes[id]._id).catch((err) => {
+                nuages.term.logError(err.message);
+            });
         }
-        var destPort = destAddr[1];
-        var destIP = destAddr[0];
-        if(nuages.vars.globalOptions.implant.value == "" || nuages.vars.globalOptions.implant.value == undefined) {return;}
-        nuages.tunnelService.create({
-            port:bindPort, 
-            type:"tcp_fwd",
-            destination: cmdArray[3],
-            maxPipes: parseInt(nuages.vars.globalOptions.maxchannels.value), 
-            bindIP: bindIP,
-            implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
-            jobOptions:{host:destIP, port:destPort}
-        }).then(() => {}).catch((err) => {
-            nuages.term.logError(err.message);
-        });
-     });
-
-   nuages.repl.addCommand(tunnels_command);
-
-   nuages.repl
-  .command('!channels [id]')
-  .description('Manage channels')
-  .option('-r, --remove', 'Remove channel')
-  .option('-i, --interact', 'Interact with the channel')
-  .action(function (id, cmdObj) {
-    if(!id){
-        nuages.getPipes();
-    }else if(nuages.vars.pipes[id] == undefined){
-        nuages.term.logError("Channel not found");
-    }else if(cmdObj.remove) {
-        nuages.pipeService.remove(nuages.vars.pipes[id]._id).catch((err) => {
-            nuages.term.logError(err.message);
-        });
-    }
-    else if(cmdObj.interact) {
-        nuages.interactWithPipe(nuages.vars.pipes[id]._id, process.stdin, process.stdout);
-    }
-    else{
-        nuages.term.writeln("\r\n" + nuages.printPipes({imp:nuages.vars.pipes[id]}));
-    }
+        else if(cmdObj.interact) {
+            nuages.interactWithPipe(nuages.vars.pipes[id]._id, process.stdin, process.stdout);
+        }
+        else{
+            nuages.term.writeln("\r\n" + nuages.printPipes({imp:nuages.vars.pipes[id]}));
+        }
     });
 
-    nuages.repl
-    .command('!back')
+    nuages.commands["!back"] = new Command()
+    .name("!back")
+    .exitOverride()
     .description('Exit implant, module and handler')
     .action(function () {
         nuages.vars.globalOptions.implant.value= ""; 
         nuages.vars.module = ""; 
     });
 
-    nuages.repl
-    .command('!exit')
+    nuages.commands["!exit"] = new Command()
+    .name("!exit")
+    .exitOverride()
     .alias('!quit')
     .description('Exit the program')
     .action(function () {
         process.exit(0);
     });
 
-    nuages.repl.addHelpCommand('!help [command]', 'Show help');
+    nuages.maincommand.addCommand(nuages.commands["!login"]);
+    nuages.maincommand.addCommand(nuages.commands["!implants"]);
+    nuages.maincommand.addCommand(nuages.commands["!shell"]);
+    nuages.maincommand.addCommand(nuages.commands["!interactive"]);
+    nuages.maincommand.addCommand(nuages.commands["!put"]);
+    nuages.maincommand.addCommand(nuages.commands["!get"]);
+    nuages.maincommand.addCommand(nuages.commands["!files"]);
+    nuages.maincommand.addCommand(nuages.commands["!use"]);
+    nuages.maincommand.addCommand(nuages.commands["!modules"]);
+    nuages.maincommand.addCommand(nuages.commands["!run"]);
+    nuages.maincommand.addCommand(nuages.commands["!autoruns"]);
+    nuages.maincommand.addCommand(nuages.commands["!handlers"]);
+    nuages.maincommand.addCommand(nuages.commands["!listeners"]);
+    nuages.maincommand.addCommand(nuages.commands["!jobs"]);
+    nuages.maincommand.addCommand(nuages.commands["!tunnels"]);
+    nuages.maincommand.addCommand(nuages.commands["!channels"]);
+    nuages.maincommand.addCommand(nuages.commands["!options"]);
+    nuages.maincommand.addCommand(nuages.commands["!set"]);
+    nuages.maincommand.addCommand(nuages.commands["!unset"]);
+    nuages.maincommand.addCommand(nuages.commands["!back"]);
+    nuages.maincommand.addCommand(nuages.commands["!exit"]);
 
-    nuages.resetRepl = function(repl){
-    //for(i=0; i < repl.commands.length; i++){
-    //  console.log(i + " " + repl.commands[i]._name);
-    //}
-    repl.commands[1].configure = undefined; // Implants
-    repl.commands[1].value = undefined;
-    repl.commands[1].kill = undefined;
-    repl.commands[1].remove = undefined;
-    repl.commands[1].interact = undefined;
-    repl.commands[8].global = undefined; // Options
-    repl.commands[9].global = undefined; // Set
-    repl.commands[10].global = undefined; // Unser
-    repl.commands[16].remove = undefined; // Handlers
-    repl.commands[12].remove = undefined; // Modules
-    repl.commands[17].remove = undefined; // Listeners
-    repl.commands[18].commands[0].command = undefined; // Jobs
-    repl.commands[18].commands[0].implant = undefined; 
-    repl.commands[18].commands[0].type = undefined; 
-    repl.commands[7].remove = undefined; // Files
-    repl.commands[7].save = undefined;
-    repl.commands[19].remove = undefined; // Tunnels
-    repl.commands[19].commands[0].listen = undefined;
-    repl.commands[19].commands[1].listen = undefined;
-    repl.commands[19].commands[1].destination = undefined;
-    repl.commands[20].remove = undefined; // Channels
-    repl.commands[20].interact = undefined; 
+    nuages.maincommand.addHelpCommand('!help [command]', 'Show help for a command');
+    
+    nuages.resetmaincommand = function(){
+        nuages.commands["!implants"].configure = undefined; 
+        nuages.commands["!implants"].value = undefined;
+        nuages.commands["!implants"].kill = undefined;
+        nuages.commands["!implants"].remove = undefined;
+        nuages.commands["!implants"].interact = undefined;
+        nuages.commands["!implants"].all = undefined;
+        nuages.commands["!run"].autorun = undefined;
+        nuages.commands["!options"].global = undefined; 
+        nuages.commands["!set"].global = undefined;
+        nuages.commands["!unset"].global = undefined; 
+        nuages.commands["!handlers"].remove = undefined; 
+        nuages.commands["!autoruns"].clear = undefined; 
+        nuages.commands["!modules"].remove = undefined; 
+        nuages.commands["!listeners"].remove = undefined;
+        nuages.commands["!listeners"].start = undefined;
+        nuages.commands["!listeners"].stop = undefined; 
+        nuages.commands["!jobs"].command = undefined; 
+        nuages.commands["!jobs"].implant = undefined; 
+        nuages.commands["!jobs"].type = undefined; 
+        nuages.commands["!jobs"].max = undefined; 
+        nuages.commands["!jobs"].save = undefined; 
+        nuages.commands["!files"].remove = undefined;
+        nuages.commands["!files"].upload = undefined;  
+        nuages.commands["!files"].save = undefined;
+        nuages.commands["!tunnels"].remove = undefined; 
+        nuages.commands["!tunnels"].socks = undefined;
+        nuages.commands["!tunnels"].tcp = undefined; 
+        nuages.commands["!tunnels"].listen = undefined;
+        nuages.commands["!tunnels"].destination = undefined;
+        nuages.commands["!channels"].remove = undefined; 
+        nuages.commands["!channels"].interact = undefined; 
 }
 
 function CommandParser(str) {
@@ -583,8 +659,8 @@ executeCommand = function(cmd){
         nuages.createImplantInteractiveChannel(nuages.vars.globalOptions.implant.value, filename, args);
     }
     else if (cmd[0] == "!"){
-       nuages.resetRepl(nuages.repl);
-       nuages.repl.parse(cmdArray, { from: 'user' });
+       nuages.resetmaincommand(nuages.maincommand);
+       nuages.maincommand.parse(cmdArray, { from: 'user' });
     }
     else if(cmdArray[0].length > 0){
         if(nuages.vars.globalOptions.implant.value == "" || nuages.vars.globalOptions.implant.value == undefined) {return;}

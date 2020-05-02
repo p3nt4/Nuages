@@ -464,11 +464,11 @@ nuages.downloadFile = async function(fileId, filePath){
 };
 
 
-nuages.saveTextToFile = async function(text, filePath){
+nuages.saveJobToFile = async function(job, filePath){
     try{
-        filePath = !(fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()) ? filePath : path.resolve(filePath, result.filename);
+        filePath = !(fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()) ? filePath : path.resolve(filePath, job._id + ".job");
         var writeStream = fs.createWriteStream(filePath);
-        writeStream.write(text);
+        writeStream.write(job.result);
         writeStream.close();
         nuages.term.logInfo(filePath + " saved");
         return;
