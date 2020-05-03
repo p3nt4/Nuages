@@ -9,13 +9,13 @@ Refer to the [Wiki](https://github.com/p3nt4/Nuages/wiki) for documentation, do 
 
 ## Introduction
 
-Nuages aims at being a C2 framework in which back end elements are open source, whilst implants and handlers must be developed ad hoc by users. As a result, it does not provide a way to generate implants, but an open source framework to develop and manage compatible implants that can leverage all the back end resources already developed. 
+Nuages aims at being a C2 framework in which back end elements are open source, whilst implants and handlers must be developed ad hoc by users. As a result, it does not provide a way to generate implants, but an open source framework to develop and manage compatible implants that can leverage all the back end resources already developed. Nuages does abstraction of the different layers so that paylaods implemented are indifferent to the handlers and implants that are used to carry them.
 
 This design hopes to facilitate penetration testing by facilitating the development of custom implants and reducing the likelihood of implants being detected by defensive solutions.
 
-Contribution are welcome, whether it is solely testing, or development of new modules and compatible clients.
+For testing and refererence, example implants and handlers are provided on this repo.
 
-For testing and refererence, an example implant and handler are provided on this repo.
+Contribution are welcome.
 
 ## Capabilities
 
