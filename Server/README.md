@@ -1,5 +1,4 @@
 ## Nuages Server
-================
 
 ### Requirements
 
