@@ -115,7 +115,7 @@ class NuagesImplant:
         self.handler = "HTTPAES256"
         self.implantType = "Python"
         self.connectionString = self.nuages.connectionString
-        self.supportedPayloads = ["cd","command"]
+        self.supportedPayloads = ["cd", "command", "configure", "upload", "download", "interactive", "tcp_fwd", "socks"]
         self.config = config
 
     def register(self):
