@@ -18,7 +18,7 @@ For testing and refererence, example implants and handlers are provided on this 
 Contribution are welcome.
 
 ## Capabilities
-
+Nuages can be easily be extended with modules to perform anything desired. At the moment, the following payloads are implemented in the example implants:
 - Command Execution
 - Interactive Channels
 - File Upload/Download
@@ -28,6 +28,11 @@ Contribution are welcome.
 - Powershell Execution
 
 https://github.com/p3nt4/Nuages/wiki/Job-Payloads
+
+Nuages does abstraction of the handler level so that payloads can be executed over any communication method. New handlers can easily be implemented and will support all the  paylaods mentioned above. The following handlers are available in this repo:
+ - HTTP
+ - SLACK
+ - DNS
 
 ## Architecture
 ![Nuages](https://user-images.githubusercontent.com/19682240/56617113-ffcfb380-65ec-11e9-99ca-fc0e674d4dcd.PNG)
