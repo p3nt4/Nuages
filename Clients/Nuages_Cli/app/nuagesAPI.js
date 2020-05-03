@@ -68,10 +68,6 @@ nuages.vars.globalOptions = {
             value: 50,
             description: "The channel refresh rate in ms"
         },
-        maxchannels:{
-            value: 50,
-            description: "The maximum number of channels for created tunnels"
-        },
         newlinemode:{
             value: "Windows",
             description: "The newline mode for interactive channels (Windows/Posix)"

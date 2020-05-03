@@ -13,6 +13,7 @@ nuages.maincommand.exitOverride();
 
 nuages.commands["!login"]= new Command()
 .name("!login")
+.exitOverride()
 .arguments("<username>")
 .description("Login to Nuages")
 .action((username)=>{
@@ -432,6 +433,7 @@ nuages.commands["!implants"]= new Command()
   .option('--socks', 'Create a socks tunnel on the current implant')
   .option('-l, --listen <address>', 'Listening address [ip:]<port>')
   .option('-d, --destination <address>', 'Destination address <host>:<port>')
+  .option('-c, --channels <number>', 'Max number of channels', (a,b)=>{return parseInt(a)})
   .option('-r, --remove', 'Remove tunnel')
   .action(function (id, cmdObj) {
     if(!id){
@@ -445,7 +447,7 @@ nuages.commands["!implants"]= new Command()
                 port:bindPort, 
                 type:"socks",
                 destination: "socks",
-                maxPipes: parseInt(nuages.vars.globalOptions.maxchannels.value), 
+                maxPipes: cmdObj.channels, 
                 bindIP: bindIP,
                 implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
                 jobOptions:{}
@@ -470,7 +472,7 @@ nuages.commands["!implants"]= new Command()
                 port:bindPort, 
                 type:"tcp_fwd",
                 destination: cmdObj.destination,
-                maxPipes: parseInt(nuages.vars.globalOptions.maxchannels.value), 
+                maxPipes: cmdObj.channels, 
                 bindIP: bindIP,
                 implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
                 jobOptions:{host:destIP, port:destPort}
@@ -589,6 +591,7 @@ nuages.commands["!implants"]= new Command()
         nuages.commands["!tunnels"].tcp = undefined; 
         nuages.commands["!tunnels"].listen = undefined;
         nuages.commands["!tunnels"].destination = undefined;
+        nuages.commands["!tunnels"].channels = undefined;
         nuages.commands["!channels"].remove = undefined; 
         nuages.commands["!channels"].interact = undefined; 
 }
