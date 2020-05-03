@@ -14,7 +14,11 @@ nuages.maincommand.exitOverride();
 nuages.commands["!login"]= new Command()
 .name("!login")
 .arguments("<username>")
-.description("Login to Nuages");
+.description("Login to Nuages")
+.action((username)=>{
+    nuages.term.passwordMode = true;
+    nuages.term.username = username;
+});
 
 
 nuages.commands["!implants"]= new Command()
@@ -601,7 +605,9 @@ function CommandParser(str) {
             }
             part = '';
         } else {
-            if( str.charAt(i) === quoteStyle){
+            if(str.charAt(i) === '\\' && (i > 1 && str.charAt(i-1) !== '\\')){
+            }
+            else if( str.charAt(i) === quoteStyle && str.charAt(i-1) != '\\'){
                 readingPart = !readingPart;
                 quoteStyle = false;
             }
@@ -635,10 +641,6 @@ executeCommand = function(cmd){
     if(cmdArray[0].toLowerCase() == "!implant"){
         cmdArray.splice(1, 0, nuages.vars.globalOptions.implant.value);
         cmdArray[0]="!implants";
-    }
-    if (cmdArray[0].toLowerCase() == "!login" && cmdArray.length > 1){
-        nuages.term.passwordMode = true;
-        nuages.term.username = cmdArray[1];
     }
     else if (cmdArray[0].toLowerCase() == "cd"){
         if(nuages.vars.implants[nuages.vars.globalOptions.implant.value.substring(0.6)].supportedPayloads.includes("cd")){
