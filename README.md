@@ -36,7 +36,7 @@ https://github.com/p3nt4/Nuages/wiki/Job-Payloads
 
 **Implants:** Custom code to run on the target devices, they can communicate with handlers over custom protocol or directly with the Nuages API.
 
-**Handlers:** Custom code acting as a proxy between Implants and the Nuages API, to implemenet custom communication protocols (DNS tunneling, domain fronting, IRC etc...).
+**Handlers:** Custom code acting as a proxy between Implants and the Nuages API, to implement custom communication protocols (DNS tunneling, domain fronting, IRC etc...).
 
 **Clients:** Clients rely on the Nuages API and can be implemented in any form such as cli or web application.
 
