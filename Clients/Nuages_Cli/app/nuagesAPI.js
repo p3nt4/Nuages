@@ -26,7 +26,7 @@ app.configure(feathers.socketio(socket));
 
 nuages.implantService = app.service('implants');
 nuages.jobService = app.service('jobs');
-nuages.fileService = app.service('/fs/files');
+nuages.fileService = app.service('/files');
 nuages.modrunService = app.service('/modules/run');
 nuages.moduleService = app.service('/modules');
 nuages.logService = app.service('/logs');
@@ -431,36 +431,55 @@ nuages.sleep = function(ms) {
         setTimeout(resolve, ms);
     });
 };  
-nuages.downloadFile = async function(fileId, filePath){
-    filePath = !(fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()) ? filePath : path.resolve(filePath, nuages.vars.files[fileId].filename);
-    if (nuages.vars.files[fileId] != undefined){
-        try{
-            var pipe = await nuages.pipeService.create({type:"download", source: nuages.vars.files[fileId]._id, destination: filePath, bufferSize: nuages.vars.globalOptions.buffersize.value});
-            var writeStream = fs.createWriteStream(filePath);
-            var dlBytes = 0;
-            while(dlBytes < nuages.vars.files[fileId].length){
-                await nuages.sleep(nuages.vars.globalOptions.refreshrate.value);
-                var data = await this.ioService.create({pipe_id: pipe._id});
-                if(data.out && data.out.length > 0){
-                    var buff = Buffer.from(data.out, 'base64');
-                    dlBytes+=buff.length;
-                    data = writeStream.write(buff);
-                }
+
+nuages.findFile = function(id){
+    r = undefined;
+    if(nuages.vars.files[id]) return nuages.vars.files[id];
+    for (f in nuages.vars.files){
+        file = nuages.vars.files[f]
+        if(file.filename == id){
+            if(r != undefined){
+                nuages.term.logError("More than one files have this name, use file id");
+                return;
             }
-            term.logSuccess("Downloaded: "+ filePath);
-        }catch(err){
-            nuages.term.logError(err.message);
-        }
-        finally{
-            if(writeStream){
-                writeStream.close();
-            }if(pipe){
-                nuages.pipeService.remove(pipe._id).catch((err) => {
-                    nuages.term.logError(err.message);
-                });
-            }
+            r = file;
         }
     }
+    if(r == undefined){
+        nuages.term.logError("File not found");
+    }
+    return r
+}
+
+nuages.downloadFile = async function(file, filePath){
+    filePath = !(fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()) ? filePath : path.resolve(filePath, file.filename);
+    try{
+        var pipe = await nuages.pipeService.create({type:"download", source: file._id, destination: filePath, bufferSize: nuages.vars.globalOptions.buffersize.value});
+        var writeStream = fs.createWriteStream(filePath);
+        var dlBytes = 0;
+        while(dlBytes < file.length){
+            await nuages.sleep(nuages.vars.globalOptions.refreshrate.value);
+            var data = await this.ioService.create({pipe_id: pipe._id});
+            if(data.out && data.out.length > 0){
+                var buff = Buffer.from(data.out, 'base64');
+                dlBytes+=buff.length;
+                data = writeStream.write(buff);
+            }
+        }
+        term.logSuccess("Downloaded: "+ filePath);
+    }catch(err){
+        nuages.term.logError(err.message);
+    }
+    finally{
+        if(writeStream){
+            writeStream.close();
+        }if(pipe){
+            nuages.pipeService.remove(pipe._id).catch((err) => {
+                nuages.term.logError(err.message);
+            });
+        }
+    }
+    
 };
 
 

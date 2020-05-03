@@ -10,6 +10,8 @@ const afterRemoveFsFiles = require('../../hooks/after-remove-fs-files');
 
 const beforeGetFsFiles = require('../../hooks/before-get-fs-files');
 
+const beforeRemoveFsFiles = require('../../hooks/before-remove-fs-files');
+
 module.exports = {
   before: {
     all: [authenticate('jwt')],
@@ -18,7 +20,7 @@ module.exports = {
     create: [beforeCreateFsFiles()],
     update: [disallow('external')],
     patch: [disallow('external')],
-    remove: []
+    remove: [beforeRemoveFsFiles()]
   },
 
   after: {

@@ -99,19 +99,20 @@ nuages.commands["!implants"]= new Command()
     .exitOverride()
     .description('Start a download job on the current implant')
     .action(function (id, path) {
-        if(nuages.vars.files[id] == undefined) throw("File not found")
-        var file = path ? path : nuages.vars.files[id].filename;
+        file = nuages.findFile(id);
+        if(file == undefined) return;
+        var target = path ? path : file.filename;
         nuages.createJobWithPipe(nuages.vars.globalOptions.implant.value, 
             {type:"download", 
                 options:{ 
-                    file: file, 
-                    filename: nuages.vars.files[id].filename, 
-                    length: nuages.vars.files[id].length, 
+                    file: target, 
+                    filename: file.filename, 
+                    length: file.length, 
                     path: nuages.vars.paths[nuages.vars.globalOptions.implant.value.substring(0.6)]
                 }, 
             },
             {type: "download",
-                source: nuages.vars.files[id]._id,
+                source: file._id,
                 destination: file,
                 implantId: nuages.vars.globalOptions.implant.value
             }).catch((err) => {
@@ -157,18 +158,21 @@ nuages.commands["!implants"]= new Command()
         if(!id){
             if (cmdObj.upload) nuages.uploadFile(cmdObj.upload);
             else nuages.getFiles();
-        }else if(nuages.vars.files[id] == undefined){
-            nuages.term.logError("File not found");
+            return;
+        }
+        else file = nuages.findFile(id);
+        if(!file){
+            return;
         }else if(cmdObj.remove) {
-            nuages.fileService.remove(nuages.vars.files[id].mongoId).catch((err) => {
+            nuages.fileService.remove(file._id).catch((err) => {
                 nuages.term.logError(err.message);
             });
         }
         else if(cmdObj.save) {
-            nuages.downloadFile(id, cmdObj.save);
+            nuages.downloadFile(file._id.substring(0,6), cmdObj.save);
         }
         else{
-            nuages.term.writeln("\r\n" + nuages.printFiles({imp:nuages.vars.files[id]}));
+            nuages.term.writeln("\r\n" + nuages.printFiles({imp:file}));
         }
     })
 
@@ -659,7 +663,7 @@ executeCommand = function(cmd){
         nuages.createImplantInteractiveChannel(nuages.vars.globalOptions.implant.value, filename, args);
     }
     else if (cmd[0] == "!"){
-       nuages.resetmaincommand(nuages.maincommand);
+       nuages.resetmaincommand();
        nuages.maincommand.parse(cmdArray, { from: 'user' });
     }
     else if(cmdArray[0].length > 0){

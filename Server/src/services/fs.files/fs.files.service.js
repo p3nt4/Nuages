@@ -8,10 +8,10 @@ module.exports = function (app) {
   const options = { paginate };
 
   // Initialize our service with any options it requires
-  app.use('/fs/files', createService(options));
+  app.use('/files', createService(options));
 
   // Get our initialized service so that we can register hooks and filters
-  const service = app.service('fs/files');
+  const service = app.service('/files');
 
   mongoClient.then(db => {
     service.Model = db.collection('fs.files');

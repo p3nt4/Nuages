@@ -57,6 +57,11 @@ module.exports = (options = {}) => {
       stream.on('error', function(err) {
         console.log(err);
       });
+      stream.on('finish', function() {
+        if (stream.length == 0){
+          context.app.service("/files").remove(file_id);
+        }
+      });
       if(data.implantId){
         context.app.pipe_list[data._id]={
           bufferSize : data.bufferSize,

@@ -14,7 +14,7 @@ function getTerm(){
         else if((words[0].toLowerCase() == "!implant")){
             var completions = "--config --value --kill --remove".split(' ');
         }
-        else if((words[0].toLowerCase() == "!files" || words[0].toLowerCase() == "!put")&& words.length == 2){
+        else if((words[0].toLowerCase() == "!files" || words[0].toLowerCase() == "!put")){
             var completions = Object.keys(nuages.vars.files);
             if(words[0].toLowerCase() == "!files"){
                 completions = completions.concat("--save --upload --remove".split(' '));
