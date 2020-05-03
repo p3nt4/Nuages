@@ -1,5 +1,5 @@
 ## Nuages Server
------------------
+----------------
 ### Requirements
 
 Running the server requires node and npm to be installed.
