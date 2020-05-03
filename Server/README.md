@@ -1,13 +1,37 @@
-## Nuages Server
+### Requirements
 
-### Getting started
+Running the server requires node and npm to be installed.
 
-Running the server requires the following: mongodb, node, npm.
+A mongodb database must also be available but it can be on a different host.
 
+### Setup script
 The setup script should be sufficient to install the required dependencies and setup the connection to the database.
 
-### Notes
+```
+bash setup.sh
+```
+### Manual Installation
+The Nuages Server can run on any host that supports NodeJS (Windows/Linux/Mac). 
+Once node is installed the following steps can install Nuages manually.
 
- * The server is accessible over HTTP by default. A lot of setups will only make the API accessible to the localhost, with handlers implementing an encryption layer and as such will not need HTTPS. If needed it can be implemented by modifying the src/app.js file (https://docs.feathersjs.com/api/express.html#https), or by using a reverse proxy such as nginx.
+```
+# Install dependencies
+npm install
+# Setup Nuages
+node setup.js
+# Start Nuages
+node src/
+```
 
- * Although multi user support is planned to be added in the future, the current version has a single user design.
+
+### Installing MongoDB on Kali
+Installing Mongodb on Kali can be a pain. If the apt-get package does not work, the following steps can work:
+```
+wget https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-debian10-4.2.5.tgz
+tar -xzvf mongodb-linux-x86_64-debian10-4.2.5.tgz
+cd mongodb-linux-x86_64-debian10-4.2.5/bin
+mkdir /data/db
+
+# This command starts the Mongo server and must be run before running Nuages
+./mongod --dbpath /data/db --logpath /var/log/mongodb/mongod.log
+```
