@@ -101,9 +101,12 @@ nuages.commands["!implants"]= new Command()
     nuages.commands["!put"]= new Command()
     .name('!put')
     .arguments('<id> [path]')
+    .usage('<id> [path] | !put --local <path> [path]')
     .exitOverride()
     .description('Start a download job on the current implant')
-    .action(function (id, path) {
+    .option('-l, --local', 'Send a file from the local client')
+    .action(function (id, path, cmdObj) {
+        if(cmdObj.local) {nuages.sendLocalFile(id, path,nuages.vars.globalOptions.implant.value); return}
         file = nuages.findFile(id);
         if(file == undefined) return;
         var target = path ? path : file.filename;
@@ -118,7 +121,7 @@ nuages.commands["!implants"]= new Command()
             },
             {type: "download",
                 source: file._id,
-                destination: file,
+                destination: target,
                 implantId: nuages.vars.globalOptions.implant.value
             }).catch((err) => {
                 nuages.term.logError(err.message);
@@ -568,6 +571,7 @@ nuages.commands["!implants"]= new Command()
         nuages.commands["!implants"].remove = undefined;
         nuages.commands["!implants"].interact = undefined;
         nuages.commands["!implants"].all = undefined;
+        nuages.commands["!put"].local = undefined;
         nuages.commands["!run"].autorun = undefined;
         nuages.commands["!options"].global = undefined; 
         nuages.commands["!set"].global = undefined;
@@ -608,7 +612,7 @@ function CommandParser(str) {
             }
             part = '';
         } else {
-            if(str.charAt(i) === '\\' && (i > 1 && str.charAt(i-1) !== '\\')){
+            if(str.charAt(i) === '\\' && (i > 1 && str.charAt(i-1) !== '\\') && quoteStyle != false){
             }
             else if( str.charAt(i) === quoteStyle && str.charAt(i-1) != '\\'){
                 readingPart = !readingPart;
@@ -669,6 +673,7 @@ executeCommand = function(cmd){
     }
     else if (cmd[0] == "!"){
        nuages.resetmaincommand();
+       cmdArray[0] = cmdArray[0].toLowerCase();
        nuages.maincommand.parse(cmdArray, { from: 'user' });
     }
     else if(cmdArray[0].length > 0){

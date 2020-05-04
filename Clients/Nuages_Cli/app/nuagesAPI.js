@@ -419,8 +419,74 @@ nuages.uploadFile = async function(filePath) {
           });
         }
         readNextChunk()
-      });
+    });
 }
+
+nuages.sendLocalFile = async function(localPath, remotePath, implantId) {
+    var fileStats = fs.lstatSync(localPath);
+    if(fileStats.isDirectory()){
+        nuages.term.logError("This is a directory"); return
+    }
+    var target = remotePath ? remotePath : path.basename(localPath);
+    job = await nuages.createJobWithPipe(
+        implantId, 
+        {type:"download", 
+            options:{ 
+                file: target, 
+                filename: path.basename(localPath), 
+                length: fileStats.size, 
+                path: nuages.vars.paths[implantId.substring(0.6)]
+            }, 
+        },
+        {type: "bidirectional",
+            source: localPath,
+            destination: target,
+            implantId: implantId
+        }).catch((err) => {
+            nuages.term.logError(err.message);
+        });
+    if(!job){nuages.term.logError("Error creating job"); return}
+    var CHUNK_SIZE = parseInt(nuages.vars.globalOptions.buffersize.value);
+    buffer = new Buffer.alloc(CHUNK_SIZE);
+    fs.open(localPath, 'r', async function(err, fd) {
+        if (err) {nuages.term.logError(err.message); return};
+        if (!job.pipe_id){nuages.term.logError("Error creating pipe"); return}
+        async function readNextChunk() {
+          fs.read(fd, buffer, 0, CHUNK_SIZE, null, async function(err, nread) {
+            if (err || nread === 0) {
+                if (err) {
+                    nuages.pipeService.remove(job.pipe_id).catch((err) => {
+                        nuages.term.logError(err.message);
+                    });	
+                }
+                fs.close(fd, function(err) {
+                    if (err) throw err;
+                });
+                if(err){
+                    nuages.term.logError(err.message);
+                }
+                term.logSuccess("Sent: "+ localPath)
+                return;
+            };
+            var data;
+            if (nread < CHUNK_SIZE)
+              data = buffer.slice(0, nread);
+            else
+              data = buffer;
+              try{
+                // We dont really have to wait but lets spare the server
+                await nuages.ioService.create({pipe_id: job.pipe_id, in:data.toString('base64')});
+              }catch(err){
+                nuages.term.logError(err.message);
+                return;
+              }
+            readNextChunk();
+          });
+        }
+        readNextChunk()
+    });
+}
+
 
 nuages.sleep = function(ms) {
     return new Promise((resolve) => {
