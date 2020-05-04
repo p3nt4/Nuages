@@ -659,11 +659,7 @@ executeCommand = function(cmd){
     if(cmdArray.length == 0){
         return;
     }
-    if(cmdArray[0].toLowerCase() == "!implant"){
-        cmdArray.splice(1, 0, nuages.vars.globalOptions.implant.value);
-        cmdArray[0]="!implants";
-    }
-    else if (cmdArray[0].toLowerCase() == "cd"){
+    if (cmdArray[0].toLowerCase() == "cd"){
         if(nuages.vars.implants[nuages.vars.globalOptions.implant.value.substring(0.6)].supportedPayloads.includes("cd")){
             nuages.createJob(nuages.vars.globalOptions.implant.value, {type:"cd", options:{ path: nuages.vars.paths[nuages.vars.globalOptions.implant.value.substring(0.6)], dir:cmdArray.slice(1).join(" ")}});
         }
@@ -686,6 +682,10 @@ executeCommand = function(cmd){
         nuages.createImplantInteractiveChannel(nuages.vars.globalOptions.implant.value, filename, args);
     }
     else if (cmd[0] == "!"){
+        if(cmdArray[0].toLowerCase() == "!implant"){
+            cmdArray.splice(1, 0, nuages.vars.globalOptions.implant.value);
+            cmdArray[0]="!implants";
+        }
        nuages.resetmaincommand();
        cmdArray[0] = cmdArray[0].toLowerCase();
        nuages.maincommand.parse(cmdArray, { from: 'user' });
