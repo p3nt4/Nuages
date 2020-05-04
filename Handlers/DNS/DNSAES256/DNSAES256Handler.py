@@ -15,6 +15,7 @@ import traceback
 import socketserver
 import struct
 from dnslib import *
+import time
 import base64
 
 class HTTPerror(Exception):
@@ -77,7 +78,11 @@ class DomainName(str):
 class NuagesRequest():
     def __init__(self, url, data = ""):
         self.url = url
+        self.counter = 0
+        self.lastEdited = time.time()
         self.data = data
+        self.executed = False
+        self.response = b''
 
 class NuagesDNS:
     def __init__(self, connectionString, key, domain):
@@ -104,6 +109,20 @@ class NuagesDNS:
         Request.response = self.POST(self.urls[Request.url], body)
         return Request.response
 
+    def cleanup(self):
+        while True:
+            toDelete = []
+            time.sleep(15)
+            try:
+                now = time.time()
+                for key, val in self.requestDB.items():
+                    if(now - val.lastEdited > 15):
+                        toDelete.append(key)
+                for key in toDelete:
+                    del self.requestDB[key]
+            except:
+                pass
+
     def handle_dns(self, request):
         qn = str(request.q.qname)
         splitReq = qn.split(".")
@@ -111,26 +130,44 @@ class NuagesDNS:
         reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
         try:
             if(splitReq[0] == "N"):
-                if not(args.quiet): print("New Request: {}".format(splitReq[1]))
+                if (args.verbose): print("New Request: {}".format(splitReq[1]))
                 data = "".join(splitReq[2:-self.domNum])
                 self.requestDB[str(self.reqId)] = NuagesRequest(splitReq[1], data)
                 reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("N.{}.OK".format(self.reqId))))
                 self.reqId += 1
             elif(splitReq[0] == "D"):
-                if not(args.quiet): print("Received Data for Request: {}".format(splitReq[1]))
-                data = "".join(splitReq[2:-self.domNum])
-                self.requestDB[splitReq[1]].data += data
+                if (args.verbose): print("Received Data for Request: {}".format(splitReq[1]))
+                if(int(splitReq[2]) == self.requestDB[splitReq[1]].counter + 1):
+                    data = "".join(splitReq[3:-self.domNum])
+                    self.requestDB[splitReq[1]].lastEdited = time.time()
+                    self.requestDB[splitReq[1]].data += data
+                    self.requestDB[splitReq[1]].counter += 1
+                if(self.requestDB[splitReq[1]].counter > 100):
+                    print("FOUND TOP 100 request!!!!!!!!")
+                    del self.requestDB[splitReq[1]]
+                    reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("-1")))
+                    return reply.pack()
                 reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("D.{}.OK".format(splitReq[1]))))
             elif(splitReq[0] == "C"):
-                if not(args.quiet): print("Received Completion for Request: {}".format(splitReq[1]))
+                if (args.verbose): print("Received Completion for Request: {}".format(splitReq[1]))
                 if(splitReq[1] == "-1"):
                     data = "".join(splitReq[3:-self.domNum])
-                    response = self.doRequest(NuagesRequest(splitReq[2], data))
+                    tempId = data[0:6]
+                    if (tempId in self.requestDB):
+                        response = self.requestDB[tempId].response
+                    else:
+                        self.requestDB[tempId] = NuagesRequest(splitReq[2], data)
+                        self.requestDB[tempId].lastEdited = time.time()
+                        response = self.doRequest(self.requestDB[tempId])
                 else:
-                    data = "".join(splitReq[2:-self.domNum])
-                    self.requestDB[splitReq[1]].data += data       
-                    response = self.doRequest(self.requestDB[splitReq[1]])
-                    del self.requestDB[splitReq[1]]
+                    if(not(self.requestDB[splitReq[1]].executed)):
+                        self.requestDB[splitReq[1]].executed = True
+                        data = "".join(splitReq[2:-self.domNum])
+                        self.requestDB[splitReq[1]].data += data
+                        self.requestDB[splitReq[1]].lastEdited = time.time()       
+                        response = self.doRequest(self.requestDB[splitReq[1]])
+                    else:
+                        response = self.requestDB[splitReq[1]].response
                 encResponse = base64.b64encode(self.aes.encrypt(response)).decode("utf-8").replace("+","-0").replace("/","-1").replace("=","-2")
                 txt = "C.{}.200.".format(splitReq[1]) + encResponse
                 i = 0
@@ -145,8 +182,8 @@ class NuagesDNS:
                 reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("D.{}.{}".format(splitReq[1], e.HTTPCode))))
                 return reply.pack() 
         except Exception as e:
-                if not(args.quiet): print("Caught Exception")
-                if(args.verbose): print(e)
+                if not(args.quiet): print("Caught Exception: " + str(e))
+                if (args.verbose): print(e)
                 #reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
                 reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("-1")))
                 return reply.pack()
@@ -229,6 +266,9 @@ if __name__ == '__main__':
         thread.daemon = True 
         thread.start()
         print("%s server loop running in thread: %s" % (s.RequestHandlerClass.__name__[:3], thread.name))
+    thread = threading.Thread(target=nuagesDNS.cleanup) 
+    thread.daemon = True 
+    thread.start()
     try:
         while 1:
             time.sleep(1)
