@@ -137,6 +137,9 @@ class NuagesDNS:
                 while (i < len(txt)):
                     reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT(txt[i:i + min(len(txt) - i, 255)])))
                     i += 255
+            else:
+                reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("OK")))
+                return reply.pack()
         except HTTPerror as e:
                 #reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
                 reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("D.{}.{}".format(splitReq[1], e.HTTPCode))))
@@ -146,10 +149,9 @@ class NuagesDNS:
                 if(args.verbose): print(e)
                 #reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
                 reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("-1")))
-                return reply.pack()                              
+                return reply.pack()
         else:
-            reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("OK")))
-        return reply.pack()
+            return reply.pack()                              
 
 class BaseRequestHandler(socketserver.BaseRequestHandler):
 
