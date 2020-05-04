@@ -34,6 +34,8 @@ module.exports = function (options = {}) {
 
     data.pipe_id = context.data.pipe_id ? context.data.pipe_id : undefined;
 
+    data.noPipeDelete = context.data.noPipeDelete ? context.data.noPipeDelete : false;
+
     if(!context.data.payload){
       throw error.BadRequest("A payload is needed");
     } else{

@@ -422,8 +422,10 @@ nuages.uploadFile = async function(filePath) {
     });
 }
 
-nuages.sendLocalFile = async function(localPath, remotePath, implantId) {
-    var fileStats = fs.lstatSync(localPath);
+nuages.putLocal = async function(localPath, remotePath, implantId) {
+    try{
+        var fileStats = fs.lstatSync(localPath);
+    }catch{nuages.term.logError(err.message); return;}
     if(fileStats.isDirectory()){
         nuages.term.logError("This is a directory"); return
     }
@@ -487,6 +489,72 @@ nuages.sendLocalFile = async function(localPath, remotePath, implantId) {
     });
 }
 
+nuages.getLocal = async function(remotepath, localpath, implantId){
+    try{
+        var writeStream = false;
+        var job = false;
+        var arr = remotepath.split("\\");
+        var filename = arr[arr.length-1];
+        arr = filename.split("/");
+        filename = arr[arr.length-1];
+        filePath = !(fs.existsSync(localpath) && fs.lstatSync(localpath).isDirectory()) ? localpath : path.resolve(localpath, filename);
+        job = await nuages.createJobWithPipe(implantId, 
+            {type:"upload", 
+                options:{ 
+                    file: remotepath, 
+                    path: nuages.vars.paths[implantId.substring(0.6)],
+                }
+            }, 
+            {type: "bidirectional",
+                source: remotepath,
+                implantId: nuages.vars.globalOptions.implant.value,
+                filename: filename,
+                destination: "Local: " + localpath
+            }, true).catch((err) => {
+                nuages.term.logError(err.message);
+            });
+        if(!job){nuages.term.logError("Error creating job"); return;}
+        var tries = 0;
+        var bytesRead = 0;
+        while((nuages.vars.jobs[job._id.substring(0,6)] == undefined  
+        || nuages.vars.jobs[job._id.substring(0,6)].jobStatus < 3)
+        && tries < 60
+        ){
+            tries++;
+            await nuages.sleep(1000);
+        }
+        if(nuages.vars.jobs[job._id.substring(0,6)].jobStatus == 4){throw new Error("Upload job failed");}
+        if(tries == 60){throw new Error("Implant did not finish job");}
+        var writeStream = fs.createWriteStream(filePath);
+        refreshrate = nuages.vars.globalOptions.refreshrate.value;
+        bytesRead = 1;
+        while(bytesRead > 0 ){
+            await nuages.sleep(refreshrate);
+            var data = await this.ioService.create({pipe_id: job.pipe_id});
+            if(data.out && data.out.length > 0){
+                var buff = Buffer.from(data.out, 'base64');
+                bytesRead = buff.length;
+                data = writeStream.write(buff);
+            }else{
+                bytesRead = 0;
+            }
+        }
+        term.logSuccess("Downloaded: "+ filePath);
+    }catch(err){
+        nuages.term.logError(err.message);
+    }
+    finally{
+        if(writeStream){
+            if(writeStream.size == 0){
+                writeStream.unlink();
+            }
+            writeStream.close();
+        }
+        if(job){nuages.pipeService.remove(job.pipe_id).catch((err) => {
+            });
+        }
+    }
+}
 
 nuages.sleep = function(ms) {
     return new Promise((resolve) => {
@@ -850,7 +918,7 @@ nuages.createJob = function (implant, payload){
     }
 }
 
-nuages.createJobWithPipe = function (implant, payload, pipe){
+nuages.createJobWithPipe = function (implant, payload, pipe, noPipeDelete = false){
     var timeout = Date.now() + parseInt(nuages.vars.globalOptions.timeout.value) * 60000;
     pipe.implantId = nuages.vars.implants[implant]._id;
     if (nuages.vars.implants[implant] != undefined){
@@ -859,6 +927,7 @@ nuages.createJobWithPipe = function (implant, payload, pipe){
             timeout: timeout,
             vars: {session: nuages.vars.session},
             pipe: pipe,
+            noPipeDelete : noPipeDelete,
             payload: payload}
             );
     }else{
@@ -866,6 +935,7 @@ nuages.createJobWithPipe = function (implant, payload, pipe){
 }
 
 nuages.processJobPatched = function (job){
+    nuages.vars.jobs[job._id.substring(0,6)] = job;
     if(job.moduleRun !== null){
         return;
     }

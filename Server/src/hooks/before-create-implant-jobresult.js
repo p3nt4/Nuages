@@ -56,7 +56,7 @@ module.exports = function (options = {}) {
     job.lastUpdated = Date.now();
 
     //Delete pipe if this job had a pipe
-    if(job.pipe_id && job.jobStatus > 2 && context.app.pipe_list && context.app.pipe_list[job.pipe_id]){
+    if(job.pipe_id && job.jobStatus > 2 && !(job.noPipeDelete && job.jobStatus == 3) && context.app.pipe_list[job.pipe_id]){
       context.app.service("pipes").remove(job.pipe_id);	
     }
 

@@ -101,12 +101,12 @@ nuages.commands["!implants"]= new Command()
     nuages.commands["!put"]= new Command()
     .name('!put')
     .arguments('<id> [path]')
-    .usage('<id> [path] | !put --local <path> [path]')
+    .usage('<id> [path] | !put --local <localpath> [path]')
     .exitOverride()
     .description('Start a download job on the current implant')
     .option('-l, --local', 'Send a file from the local client')
     .action(function (id, path, cmdObj) {
-        if(cmdObj.local) {nuages.sendLocalFile(id, path,nuages.vars.globalOptions.implant.value); return}
+        if(cmdObj.local) {nuages.putLocal(id, path,nuages.vars.globalOptions.implant.value); return}
         file = nuages.findFile(id);
         if(file == undefined) return;
         var target = path ? path : file.filename;
@@ -130,10 +130,20 @@ nuages.commands["!implants"]= new Command()
 
     nuages.commands["!get"]= new Command()
     .name('!get')
-    .arguments('<path>')
+    .arguments('<path> [localpath]')
+    .option('-l, --local', 'Downloads the file to the local client')
+    .usage('<path> | !get --local <path> <localpath>')
     .exitOverride()
     .description('Start an upload job on the current implant')
-    .action(function (path) {
+    .action(function (path, localpath, cmdObj) {
+        if(cmdObj.local){
+            if (localpath == undefined){
+                nuages.term.logError("A local path is needed");
+                return;
+            }
+            nuages.getLocal(path, localpath, nuages.vars.globalOptions.implant.value);
+            return;
+        }
         var arr = path.split("\\");
         var filename = arr[arr.length-1];
         arr = filename.split("/");
@@ -177,7 +187,7 @@ nuages.commands["!implants"]= new Command()
             });
         }
         else if(cmdObj.save) {
-            nuages.downloadFile(file._id.substring(0,6), cmdObj.save);
+            nuages.downloadFile(file, cmdObj.save);
         }
         else{
             nuages.term.writeln("\r\n" + nuages.printFiles({imp:file}));
@@ -572,6 +582,7 @@ nuages.commands["!implants"]= new Command()
         nuages.commands["!implants"].interact = undefined;
         nuages.commands["!implants"].all = undefined;
         nuages.commands["!put"].local = undefined;
+        nuages.commands["!get"].local = undefined;
         nuages.commands["!run"].autorun = undefined;
         nuages.commands["!options"].global = undefined; 
         nuages.commands["!set"].global = undefined;
