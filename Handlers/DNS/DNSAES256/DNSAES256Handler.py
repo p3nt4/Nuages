@@ -80,11 +80,13 @@ class NuagesRequest():
         self.data = data
 
 class NuagesDNS:
-    def __init__(self, connectionString, key):
+    def __init__(self, connectionString, key, domain):
         self.aes = AESCipher(key)
         self.requestDB = {}
         self.reqId = 0
         self.connectionString = connectionString
+        self.domain = domain
+        self.domNum = domain.count(".") + 1
         self.urls={"i":"/implant/io", "r":"/implant/register", "j":"/implant/jobresult", "h":"/implant/heartbeat"}
 
     def POST(self, url, body):
@@ -105,27 +107,27 @@ class NuagesDNS:
     def handle_dns(self, request):
         qn = str(request.q.qname)
         splitReq = qn.split(".")
-        #print(request.q.qname)
+        if(args.verbose): print(request.q.qname)
         reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
         if(splitReq[0] == "N"):
             if not(args.quiet): print("New Request: {}".format(splitReq[1]))
-            data = "".join(splitReq[2:-3])
+            data = "".join(splitReq[2:-self.domNum])
             self.requestDB[str(self.reqId)] = NuagesRequest(splitReq[1], data)
             reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("N.{}.OK".format(self.reqId))))
             self.reqId += 1
         elif(splitReq[0] == "D"):
             if not(args.quiet): print("Received Data for Request: {}".format(splitReq[1]))
-            data = "".join(splitReq[2:-3])
+            data = "".join(splitReq[2:-self.domNum])
             self.requestDB[splitReq[1]].data += data
             reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("D.{}.OK".format(splitReq[1]))))
         elif(splitReq[0] == "C"):
             try:
                 if not(args.quiet): print("Received Completion for Request: {}".format(splitReq[1]))
                 if(splitReq[1] == "-1"):
-                    data = "".join(splitReq[3:-3])
+                    data = "".join(splitReq[3:-self.domNum])
                     response = self.doRequest(NuagesRequest(splitReq[2], data))
                 else:
-                    data = "".join(splitReq[2:-3])
+                    data = "".join(splitReq[2:-self.domNum])
                     self.requestDB[splitReq[1]].data += data       
                     response = self.doRequest(self.requestDB[splitReq[1]])
                     del self.requestDB[splitReq[1]]
@@ -138,8 +140,9 @@ class NuagesDNS:
             except HTTPerror as e:
                     reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
                     reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("D.{}.{}".format(splitReq[1], e.HTTPCode)))) 
-            except Exception:
-                    print("Caught Exception")
+            except Exception as e:
+                    if not(args.quiet): print("Caught Exception")
+                    if(args.verbose): print(e)
                     reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
                     reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("-1")))                              
         else:
@@ -151,8 +154,6 @@ class BaseRequestHandler(socketserver.BaseRequestHandler):
     def dns_response(self, data):
         request = DNSRecord.parse(data)
         return nuagesDNS.handle_dns(request)
-        
-
     def get_data(self):
         raise NotImplementedError
     def send_data(self, data):
@@ -198,6 +199,7 @@ if __name__ == '__main__':
     parser.add_argument("-k", "--key", required=True, help="The seed for the encryption key")
     parser.add_argument("-u", "--uri", default="http://127.0.0.1:3030", help="The URI of the Nuages API")
     parser.add_argument("-i", "--id", help="The listener ID for listener tracking")
+    parser.add_argument("-v", "--verbose", action='store_true', help="Display extra logs")
     parser.add_argument("-q", "--quiet", action='store_true', help="Hide logs")
     args = parser.parse_args()
     
@@ -206,7 +208,7 @@ if __name__ == '__main__':
     IP = '127.0.0.1'
     TTL = 60 * 5
 
-    nuagesDNS = NuagesDNS(args.uri, args.key)
+    nuagesDNS = NuagesDNS(args.uri, args.key, D)
     
     servers = []
     if args.udp: servers.append(socketserver.ThreadingUDPServer(('', args.port), UDPRequestHandler))
@@ -223,7 +225,6 @@ if __name__ == '__main__':
         thread.daemon = True 
         thread.start()
         print("%s server loop running in thread: %s" % (s.RequestHandlerClass.__name__[:3], thread.name))
-
     try:
         while 1:
             time.sleep(1)
