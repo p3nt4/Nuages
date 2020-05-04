@@ -407,8 +407,10 @@ nuages.commands["!implants"]= new Command()
                 nuages.term.logError(err.message);
             });
     }
-    else nuages.term.writeln("\r\n" + nuages.printListeners({imp:nuages.vars.listeners[id]}));
-    console.log(nuages.printModuleOptions("handler",nuages.vars.listeners[id].options));
+    else {
+        nuages.term.writeln("\r\n" + nuages.printListeners({imp:nuages.vars.listeners[id]}));
+        console.log(nuages.printModuleOptions("handler",nuages.vars.listeners[id].options));
+    }
   })
 
   nuages.commands["!jobs"] = new Command()
