@@ -386,24 +386,24 @@ nuages.commands["!implants"]= new Command()
   .option('-s, --start', 'Start the listener')
   .option('-p, --stop', 'Stop the listener')
   .option('-r, --remove', 'Remove the listener')
-  .action(function (name, cmdObj) {
-    if(!name){
+  .action(function (id, cmdObj) {
+    if(!id){
         nuages.getListeners();
-    }else if(nuages.vars.listeners[name] == undefined){
+    }else if(nuages.vars.listeners[id] == undefined){
         nuages.term.logError("Listener not found");
     }
     else if(cmdObj.remove) {
-        nuages.listenerService.remove(nuages.vars.listeners[name.toLowerCase()]._id).catch((err) => {
+        nuages.listenerService.remove(nuages.vars.listeners[id]._id).catch((err) => {
             nuages.term.logError(err.message);
         });
     }
     else if(cmdObj.start) {
-        nuages.listenerStartService.create({id:nuages.vars.listeners[name]._id, wantedStatus: 3}).catch((err) => {
+        nuages.listenerStartService.create({id:nuages.vars.listeners[id]._id, wantedStatus: 3}).catch((err) => {
             nuages.term.logError(err.message);
         });
     }
     else if(cmdObj.stop) {
-            nuages.listenerStartService.create({id:nuages.vars.listeners[name]._id, wantedStatus: 2}).catch((err) => {
+            nuages.listenerStartService.create({id:nuages.vars.listeners[id]._id, wantedStatus: 2}).catch((err) => {
                 nuages.term.logError(err.message);
             });
     }
