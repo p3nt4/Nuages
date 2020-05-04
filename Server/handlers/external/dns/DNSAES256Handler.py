@@ -14,7 +14,7 @@ import threading
 import traceback
 import socketserver
 import struct
-from dnslib import *
+import dnslib
 import time
 import base64
 
