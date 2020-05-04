@@ -109,19 +109,19 @@ class NuagesDNS:
         splitReq = qn.split(".")
         if(args.verbose): print(request.q.qname)
         reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
-        if(splitReq[0] == "N"):
-            if not(args.quiet): print("New Request: {}".format(splitReq[1]))
-            data = "".join(splitReq[2:-self.domNum])
-            self.requestDB[str(self.reqId)] = NuagesRequest(splitReq[1], data)
-            reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("N.{}.OK".format(self.reqId))))
-            self.reqId += 1
-        elif(splitReq[0] == "D"):
-            if not(args.quiet): print("Received Data for Request: {}".format(splitReq[1]))
-            data = "".join(splitReq[2:-self.domNum])
-            self.requestDB[splitReq[1]].data += data
-            reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("D.{}.OK".format(splitReq[1]))))
-        elif(splitReq[0] == "C"):
-            try:
+        try:
+            if(splitReq[0] == "N"):
+                if not(args.quiet): print("New Request: {}".format(splitReq[1]))
+                data = "".join(splitReq[2:-self.domNum])
+                self.requestDB[str(self.reqId)] = NuagesRequest(splitReq[1], data)
+                reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("N.{}.OK".format(self.reqId))))
+                self.reqId += 1
+            elif(splitReq[0] == "D"):
+                if not(args.quiet): print("Received Data for Request: {}".format(splitReq[1]))
+                data = "".join(splitReq[2:-self.domNum])
+                self.requestDB[splitReq[1]].data += data
+                reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("D.{}.OK".format(splitReq[1]))))
+            elif(splitReq[0] == "C"):
                 if not(args.quiet): print("Received Completion for Request: {}".format(splitReq[1]))
                 if(splitReq[1] == "-1"):
                     data = "".join(splitReq[3:-self.domNum])
@@ -137,14 +137,16 @@ class NuagesDNS:
                 while (i < len(txt)):
                     reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT(txt[i:i + min(len(txt) - i, 255)])))
                     i += 255
-            except HTTPerror as e:
-                    reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
-                    reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("D.{}.{}".format(splitReq[1], e.HTTPCode)))) 
-            except Exception as e:
-                    if not(args.quiet): print("Caught Exception")
-                    if(args.verbose): print(e)
-                    reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
-                    reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("-1")))                              
+        except HTTPerror as e:
+                #reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
+                reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("D.{}.{}".format(splitReq[1], e.HTTPCode))))
+                return reply.pack() 
+        except Exception as e:
+                if not(args.quiet): print("Caught Exception")
+                if(args.verbose): print(e)
+                #reply = DNSRecord(DNSHeader(id=request.header.id, qr=1, aa=1, ra=1), q=request.q)
+                reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("-1")))
+                return reply.pack()                              
         else:
             reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("OK")))
         return reply.pack()
