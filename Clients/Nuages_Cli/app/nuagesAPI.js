@@ -1088,7 +1088,7 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
                     return;
                 }
                 if(nuages.vars.globalOptions.newlinemode.value != "Windows"){
-                    if(input[input.length-1] == 0x0d){
+                    if(input.length > 1 && input[input.length-2] == 0x0d){
                         input = input.slice(0, input.length - 1);
                         input[input.length-1] = 0x0a;
                     }
