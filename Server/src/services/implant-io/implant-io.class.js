@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 exports.ImplantsIo = class ImplantsIo {
   constructor (options) {
+    this.events = ['pipeData']
     this.options = options || {};
   }
 

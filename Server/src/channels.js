@@ -36,11 +36,18 @@ module.exports = function(app) {
     }
   });
 
+  app.publish('pipeData',(data, hook) => {
+    // Here you can add event publishers to channels set up in `channels.js`
+    // To publish only for a specific event use `app.publish(eventname, () => {})`
+    console.log(data);
+    return app.channel('authenticated');
+  });
+
   // eslint-disable-next-line no-unused-vars
   app.publish((data, hook) => {
     // Here you can add event publishers to channels set up in `channels.js`
     // To publish only for a specific event use `app.publish(eventname, () => {})`
-  
+
     // I think this will create a lot of redundant information - better be monitoring the actual objects than API calls
     if(hook.path.includes("implant/")){
       return;

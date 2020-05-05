@@ -24,8 +24,8 @@ const app = feathers();
 app.configure(feathers.authentication({}));
 app.configure(feathers.socketio(socket));
 
-nuages.implantService = app.service('implants');
-nuages.jobService = app.service('jobs');
+nuages.implantService = app.service('/implants');
+nuages.jobService = app.service('/jobs');
 nuages.fileService = app.service('/files');
 nuages.modrunService = app.service('/modules/run');
 nuages.moduleService = app.service('/modules');
@@ -39,6 +39,7 @@ nuages.tunnelService = app.service('/tunnels');
 nuages.pipeService = app.service('/pipes');
 nuages.ioService = app.service('/pipes/io');
 
+
 nuages.vars = { 
     implants: {},
     pipes: {},
@@ -49,6 +50,11 @@ nuages.vars = {
     jobs: {},
     listeners: {},
     module: ""
+};
+
+nuages.watch = {
+    pipes: {},
+    jobs: {}
 };
 
 nuages.vars.globalOptions = {
@@ -514,45 +520,26 @@ nuages.getLocal = async function(remotepath, localpath, implantId){
                 nuages.term.logError(err.message);
             });
         if(!job){nuages.term.logError("Error creating job"); return;}
-        var tries = 0;
-        var bytesRead = 0;
-        while((nuages.vars.jobs[job._id.substring(0,6)] == undefined  
-        || nuages.vars.jobs[job._id.substring(0,6)].jobStatus < 3)
-        && tries < 60
-        ){
-            tries++;
-            await nuages.sleep(1000);
-        }
-        if(nuages.vars.jobs[job._id.substring(0,6)].jobStatus == 4){throw new Error("Upload job failed");}
-        if(tries == 60){throw new Error("Implant did not finish job");}
         var writeStream = fs.createWriteStream(filePath);
-        refreshrate = nuages.vars.globalOptions.refreshrate.value;
-        bytesRead = 1;
-        while(bytesRead > 0 ){
-            await nuages.sleep(refreshrate);
-            var data = await this.ioService.create({pipe_id: job.pipe_id});
-            if(data.out && data.out.length > 0){
-                var buff = Buffer.from(data.out, 'base64');
-                bytesRead = buff.length;
-                data = writeStream.write(buff);
-            }else{
-                bytesRead = 0;
-            }
+        nuages.watch.pipes[job.pipe_id] = {
+            stream: writeStream,
+            pipe_id: job.pipe_id,
+            onJobFinished : (obj) =>{
+                if (obj.stream.bytesWritten == 0){
+                    obj.stream.close();
+                    term.logError("File was empty, removing: "+ filePath);
+                    fs.unlinkSync(obj.stream.path);
+                }
+                else{
+                    obj.stream.close();
+                    nuages.pipeService.remove(obj.pipe_id).catch(()=>{});
+                    term.logSuccess("Downloaded: "+ filePath);
+                    obj.stream.close();
+                }
+            } 
         }
-        term.logSuccess("Downloaded: "+ filePath);
     }catch(err){
         nuages.term.logError(err.message);
-    }
-    finally{
-        if(writeStream){
-            if(writeStream.size == 0){
-                writeStream.unlink();
-            }
-            writeStream.close();
-        }
-        if(job){nuages.pipeService.remove(job.pipe_id).catch((err) => {
-            });
-        }
     }
 }
 
@@ -934,7 +921,7 @@ nuages.createJobWithPipe = function (implant, payload, pipe, noPipeDelete = fals
     }
 }
 
-nuages.processJobPatched = function (job){
+nuages.onJobPatched = function (job){
     nuages.vars.jobs[job._id.substring(0,6)] = job;
     if(job.moduleRun !== null){
         return;
@@ -966,6 +953,11 @@ nuages.processJobPatched = function (job){
         }
         else {
             nuages.term.logSuccess(job.payload.type + " succeeded:" +"\r\n" + job.result, job.implantId.substring(0,6));
+        }
+    }
+    if((job.jobStatus == 3 || job.jobStatus == 4) && job.pipe_id){
+        if(nuages.watch.pipes[job.pipe_id] && nuages.watch.pipes[job.pipe_id].onJobFinished){
+            nuages.watch.pipes[job.pipe_id].onJobFinished(nuages.watch.pipes[job.pipe_id]);
         }
     }
 }
@@ -1074,7 +1066,7 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
     async function syncIO(nuages, pipe_id, input = undefined, stdout = process.stdout){
         try{
             if(input){
-                if(input.toString()=="!switch\r\n"){
+                if(input.toString()=="!switch\n" || input.toString()=="!switch\r\n" ){
                     if(nuages.vars.globalOptions.newlinemode.value != "Windows"){
                         term.logInfo("Changing newlinemode to Windows");
                         nuages.vars.globalOptions.newlinemode.value = "Windows";
@@ -1084,11 +1076,11 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
                     }
                     return;
                 }
-                if(input.toString()=="!background\r\n"){
+                if(input.toString()=="!background\n" || input.toString()=="!background\r\n"){
                     stdin.removeAllListeners('data');
+                    delete nuages.watch.pipes[pipe_id];
                     nuages.term = nuages.getTerm();
                     nuages.term.history = nuages.termHistoryBackup;
-                    clearInterval(interval);
                     term.logInfo("Putting channel in the background");
                     nuages.channelMode = false;
                     nuages.term.setPromptline();
@@ -1112,8 +1104,8 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
         }catch(e){
             stdin.removeAllListeners('data');
             nuages.term = nuages.getTerm();
+            delete nuages.watch.pipes[pipe_id];
             nuages.term.history = nuages.termHistoryBackup;
-            clearInterval(interval);
             term.logInfo("Lost connection to channel");
             nuages.channelMode = false;
             nuages.term.setPromptline();
@@ -1126,8 +1118,9 @@ nuages.interactWithPipe  = function (pipe_id,stdin,stdout){
     nuages.channelMode = true;
     nuages.termHistoryBackup = nuages.term.history;
     nuages.term.close();
-    stdin.on('data', function(chunk) {syncIO(nuages,pipe_id,chunk,stdout) });
-    var interval = setInterval(syncIO, nuages.vars.globalOptions.refreshrate.value, nuages, pipe_id, undefined, stdout);
+    stdin.on('data', function(chunk) {syncIO(nuages,pipe_id,chunk,stdout)});
+    nuages.watch.pipes[pipe_id] = {stream: stdout};
+    //var interval = setInterval(syncIO, nuages.vars.globalOptions.refreshrate.value, nuages, pipe_id, undefined, stdout);
 }
 
 nuages.chunkSubstr  = function (str, size) {
@@ -1141,9 +1134,15 @@ nuages.chunkSubstr  = function (str, size) {
     return chunks
   }
 
+nuages.onPipeData = async function(msg){
+    if(nuages.watch.pipes[msg.pipe_id] != undefined){
+        var data = await nuages.ioService.create({pipe_id:msg.pipe_id});
+        let buff = Buffer.from(data.out, 'base64');
+        nuages.watch.pipes[msg.pipe_id].stream.write(buff);
+    }
+}
 
-
-nuages.jobService.on('patched', job => nuages.processJobPatched(job));
+nuages.jobService.on('patched', job => nuages.onJobPatched(job));
 nuages.implantService.on('created', function(implant){nuages.vars.implants[implant._id.substring(0,6)] = implant; nuages.term.logInfo("New Implant:\r\n" + nuages.printImplants({imp: implant}));});
 nuages.implantService.on('patched', function(implant){nuages.vars.implants[implant._id.substring(0,6)] = implant});
 nuages.implantService.on('removed', function(implant){delete nuages.vars.implants[implant._id.substring(0,6)]; nuages.term.logInfo("Deleted Implant:\r\n" + nuages.printImplants({imp: implant}));});
@@ -1154,4 +1153,5 @@ nuages.moduleService.on('created', function(mod){nuages.term.logInfo("Module loa
 nuages.handlerService.on('created', function(mod){nuages.term.logInfo("Handler loaded:\r\n" + nuages.printHandlers({mod: mod}));nuages.vars.handlers[mod.name]=mod;});
 nuages.pipeService.on('created', function(mod){if(mod.type=="interactive"){nuages.term.logInfo("Channel created:\r\n" + nuages.printPipes({mod: mod}));}nuages.vars.pipes[mod._id.substring(0,6)]=mod;});
 nuages.tunnelService.on('created', function(mod){nuages.term.logInfo("Tunnel created:\r\n" + nuages.printTunnels({mod: mod}));nuages.vars.tunnels[mod._id.substring(0,6)]=mod;});
+app.service("implant/io").on('pipeData', (data)=>{nuages.onPipeData(data)})
 exports.nuages = nuages;

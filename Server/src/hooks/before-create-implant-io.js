@@ -11,6 +11,7 @@ module.exports = (options = {}) => {
       var pipe = context.app.pipe_list[context.data.pipe_id];
       if(context.data.in && pipe.canWrite){
         let buff = Buffer.from(context.data.in, 'base64');
+        context.service.emit('pipeData', {pipe_id: context.data.pipe_id, length: buff.length});
         pipe.out.write(buff);
       }
       if(pipe.canRead){
@@ -31,6 +32,8 @@ module.exports = (options = {}) => {
         }else{
           context.result = {out:""};
         }
+      }else{
+        context.result = {};
       }
       
     }
