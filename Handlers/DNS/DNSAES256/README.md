@@ -1,7 +1,7 @@
 ## DNSAES256
 This DNS handler uses AES256 to encrypt traffic between implants and the server.
 
-### DNS Queris
+### DNS Queries
 This handler uses three types of DNS queries
 
 #### N Query
