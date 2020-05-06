@@ -19,7 +19,7 @@ This DNS query finishes buffering a request and executes it:
  - **Query**: C.{ID}.{DATA}.domain.com
  - **Response**: C.{ID}.{HTTPCODE}.{DATA} | -1 on error
 
-If a request is short enough to fit in a single C Request it can be send like this:
+If a request is short enough to fit in a single C Request it can be sent like this:
  - **Query**: C.-1.{endpoint}.{DATA}.domain.com
 
  ### Data encoding
