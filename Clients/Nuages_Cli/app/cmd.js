@@ -660,7 +660,10 @@ executeCommand = function(cmd){
         return;
     }
     if (cmdArray[0].toLowerCase() == "cd"){
-        if(nuages.vars.implants[nuages.vars.globalOptions.implant.value.substring(0.6)].supportedPayloads.includes("cd")){
+        if(!nuages.vars.implants[nuages.vars.globalOptions.implant.value.substring(0.6)]){
+            return;
+        }
+        else if(nuages.vars.implants[nuages.vars.globalOptions.implant.value.substring(0.6)].supportedPayloads.includes("cd")){
             nuages.createJob(nuages.vars.globalOptions.implant.value, {type:"cd", options:{ path: nuages.vars.paths[nuages.vars.globalOptions.implant.value.substring(0.6)], dir:cmdArray.slice(1).join(" ")}});
         }
         else{

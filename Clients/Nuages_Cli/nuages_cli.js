@@ -2,8 +2,7 @@
 const cmdexec = require("./app/cmd");
 const getTerm = require("./app/term").getTerm;
 nuages = require("./app/nuagesAPI").nuages;
-var rl = require('readline'); 
-var fs = require("fs");
+var fs = require('fs'); 
 
 nuages.getTerm = function(){
 	term = getTerm();
@@ -23,15 +22,24 @@ nuages.getTerm = function(){
 
 nuages.term = nuages.getTerm();
 
+async function runScriptFile(file){
+	script = fs.readFileSync(nuages.program.script,'utf8');
+	console.log(script);
+	var arr = script.split('\n');
+	for(var i = 0; i < arr.length; i++){
+		arr[i] = arr[i].replace('\r','');
+		if(arr[i].split(" ").length > 1 && arr[i].split(" ")[0] == "!sleep"){
+			await nuages.sleep(arr[i].split(" ")[1]);
+		}
+		else{
+			nuages.term.write(arr[i] + "\n");
+			await nuages.sleep(500);
+		}
+	}
+
+}
 if(nuages.program.script){
-	const readInterface = rl.createInterface({
-		input: fs.createReadStream(nuages.program.script),
-		output: process.stdout,
-		console: false
-	});
-	readInterface.on('line', function(line) {
-		nuages.term.write(line + "\n");
-	});
+	runScriptFile(nuages.program.script)
 }
 
 const run = async () => {
