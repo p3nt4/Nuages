@@ -7,6 +7,7 @@ nuages.program.name == "Nuages Cli"
 
 nuages.program
   .option('-u, --url <url>', 'The Nuages API URI', "http://127.0.0.1:3030")
+  .option('-s, --script <file>', 'Run commands from a file')
   .option('--ASCII', 'Use ASCII tables')
 
 nuages.program.parse(process.argv);

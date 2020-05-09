@@ -89,7 +89,7 @@ nuages.commands["!implants"]= new Command()
     .exitOverride()
     .description('Interact with implant')
     .action(function (id) {
-    nuages.interactWithImplant(id);
+        nuages.interactWithImplant(id);
     });
 
     nuages.commands["!interactive"]= new Command()

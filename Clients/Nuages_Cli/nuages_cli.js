@@ -2,7 +2,8 @@
 const cmdexec = require("./app/cmd");
 const getTerm = require("./app/term").getTerm;
 nuages = require("./app/nuagesAPI").nuages;
-const { Command } = require('commander');
+var rl = require('readline'); 
+var fs = require("fs");
 
 nuages.getTerm = function(){
 	term = getTerm();
@@ -21,6 +22,17 @@ nuages.getTerm = function(){
 }
 
 nuages.term = nuages.getTerm();
+
+if(nuages.program.script){
+	const readInterface = rl.createInterface({
+		input: fs.createReadStream(nuages.program.script),
+		output: process.stdout,
+		console: false
+	});
+	readInterface.on('line', function(line) {
+		nuages.term.write(line + "\n");
+	});
+}
 
 const run = async () => {
         nuages.term.writeln(nuages.term.toBlue(nuages.term.toBold("                     +,,,,,,,,,,~=                        ")));
