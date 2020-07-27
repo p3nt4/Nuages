@@ -525,8 +525,12 @@ nuages.commands["!implants"]= new Command()
             nuages.term.logError("Channel not found");
         }else if(cmdObj.remove) {
             if(cmdObj.all){
-                nuages.pipeService.remove(null,{}).catch((err) => {
-                    nuages.term.logError(err.message);
+                nuages.pipeService.find({$limit:1000}).then(pipes => {
+                    for(var i=0; i< pipes.data.length; i++){
+                        nuages.pipeService.remove(pipes.data[i]._id);
+                    }
+                }).catch(err=>{
+                    nuages.term.logError(err);
                 });
             }else{
             nuages.pipeService.remove(nuages.vars.pipes[id]._id).catch((err) => {
