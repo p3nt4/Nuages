@@ -517,15 +517,22 @@ nuages.commands["!implants"]= new Command()
     .description('Manage channels')
     .option('-r, --remove', 'Remove channel')
     .option('-i, --interact', 'Interact with the channel')
+    .option('--all', 'Apply the command to all implants')
     .action(function (id, cmdObj) {
         if(!id){
             nuages.getPipes();
         }else if(nuages.vars.pipes[id] == undefined){
             nuages.term.logError("Channel not found");
         }else if(cmdObj.remove) {
+            if(cmdObj.all){
+                nuages.pipeService.remove(null,{}).catch((err) => {
+                    nuages.term.logError(err.message);
+                });
+            }else{
             nuages.pipeService.remove(nuages.vars.pipes[id]._id).catch((err) => {
                 nuages.term.logError(err.message);
             });
+        }
         }
         else if(cmdObj.interact) {
             nuages.interactWithPipe(nuages.vars.pipes[id]._id, process.stdin, process.stdout);
@@ -612,6 +619,7 @@ nuages.commands["!implants"]= new Command()
         nuages.commands["!tunnels"].channels = undefined;
         nuages.commands["!channels"].remove = undefined; 
         nuages.commands["!channels"].interact = undefined; 
+        nuages.commands["!channels"].all = undefined; 
 }
 
 function CommandParser(str) {

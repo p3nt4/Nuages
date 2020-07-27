@@ -47,6 +47,9 @@ module.exports = function (options = {}) {
               context.app.service('pipes').remove(pipe_id).catch((err) => {});
           }catch(e){};
         });
+
+        socket.setTimeout(30000);
+
         var pipes = await context.app.service("pipes").find({query:{tunnelId: data._id}});
         if(pipes.total >= data.maxPipes){
           console.log("Too many pipes on tunnel: " + data._id);
