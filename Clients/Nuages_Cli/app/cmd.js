@@ -519,9 +519,9 @@ nuages.commands["!implants"]= new Command()
     .option('-i, --interact', 'Interact with the channel')
     .option('--all', 'Apply the command to all implants')
     .action(function (id, cmdObj) {
-        if(!id){
+        if(!id && !cmdObj.all){
             nuages.getPipes();
-        }else if(nuages.vars.pipes[id] == undefined){
+        }else if(!cmdObj.all && nuages.vars.pipes[id] == undefined){
             nuages.term.logError("Channel not found");
         }else if(cmdObj.remove) {
             if(cmdObj.all){
