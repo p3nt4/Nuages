@@ -449,6 +449,7 @@ nuages.commands["!implants"]= new Command()
   .option('--socks', 'Create a socks tunnel on the current implant')
   .option('-l, --listen <address>', 'Listening address [ip:]<port>')
   .option('-d, --destination <address>', 'Destination address <host>:<port>')
+  .option('-t, --timeout <number>', 'Connection timeout in ms', (a,b)=>{return parseInt(a)})
   .option('-c, --channels <number>', 'Max number of channels', (a,b)=>{return parseInt(a)})
   .option('-r, --remove', 'Remove tunnel')
   .action(function (id, cmdObj) {
@@ -463,7 +464,8 @@ nuages.commands["!implants"]= new Command()
                 port:bindPort, 
                 type:"socks",
                 destination: "socks",
-                maxPipes: cmdObj.channels, 
+                maxPipes: cmdObj.channels,
+                timeout: cmdObj.timeout, 
                 bindIP: bindIP,
                 implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
                 jobOptions:{}
@@ -621,6 +623,7 @@ nuages.commands["!implants"]= new Command()
         nuages.commands["!tunnels"].listen = undefined;
         nuages.commands["!tunnels"].destination = undefined;
         nuages.commands["!tunnels"].channels = undefined;
+        nuages.commands["!tunnels"].timeout = undefined;
         nuages.commands["!channels"].remove = undefined; 
         nuages.commands["!channels"].interact = undefined; 
         nuages.commands["!channels"].all = undefined; 

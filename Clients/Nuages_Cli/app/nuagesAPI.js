@@ -296,6 +296,10 @@ nuages.templates.tunnels = [
         attr: "destination",
     },
     {   
+        header: "Timeout",
+        attr: "timeout",
+    },
+    {   
         header: "Channels",
         attr: "pipeNo",
     },
