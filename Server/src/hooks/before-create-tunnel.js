@@ -26,6 +26,8 @@ module.exports = function (options = {}) {
 
     data.implantId = context.data.implantId;
 
+    data.timeout = context.data.timeout? parseInt(context.data.timeout) : null;
+
     data.jobOptions = context.data.jobOptions ? context.data.jobOptions : {};
 
     data.port = parseInt(context.data.port);
@@ -39,23 +41,23 @@ module.exports = function (options = {}) {
         pipe_id = srs({length: 32, alphanumeric: true});
         socket.on('error', function(e) {
           try{
-            console.log("TCP socket error");
             context.app.service('pipes').remove(pipe_id).catch((err) => {});
         }catch(e){};
         });
         socket.on('end', function(e) {
           try{
-              console.log("TCP socket end");
               context.app.service('pipes').remove(pipe_id).catch((err) => {});
           }catch(e){};
         });
 
-        socket.setTimeout(30000, function(e) {
-          try{
-              console.log("TCP socket timed out");
-              context.app.service('pipes').remove(pipe_id).catch((err) => {});
-          }catch(e){};
-        });
+        if(data.timeout != null){
+          socket.setTimeout(data.timeout, function(e) {
+            try{
+                console.log("TCP connection timed out");
+                context.app.service('pipes').remove(pipe_id).catch((err) => {});
+            }catch(e){};
+          });
+        }
 
         var pipes = await context.app.service("pipes").find({query:{tunnelId: data._id}});
         if(pipes.total >= data.maxPipes){
