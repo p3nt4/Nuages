@@ -39,16 +39,23 @@ module.exports = function (options = {}) {
         pipe_id = srs({length: 32, alphanumeric: true});
         socket.on('error', function(e) {
           try{
+            console.log("TCP socket error");
             context.app.service('pipes').remove(pipe_id).catch((err) => {});
         }catch(e){};
         });
         socket.on('end', function(e) {
           try{
+              console.log("TCP socket end");
               context.app.service('pipes').remove(pipe_id).catch((err) => {});
           }catch(e){};
         });
 
-        socket.setTimeout(30000);
+        socket.setTimeout(30000, function(e) {
+          try{
+              console.log("TCP socket timed out");
+              context.app.service('pipes').remove(pipe_id).catch((err) => {});
+          }catch(e){};
+        });
 
         var pipes = await context.app.service("pipes").find({query:{tunnelId: data._id}});
         if(pipes.total >= data.maxPipes){
