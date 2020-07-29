@@ -26,7 +26,7 @@ module.exports = function (options = {}) {
 
     data.implantId = context.data.implantId;
 
-    data.timeout = parseInt(context.data.timeout) ? parseInt(context.data.timeout) : 30000;
+    data.timeout = context.data.timeout? parseInt(context.data.timeout) : null;
 
     data.jobOptions = context.data.jobOptions ? context.data.jobOptions : {};
 
