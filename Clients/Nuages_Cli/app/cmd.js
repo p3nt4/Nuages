@@ -31,7 +31,7 @@ nuages.commands["!implants"]= new Command()
   .option('-r, --remove', 'Remove the implant')
   .option('-c, --configure [key]', 'Show or modify the implant configuration')
   .option('-v, --value [value]', 'New configuration value')
-  .option('-k, --kill', 'Remove the implant')
+  .option('-k, --kill', 'Kill the implant')
   .option('--all', 'Apply the command to all implants')
   .action(function (id, cmdObj) {
     if(!id && !cmdObj.all){
