@@ -1,3 +1,4 @@
+#!python3
 import os
 import slack
 import json
