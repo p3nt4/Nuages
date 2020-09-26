@@ -47,5 +47,6 @@ Nuages does abstraction of the handler level so that payloads can be executed ov
 
 
 ## Disclaimer
-This project is intended for security researchers and penetration testers and should not only be used with the approval of system owners.
+This project is intended for security researchers and penetration testers and should only be used with the approval of system owners.
+
 
