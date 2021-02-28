@@ -50,7 +50,6 @@ function hasher (password) {
         if (error) {
           return reject(error);
         }
-
         resolve(hashedPassword);
       });
     });

