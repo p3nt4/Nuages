@@ -45,23 +45,23 @@ exports.load = function (app) {
     return handler;
 };
 
+
+function escapeShellArg (arg) {
+    return arg.replace(/(\s+)/g, '');
+}
+
 // This is the first function to be called when the handler is run
 exports.run = async function (app, run) {
-    // Lets sanitize inputs to prevent code execution
-    run.options.port.value = run.options.port.value.replace(/[`~!@#$%^&*()_|\-=?;'",.<>\{\}\[\]]/gi, '');
-    run.options.key.value = run.options.key.value.replace(/[`~!@#$%^&*()_|\-=?;'",<>\{\}\[\]]/gi, '');
-
     var script = path.join(__dirname,"HTTPAES256Handler.py");
 
-    var command = script +" -p " + run.options.port.value + " -k " + run.options.key.value + " -i " + run._id;
+    var command = script +" -p " + escapeShellArg(run.options.port.value) + " -k " + escapeShellArg(run.options.key.value) + " -i " + run._id;
 
     if(app, run.options.uri.value && run.options.uri.value != ""){
-        run.options.uri.value = run.options.uri.value.replace(/[`~!@#$%^&*()_|\-=?;'",<>\{\}\[\]]/gi, '');
-        command+= " -u " + run.options.uri.value;
+        command+= " -u " + escapeShellArg(run.options.uri.value);
     }
+
     if(app, run.options.directory.value && run.options.directory.value != ""){
-        run.options.directory.value = run.options.directory.value.replace(/[`~!@#$%^&*()_|\-=?;'",<>\{\}\[\]]/gi, '');
-        command+= " -d " + run.options.directory.value;
+        command+= " -d " + escapeShellArg(run.options.directory.value);
     }
     command+=" -q";
 

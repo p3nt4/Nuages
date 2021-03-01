@@ -55,17 +55,17 @@ exports.load = function (app) {
     return handler;
 };
 
+
+function escapeShellArg (arg) {
+    return arg.replace(/(\s+)/g, '');
+}
+
 // This is the first function to be called when the handler is run
 exports.run = async function (app, run) {
     try{
-        // Lets sanitize inputs to prevent code execution
-        run.options.port.value = run.options.port.value.replace(/[`~!@#$%^&*()_|\-=?;'",.<>\{\}\[\]]/gi, '');
-        run.options.key.value = run.options.key.value.replace(/[`~!@#$%^&*()_|\-=?;'",<>\{\}\[\]]/gi, '');
-        run.options.domain.value = run.options.domain.value.replace(/[`~!@#$%^&*()_|=?;'",<>\{\}\[\]]/gi, '');
-
         var script = path.join(__dirname,"DNSAES256Handler.py");
 
-        var command = script +" -p " + run.options.port.value + " -k " + run.options.key.value + " -i " + run._id + " -d " + run.options.domain.value ;
+        var command = script +" -p " + escapeShellArg(run.options.port.value) + " -k " + escapeShellArg(run.options.key.value) + " -i " + run._id + " -d " + escapeShellArg(run.options.domain.value);
 
         if(run.options.udp.value.toLowerCase() == "true"){
             command += " --udp"

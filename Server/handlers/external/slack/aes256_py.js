@@ -43,19 +43,19 @@ exports.load = function (app) {
     return handler;
 };
 
+function escapeShellArg (arg) {
+    return arg.replace(/(\s+)/g, '');
+}
+
 // This is the first function to be called when the handler is run
 exports.run = async function (app, run) {
-    // Lets sanitize inputs to prevent code execution
-    run.options.token.value = run.options.token.value.replace(/[`~!@#$%^&*()_|=?;'",.<>\{\}\[\]]/gi, '');
-    run.options.bot.value = run.options.bot.value.replace(/[`~!@#$%^&*()_|=?;'",<>\{\}\[\]]/gi, '');
 
     var script = path.join(__dirname,"SLACKAES256Handler.py");
 
-    var command = script +" -t " + run.options.token.value + " -k " + run.options.key.value + " -b " + run.options.bot.value + " -q" + " -i " + run._id;
+    var command = script +" -t " + escapeShellArg(run.options.token.value) + " -k " + escapeShellArg(run.options.key.value) + " -b " + escapeShellArg(run.options.bot.value) + " -q" + " -i " + run._id;
 
     if(app, run.options.uri.value && run.options.uri.value != ""){
-        run.options.uri.value = run.options.uri.value.replace(/[`~!@#$%^&*()_|\-=?;'",<>\{\}\[\]]/gi, '');
-        command+= " -u " + run.options.uri.value;
+        command+= " -u " + escapeShellArg(run.options.uri.value);
     }
     
     var python = run.options.python.value == "0" ? "python" : "python3";
