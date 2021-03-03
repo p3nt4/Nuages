@@ -1,4 +1,5 @@
 const path = require('path');
+var bodyParser = require('body-parser');
 const favicon = require('serve-favicon');
 const compress = require('compression');
 const helmet = require('helmet');
@@ -29,11 +30,24 @@ app.use(cors());
 app.use(compress());
 app.use(express.json({ limit: '100mb', extended: true  }));
 app.use(express.urlencoded({  limit: '100mb', extended: true }));
+app.use(bodyParser.raw({
+    type: "application/octet-stream",
+    limit: '100mb',
+    extended: true,
+}));
 app.use(favicon(path.join(app.get('public'), 'favicon.ico')));
 // Host the public folder
 app.use('/', express.static(app.get('public')));
 
-app.configure(express.rest());
+//app.configure(express.rest());
+app.configure(express.rest(function(req, res) {
+    if(res.hook.path === 'implant/io/:pipeId'){
+        res.type('application/octet-stream');
+    }
+    res.send(res.data);
+  }))
+
+
 app.configure(socketio());
 
 app.configure(mongodb);

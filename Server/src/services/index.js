@@ -19,6 +19,7 @@ const pipes = require('./pipes/pipes.service.js');
 const pipesIo = require('./pipes-io/pipes-io.service.js');
 const implantsIo = require('./implant-io/implant-io.service.js');
 const logs = require('./logs/logs.service.js');
+const implantIoBin = require('./implant-io-bin/implant-io-bin.service.js');
 // eslint-disable-next-line no-unused-vars
 module.exports = function (app) {
   app.configure(implants);
@@ -42,4 +43,5 @@ module.exports = function (app) {
   app.configure(pipesIo);
   app.configure(implantsIo);
   app.configure(logs);
+  app.configure(implantIoBin);
 };

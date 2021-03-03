@@ -619,7 +619,7 @@ class NuagesImplant:
                 else:
                     pass
 
-nuages = NuagesConnector("http://127.0.0.1:8080","password")
+nuages = NuagesConnector("http://127.0.0.1:8888","password")
 config = {}
 config["sleep"] = "1"
 config["buffersize"] = "65536"

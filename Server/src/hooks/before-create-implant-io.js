@@ -3,7 +3,7 @@
 
 // eslint-disable-next-line no-unused-vars
 
-const { NotFound} = require('@feathersjs/errors');
+const { NotFound } = require('@feathersjs/errors');
 
 module.exports = (options = {}) => {
   return async context => {

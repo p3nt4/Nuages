@@ -4,6 +4,8 @@
     {
         string POST(string url, string jsonContent);
 
+        byte[] POST(string url, byte[] body);
+
         string getConnectionString();
 
         string getHandler();
@@ -12,8 +14,11 @@
 
         int getRefreshRate();
 
+        bool supportsBinaryIO();
+
         void setRefreshRate(int refreshrate);
 
         void setBufferSize(int buffersize);
+
     }
 }

