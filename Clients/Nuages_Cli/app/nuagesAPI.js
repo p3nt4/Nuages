@@ -631,10 +631,10 @@ function makeid(length) { //Not made to be secure - just to differentiates sessi
 nuages.login = async function(user,password){
     try {
         //await app.logout();
-        nuages.vars.user = {email: user, password: password}
+        nuages.vars.user = {username: user, password: password}
         const payload = Object.assign({ strategy: 'local' }, nuages.vars.user);
         await app.authenticate(payload);
-        nuages.term.logSuccess("Authentication Successful", user.email);
+        nuages.term.logSuccess("Authentication Successful", user.username);
         nuages.getImplants();
         nuages.getModules(false);
         nuages.getHandlers(false);

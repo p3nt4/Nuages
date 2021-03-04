@@ -23,7 +23,7 @@ async function connectDB(){
 async function validateUsername(username){
   var users = await dbo.collection("users").find({}).toArray();
   for(var i = 0; i< users.length; i++){
-    if(users[i].email == username){
+    if(users[i].username == username){
       return("  A user with this username already exists");
     }
   }
@@ -85,7 +85,7 @@ function promptAddUser() {
     nuagesUser = answers;
     nuagesUser.password = await hasher(nuagesUser.password1);
     dbo.collection('users').insertOne({
-        email: nuagesUser.username,
+        username: nuagesUser.username,
         password: nuagesUser.password
     },function (err, response) {
       if(err) {
@@ -102,7 +102,7 @@ async function promptDelUser() {
   var users = await dbo.collection("users").find({}).toArray();
   var choices = [];
   for(var i = 0; i< users.length; i++){
-    choices.push(users[i].email);
+    choices.push(users[i].username);
   }
   choices.push("Cancel");
   answers = await inquirer.prompt([
@@ -117,7 +117,7 @@ async function promptDelUser() {
     promptIndex();
   }
   else{
-  dbo.collection("users").deleteOne({email: answers.user},function (err, response) {
+  dbo.collection("users").deleteOne({username: answers.user},function (err, response) {
     if(err) {
       console.log("  Error deleting the Nuages user: " + err.message);
     } else {
