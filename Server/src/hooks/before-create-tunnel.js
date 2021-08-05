@@ -18,7 +18,7 @@ module.exports = function (options = {}) {
 
     data.id = data._id;
     
-    data.bufferSize = parseInt(context.data.bufferSize) ? parseInt(context.data.bufferSize) : 4096;
+    data.bufferSize = parseInt(context.data.bufferSize) ? parseInt(context.data.bufferSize) : 1048576;
 
     data.type = context.data.type;
 
