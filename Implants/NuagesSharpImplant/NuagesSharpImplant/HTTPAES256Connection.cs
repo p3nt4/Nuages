@@ -166,7 +166,6 @@ namespace NuagesSharpImplant
                 if (bytes.Length == 0) {
                     return bytes;
                 }
-                string plaintext = null;
                 MemoryStream ms = new MemoryStream();
                 using (Rijndael rijAlg = Rijndael.Create())
                 {

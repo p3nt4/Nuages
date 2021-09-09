@@ -180,8 +180,6 @@ namespace NuagesSharpImplant
         {
             int ReadBytes = 0;
             byte[] buffer = new byte[this.getBufferSize()];
-            JsonObject body;
-            List<KeyValuePair<string, JsonValue>> list;
             while ((ReadBytes = stream.Read(buffer, 0, this.getBufferSize())) > 0)
             {
                 if (ReadBytes < this.getBufferSize())
@@ -209,8 +207,6 @@ namespace NuagesSharpImplant
             int refreshrate = this.getRefreshRate();
             int bufferSize = this.getBufferSize();
             byte[] buffer = new byte[bufferSize];
-            JsonObject body;
-            List<KeyValuePair<string, JsonValue>> list;
             while (sentData < data.Length)
             {
                 if ((data.Length - sentData) < bufferSize) {
@@ -237,8 +233,6 @@ namespace NuagesSharpImplant
             int bufferSize = this.getBufferSize();
             byte[] buffer = new byte[bufferSize];
             byte[] buffer3;
-            JsonObject body;
-            List<KeyValuePair<string, JsonValue>> list;
             using (MemoryStream memory = new MemoryStream()) { 
                 while (sentData < data.Length)
                 {

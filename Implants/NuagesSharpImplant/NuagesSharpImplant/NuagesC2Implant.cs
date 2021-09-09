@@ -658,7 +658,7 @@ namespace NuagesSharpImplant
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                 }
             }
