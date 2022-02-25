@@ -63,7 +63,7 @@ exports.run = async function (app, run) {
                     class: run.options.class.value,
                     method: run.options.method.value,
                     arguments: run.options.arguments.value,
-                    cache: run.options.cache.value,
+                    cache: (run.options.cache.value.toLowerCase() == "true"),
                     file_id: file._id
                 }
             },
@@ -73,7 +73,6 @@ exports.run = async function (app, run) {
                 destination: "memory",
                 implantId: run.options.implant.value
             }).catch(() => {});
-        
         // Creating the job and setting the callback
         if(!job){
             moduleHelper.logError(app,run, "Error Creating reflected_assembly Job");
