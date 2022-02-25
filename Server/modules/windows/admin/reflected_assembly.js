@@ -29,6 +29,11 @@ exports.load = function (app) {
                 value: "",
                 required: false,
                 description: "Arguments in format: MyString,[bool]true,[int]21"
+            },
+            cache:{
+                value: "true",
+                required: false,
+                description: "Allow caching of assembly file"
             }
         },
         supportedOS: ["windows"],
@@ -58,6 +63,7 @@ exports.run = async function (app, run) {
                     class: run.options.class.value,
                     method: run.options.method.value,
                     arguments: run.options.arguments.value,
+                    cache: run.options.cache.value,
                     file_id: file._id
                 }
             },

