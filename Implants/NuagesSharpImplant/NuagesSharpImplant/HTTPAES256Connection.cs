@@ -12,7 +12,7 @@ namespace NuagesSharpImplant
     {
         private string connectionString;
 
-        private string handler = "PyAES256";
+        private string handler = "HTTPAES256";
 
         private AESHelper aes;
 

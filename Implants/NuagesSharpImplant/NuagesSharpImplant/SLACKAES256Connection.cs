@@ -50,7 +50,7 @@ namespace NuagesSharpImplant
 
         public string getConnectionString()
         {
-            return "Slack";
+            return "SLACKAES256";
         }
 
         public bool supportsBinaryIO() {
