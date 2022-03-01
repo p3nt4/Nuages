@@ -143,7 +143,6 @@ class NuagesDNS:
                     self.requestDB[splitReq[1]].data += data
                     self.requestDB[splitReq[1]].counter += 1
                 if(self.requestDB[splitReq[1]].counter > 100):
-                    print("FOUND TOP 100 request!!!!!!!!")
                     del self.requestDB[splitReq[1]]
                     reply.add_answer(RR(request.q.qname, QTYPE.TXT, rdata=TXT("-1")))
                     return reply.pack()

@@ -53,21 +53,24 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="JavaScriptReader.cs" />
-    <Compile Include="JsonArray.cs" />
-    <Compile Include="JsonObject.cs" />
-    <Compile Include="JsonPrimitive.cs" />
-    <Compile Include="JsonType.cs" />
-    <Compile Include="JsonValue.cs" />
-    <Compile Include="MultiConnection.cs" />
-    <Compile Include="SLACKAES256Connection.cs" />
-    <Compile Include="NuagesC2Connection.cs" />
+    <Compile Include="Connections\DNSAES256Connection.cs" />
+    <Compile Include="Utils\AESHelper.cs" />
+    <Compile Include="Utils\JavaScriptReader.cs" />
+    <Compile Include="Utils\JsonArray.cs" />
+    <Compile Include="Utils\JsonObject.cs" />
+    <Compile Include="Utils\JsonPrimitive.cs" />
+    <Compile Include="Utils\JsonType.cs" />
+    <Compile Include="Utils\JsonValue.cs" />
+    <Compile Include="Connections\MultiConnection.cs" />
+    <Compile Include="Connections\SLACKAES256Connection.cs" />
+    <Compile Include="Connections\NuagesC2Connection.cs" />
     <Compile Include="NuagesC2Connector.cs" />
-    <Compile Include="DirectConnection.cs" />
+    <Compile Include="Connections\DirectConnection.cs" />
     <Compile Include="NuagesC2Implant.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="HTTPAES256Connection.cs" />
+    <Compile Include="Connections\HTTPAES256Connection.cs" />
+    <Compile Include="Utils\Posh.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

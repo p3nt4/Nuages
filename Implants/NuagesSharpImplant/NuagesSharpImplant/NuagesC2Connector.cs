@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Json;
 using System.Security.Policy;
+using NuagesSharpImplant.Connections;
 
 namespace NuagesSharpImplant
 {

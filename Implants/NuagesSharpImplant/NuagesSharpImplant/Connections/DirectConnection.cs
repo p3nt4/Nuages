@@ -4,7 +4,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 
-namespace NuagesSharpImplant
+namespace NuagesSharpImplant.Connections
 {
     public class DirectConnection : NuagesC2Connection
     {

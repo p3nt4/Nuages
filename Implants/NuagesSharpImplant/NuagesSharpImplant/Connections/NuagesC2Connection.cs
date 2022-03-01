@@ -1,4 +1,4 @@
-﻿namespace NuagesSharpImplant
+﻿namespace NuagesSharpImplant.Connections
 {
     public interface NuagesC2Connection
     {
