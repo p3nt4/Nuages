@@ -31,7 +31,7 @@ namespace NuagesSharpImplant
             // If the DNSAES256 Handler is used:
             // config["buffersize"] = "200";
             // config["refreshrate"] = "1000";
-            // DNSAES256Connection connection = new DNSAES256Connection("t.rapidsurvey.org", "password", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
+            // DNSAES256Connection connection = new DNSAES256Connection("a.mydomain.org", "password", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
             // If the multiple connections are used
             //List<NuagesC2Connection> connections = new List<NuagesC2Connection>();

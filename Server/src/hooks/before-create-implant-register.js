@@ -53,6 +53,7 @@ module.exports = function (options = {}) {
       }
     });
     
-    context.data = implant;
+    context.data = {_id: implant._id};
+    //context.data = implant;
   };
 };
