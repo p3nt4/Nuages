@@ -98,6 +98,19 @@ nuages.commands["!implants"]= new Command()
     .exitOverride()
     .description('Create an interactive channel on the implant')
 
+    nuages.commands["!config"]= new Command()
+    .name('!config')
+    .arguments('[key] [value]')
+    .exitOverride()
+    .description('View or change implant configuration')
+    .action(function (key, value, cmdObj) {
+        var tmpconfig = {};
+        if(key !== undefined && value !== undefined){
+            tmpconfig[key] = value
+        }
+        nuages.createJob(nuages.vars.globalOptions.implant.value, {type: "configure", options: {config:tmpconfig}}); 
+    });
+
     nuages.commands["!put"]= new Command()
     .name('!put')
     .arguments('<id> [path]')
@@ -244,10 +257,10 @@ nuages.commands["!implants"]= new Command()
     .exitOverride()
     .description('Unset an option')
     .option('-g, --global', 'Unset a global option')
-    .action(function (key, value, cmdObj) {
+    .action(function (key, cmdObj) {
         var target = cmdObj.global ? nuages.vars.globalOptions : nuages.vars.moduleOptions;
         if(target[key.toLowerCase()] !== undefined){
-            target[key.toLowerCase()] = "";
+            target[key.toLowerCase()].value = "";
         }
     });
 
@@ -570,6 +583,7 @@ nuages.commands["!implants"]= new Command()
     nuages.maincommand.addCommand(nuages.commands["!implants"]);
     nuages.maincommand.addCommand(nuages.commands["!shell"]);
     nuages.maincommand.addCommand(nuages.commands["!interactive"]);
+    nuages.maincommand.addCommand(nuages.commands["!config"]);
     nuages.maincommand.addCommand(nuages.commands["!put"]);
     nuages.maincommand.addCommand(nuages.commands["!get"]);
     nuages.maincommand.addCommand(nuages.commands["!files"]);
@@ -597,6 +611,8 @@ nuages.commands["!implants"]= new Command()
         nuages.commands["!implants"].remove = undefined;
         nuages.commands["!implants"].interact = undefined;
         nuages.commands["!implants"].all = undefined;
+        nuages.commands["!config"].key = undefined;
+        nuages.commands["!config"].value = undefined;
         nuages.commands["!put"].local = undefined;
         nuages.commands["!get"].local = undefined;
         nuages.commands["!run"].autorun = undefined;

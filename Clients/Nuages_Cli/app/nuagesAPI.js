@@ -174,6 +174,18 @@ nuages.templates.moduleOptions = [
     }
 ];
 
+nuages.templates.implantConf = [
+    {   
+        header: "Key",
+        attr: "key",
+        process: (e)=>{return term.toBold(e)},
+    },
+    {   
+        header: "Value",
+        attr: "value",
+    }
+];
+
 nuages.templates.handlers = [
     {   
         header: "Name",
@@ -663,8 +675,17 @@ nuages.formatImplantLastSeen = function(timestamp){
         return final;
 }
 
-nuages.printImplants= function (imp){
+nuages.printImplants = function (imp){
     return nuages.toTable(nuages.templates.implants, imp);
+}
+
+nuages.printImplantConf = function (conf){
+    var conf = JSON.parse(conf);
+    var arr = [];
+    for (const [key, value] of Object.entries(conf)) {
+        arr.push({key: key, value: value});
+      }
+    return nuages.toTable(nuages.templates.implantConf, arr);
 }
 
 nuages.humanFileSize = function(size) {
@@ -955,6 +976,9 @@ nuages.onJobPatched = function (job){
     else if(job.jobStatus == 3){
         if(job.payload.type=="command"){
             nuages.term.logSuccess("Received result for command: " + job.payload.options.cmd +"\r\n" + job.result, job.implantId.substring(0,6));
+        }
+        else if(job.payload.type=="configure"){
+            nuages.term.logSuccess("Configure succeded: " + "\r\n" + nuages.printImplantConf(job.result), job.implantId.substring(0,6));
         }
         else {
             nuages.term.logSuccess(job.payload.type + " succeeded:" +"\r\n" + job.result, job.implantId.substring(0,6));
