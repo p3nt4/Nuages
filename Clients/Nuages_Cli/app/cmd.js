@@ -462,6 +462,7 @@ nuages.commands["!implants"]= new Command()
   .option('--socks', 'Create a socks tunnel on the current implant')
   .option('-l, --listen <address>', 'Listening address [ip:]<port>')
   .option('-d, --destination <address>', 'Destination address <host>:<port>')
+  .option('-r, --reverse', 'Create a reverse tunnel (--tcp only)')
   .option('-t, --timeout <number>', 'Connection timeout in ms', (a,b)=>{return parseInt(a)})
   .option('-c, --channels <number>', 'Max number of channels', (a,b)=>{return parseInt(a)})
   .option('-r, --remove', 'Remove tunnel')
@@ -496,21 +497,34 @@ nuages.commands["!implants"]= new Command()
                 nuages.term.logError("Destination should be in the format host:port")
                 return;
             }
-            var destPort = destAddr[1];
-            var destIP = destAddr[0];
-            if(nuages.vars.globalOptions.implant.value == "" || nuages.vars.globalOptions.implant.value == undefined) {return;}
-            nuages.tunnelService.create({
-                port:bindPort, 
-                type:"tcp_fwd",
-                destination: cmdObj.destination,
-                maxPipes: cmdObj.channels, 
-                bindIP: bindIP,
-                implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
-                jobOptions:{host:destIP, port:destPort}
-            }).then(() => {}).catch((err) => {
-                nuages.term.logError(err.message);
-            });
-        
+            if(cmdObj.reverse){
+                if(nuages.vars.globalOptions.implant.value == "" || nuages.vars.globalOptions.implant.value == undefined) {return;}
+                nuages.tunnelService.create({
+                    port:bindPort, 
+                    type:"rev_tcp",
+                    destination: cmdObj.destination,
+                    maxPipes: cmdObj.channels, 
+                    bindIP: bindIP,
+                    implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
+                    jobOptions:{}
+                }).then(() => {}).catch((err) => {
+                    nuages.term.logError(err.message);
+                });
+                
+            }else{
+                if(nuages.vars.globalOptions.implant.value == "" || nuages.vars.globalOptions.implant.value == undefined) {return;}
+                nuages.tunnelService.create({
+                    port:bindPort, 
+                    type:"tcp_fwd",
+                    destination: cmdObj.destination,
+                    maxPipes: cmdObj.channels, 
+                    bindIP: bindIP,
+                    implantId: nuages.vars.implants[nuages.vars.globalOptions.implant.value]._id,
+                    jobOptions:{}
+                }).then(() => {}).catch((err) => {
+                    nuages.term.logError(err.message);
+                });
+         }
         }
         else nuages.getTunnels();
     }else if(nuages.vars.tunnels[id] == undefined){
@@ -636,6 +650,7 @@ nuages.commands["!implants"]= new Command()
         nuages.commands["!tunnels"].remove = undefined; 
         nuages.commands["!tunnels"].socks = undefined;
         nuages.commands["!tunnels"].tcp = undefined; 
+        nuages.commands["!tunnels"].reverse = undefined; 
         nuages.commands["!tunnels"].listen = undefined;
         nuages.commands["!tunnels"].destination = undefined;
         nuages.commands["!tunnels"].channels = undefined;

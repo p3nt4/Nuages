@@ -60,6 +60,11 @@ module.exports = function (options = {}) {
       context.app.service("pipes").remove(job.pipe_id);	
     }
 
+    //Delete tunnel if this job had a tunnel
+    if(job.tunnelId && job.jobStatus > 2){
+      context.app.service("tunnels").remove(job.tunnelId);	
+    }
+
     //Update the job with the new data
     context.app.service('jobs').patch(job._id, job); 
 

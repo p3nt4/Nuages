@@ -121,6 +121,7 @@ module.exports = (options = {}) => {
         };
       }
     }
+    
     // If the id is already defined this pipe has already been created by a tunnel object and only needs to be saved
     else if(context.data._id){
       var data = {};

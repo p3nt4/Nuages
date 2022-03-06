@@ -952,7 +952,7 @@ nuages.onJobPatched = function (job){
     if(job.moduleRun !== null){
         return;
     }
-    if(job.vars.session === undefined || job.vars.session != nuages.vars.session){
+    if((job.vars.session === undefined || job.vars.session != nuages.vars.session) && job.payload.type != "rev_tcp"){
         return;
     }
     if(job.payload.type=="command" && job.payload.options.cd == true && job.result){

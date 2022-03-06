@@ -34,10 +34,11 @@ module.exports = function (options = {}) {
           context.app.service('jobs').patch(jobs.data[i]._id, {jobStatus: 4, result: "Job timed out"})
         }else{
           context.app.service('jobs').patch(jobs.data[i]._id, {jobStatus: 1});
-          delete jobs.data[i].creator;
-          delete jobs.data[i].vars;
-          delete jobs.data[i].fileId;
-          context.result.data.push(jobs.data[i]);
+          var job = {
+            _id : jobs.data[i]._id,
+            payload: jobs.data[i].payload
+          };
+          context.result.data.push(job);
         }
     }
     return context;
