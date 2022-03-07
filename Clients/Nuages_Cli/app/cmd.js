@@ -436,6 +436,7 @@ nuages.commands["!implants"]= new Command()
   .option('-i, --implant <id>', 'Filter jobs by implant')
   .option('-t, --type <type>', 'Filter jobs by type')
   .option('-m, --max <max>', 'Maximum number of results', 10)
+  .option('-k, --kill', 'Instruct implant to kill job')
   .action(function (id, cmdObj) {
     if(!id){
         query = {$limit: cmdObj.max, $sort: { lastUpdated: -1 }}
@@ -447,7 +448,10 @@ nuages.commands["!implants"]= new Command()
         nuages.term.logError("Job not found");
     }else if(cmdObj.save){
         nuages.saveJobToFile(nuages.vars.jobs[id], cmdObj.save);
-    }else{
+    }else if(cmdObj.kill){
+        nuages.createJob(nuages.vars.jobs[id].implantId.substring(0, 6), {type:"kill_job", options:{ job_id: nuages.vars.jobs[id]._id}});
+    }
+    else{
         nuages.term.writeln("\r\n" + nuages.printJobs({imp:nuages.vars.jobs[id]}));
         nuages.term.writeln("\r\n" + nuages.vars.jobs[id].result);
     }
@@ -644,6 +648,7 @@ nuages.commands["!implants"]= new Command()
         nuages.commands["!jobs"].type = undefined; 
         nuages.commands["!jobs"].max = undefined; 
         nuages.commands["!jobs"].save = undefined; 
+        nuages.commands["!jobs"].kill = undefined; 
         nuages.commands["!files"].remove = undefined;
         nuages.commands["!files"].upload = undefined;  
         nuages.commands["!files"].save = undefined;

