@@ -20,7 +20,7 @@ const errorHandler = ctx => {
 
 module.exports = {
   before: {
-    all: [ log() ],
+    all: [log()],
     find: [],
     get: [],
     create: [],
