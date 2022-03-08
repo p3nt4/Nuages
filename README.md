@@ -23,6 +23,7 @@ Nuages can be easily be extended with modules to perform anything desired. At th
 - Interactive Channels
 - File Upload/Download
 - TCP Forwarding
+- Reverse TCP Forwarding
 - Socks Tunneling
 - Reflected Assembly Execution
 - Powershell Execution
