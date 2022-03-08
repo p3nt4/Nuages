@@ -55,7 +55,7 @@ function getTerm(){
         }
         else if((words[0].toLowerCase() == "!jobs") && words.length == 2){
             var completions = Object.keys(nuages.vars.jobs);
-            completions = completions.concat("--implant --command --type --max".split(' '));
+            completions = completions.concat("--implant --command --type --max --kill".split(' '));
         }
         else if((words[0].toLowerCase() == "!autoruns") && words.length == 2){
             var completions = '--clear'.split(' ');

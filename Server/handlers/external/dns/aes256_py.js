@@ -10,7 +10,7 @@ exports.load = function (app) {
         name: "external/dns/aes256_py",
         options: {
             python: {
-                value: "0",
+                value: "1",
                 required: true,
                 description: "[0] python [1] python3"
             },
