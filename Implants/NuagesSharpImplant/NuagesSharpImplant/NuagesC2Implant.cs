@@ -52,7 +52,7 @@ namespace NuagesSharpImplant
 
             this.connector = connector;
 
-            this.config["handler"] = this.connector.getHandler() + "|" + this.connector.getConnectionString();
+            this.config["handler"] = this.connector.getHandler();
 
             this.assemblies = new Dictionary<string, Assembly>();
 

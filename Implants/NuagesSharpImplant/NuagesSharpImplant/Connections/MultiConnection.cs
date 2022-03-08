@@ -93,7 +93,7 @@ namespace NuagesSharpImplant.Connections
         public string getHandler()
         {
 
-            string handlers = "";
+            string handlers = "MULTI";
 
             foreach (NuagesC2Connection connection in this.connections)
             {

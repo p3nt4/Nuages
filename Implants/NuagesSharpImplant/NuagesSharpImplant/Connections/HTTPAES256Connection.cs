@@ -45,7 +45,7 @@ namespace NuagesSharpImplant.Connections
 
         public string getHandler()
         {
-            return this.handler;
+            return this.handler + "|" + this.connectionString;
         }
 
         public int getBufferSize()
