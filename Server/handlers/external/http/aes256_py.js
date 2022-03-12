@@ -9,11 +9,6 @@ exports.load = function (app) {
     var handler = {
         name: "external/http/aes256_py",
         options: {
-            python: {
-                value: "1",
-                required: true,
-                description: "[0] python [1] python3"
-            },
             port: {
                 value: "80",
                 required: true,
@@ -28,11 +23,6 @@ exports.load = function (app) {
                 value: "http://127.0.0.1:3030",
                 required: true,
                 description: "The URI of the Nuages API"
-            },
-            directory:{
-                value: "",
-                required: false,
-                description: "The directory to serve on GET requests"
             }
         },
 
@@ -60,12 +50,14 @@ exports.run = async function (app, run) {
         command+= " -u " + escapeShellArg(run.options.uri.value);
     }
 
-    if(app, run.options.directory.value && run.options.directory.value != ""){
-        command+= " -d " + escapeShellArg(run.options.directory.value);
-    }
+    // This pauses a security threat as is
+    //if(app, run.options.directory.value && run.options.directory.value != ""){
+    //    command+= " -d " + escapeShellArg(run.options.directory.value);
+    //}
+    
     command+=" -q";
 
-    var python = run.options.python.value == "0" ? "python" : "python3";
+    var python = app.get("python_path");
 
     var child = child_process.execFile(python,command.split(" "),{}, function (error, stdout, stderr) {
         if(error.killed == false){

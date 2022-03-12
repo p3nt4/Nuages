@@ -29,5 +29,6 @@
       "passwordField": "password"
     }
   },
-  "id_length" : 16
+  "id_length" : 16,
+  "python_path": "python3"
 }

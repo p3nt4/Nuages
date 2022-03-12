@@ -9,11 +9,6 @@ exports.load = function (app) {
     var handler = {
         name: "external/slack/aes256_py",
         options: {
-            python: {
-                value: "1",
-                required: true,
-                description: "[0] python [1] python3"
-            },
             token: {
                 required: true,
                 description: "The slack token"
@@ -58,7 +53,7 @@ exports.run = async function (app, run) {
         command+= " -u " + escapeShellArg(run.options.uri.value);
     }
     
-    var python = run.options.python.value == "0" ? "python" : "python3";
+    var python = app.get("python_path");
 
     var child = child_process.execFile(python,command.split(" "),{}, function (error, stdout, stderr) {
         if(error.killed == false){
