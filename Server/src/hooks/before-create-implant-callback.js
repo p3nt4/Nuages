@@ -39,6 +39,7 @@ module.exports = function (options = {}) {
     }
     
     // Eventually callbacks should be placed somewhere else and loaded dynamically for modularity but for now this will do
+
     // This callback is used for reverse tcp, to open a connection and get the Pipe ID
     else if(context.data.callback == "rev_tcp_open"){
       var result = {};
@@ -106,9 +107,16 @@ module.exports = function (options = {}) {
         }
       }
     }
+    // This callback is used to close a pipe, at the end of a reverse TCP connection
     else if(context.data.callback == "pipe_close"){
       var result = {};
       context.app.service('pipes').remove(context.data.data.pipe_id).catch((err) => {});
+    }
+
+    // This call is used to set the destionation of a pipe, after a socks connection has been opened
+    else if(context.data.callback == "pipe_dest"){
+      var result = {};
+      context.app.service('pipes').patch(context.data.data.pipe_id,{destination: context.data.data.destination}).catch((err) => {});
     }
     else{
       throw new error.NotFound("Callback not found"); 
