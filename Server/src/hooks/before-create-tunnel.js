@@ -14,7 +14,7 @@ module.exports = function (options = {}) {
     var data = {};
 
     //  Data validation
-    data._id = srs({length: 32, alphanumeric: true});
+    data._id = srs({length: context.app.get('id_length'), alphanumeric: true});
 
     data.id = data._id;
     
@@ -54,7 +54,7 @@ module.exports = function (options = {}) {
     else{
       var server = net.createServer(async function(socket) {
         try{
-          pipe_id = srs({length: 32, alphanumeric: true});
+          pipe_id = srs({length: context.app.get('id_length'), alphanumeric: true});
           socket.on('error', function(e) {
             try{
               context.app.service('pipes').remove(pipe_id).catch((err) => {});

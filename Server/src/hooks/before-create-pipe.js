@@ -14,7 +14,7 @@ module.exports = (options = {}) => {
     // These pipes are used to communicate between implants and clients directly
     if(context.data.type == "interactive" || context.data.type == "bidirectional"){
       var data = {};
-      data.id = srs({length: 32, alphanumeric: true});
+      data.id = srs({length: context.app.get('id_length'), alphanumeric: true});
       data._id = data.id;
       data.implantId = context.data.implantId;
       data.type = context.data.type ? context.data.type : "";
@@ -36,7 +36,7 @@ module.exports = (options = {}) => {
     // This is a file upload
     else if(context.data.type == "upload"){
       var data = {};
-      data.id = srs({length: 32, alphanumeric: true});
+      data.id = srs({length: context.app.get('id_length'), alphanumeric: true});
       data._id = data.id;
       data.implantId = context.data.implantId;
       data.type = context.data.type ? context.data.type : "";
@@ -51,7 +51,7 @@ module.exports = (options = {}) => {
       // This is a max buffer size
       data.bufferSize = parseInt(context.data.bufferSize) ? parseInt(context.data.bufferSize) : 65536;
       // Let's open a GridFS stream
-      file_id = srs({length: 32, alphanumeric: true});
+      file_id = srs({length: context.app.get('id_length'), alphanumeric: true});
       data.destination = file_id;
       stream = context.app.gridFS.openUploadStream(file_id,{metadata:{filename:data.filename,uploadedBy:uploadedBy}});
       stream.on('error', function(err) {
@@ -82,7 +82,7 @@ module.exports = (options = {}) => {
     // This is a file download
     else if(context.data.type == "download"){
       var data = {};
-      data.id = srs({length: 32, alphanumeric: true});
+      data.id = srs({length: context.app.get('id_length'), alphanumeric: true});
       data._id = data.id;
       data.implantId = context.data.implantId;
       data.type = context.data.type ? context.data.type : "";

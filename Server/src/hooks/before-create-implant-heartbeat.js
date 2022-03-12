@@ -9,7 +9,7 @@ module.exports = function (options = {}) {
   return async context => {
     
     // The implant must know its id
-    if(!context.data.id || context.data.id.length != 32){
+    if(!context.data.id || context.data.id.length != context.app.get("id_length")){
 		  throw new error.Forbidden("Unauthorized");
     }
     

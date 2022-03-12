@@ -28,5 +28,6 @@
       "usernameField": "\\username",
       "passwordField": "password"
     }
-  }
+  },
+  "id_length" : 16
 }

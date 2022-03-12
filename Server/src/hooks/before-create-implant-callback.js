@@ -62,7 +62,7 @@ module.exports = function (options = {}) {
               result.errorMessage = "Too many pipes on tunnel";
             }
             else{
-              var pipe_id = srs({length: 32, alphanumeric: true});
+              var pipe_id = srs({length: context.app.get('id_length'), alphanumeric: true});
               var pipe = await context.app.service('pipes').create({
                 tunnelId:tunnel._id,  
                 type: "rev_tcp",

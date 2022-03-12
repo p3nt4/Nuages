@@ -33,7 +33,7 @@ module.exports = function (options = {}) {
 
     data2.supportedPayloads = data.supportedPayloads ? data.supportedPayloads : ["Unknown"];
 
-    data2._id = srs({length: 32, alphanumeric: true});
+    data2._id = srs({length: context.app.get('id_length'), alphanumeric: true});
 
     data2.createdAt = Date.now();
 

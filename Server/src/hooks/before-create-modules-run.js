@@ -52,7 +52,7 @@ module.exports = function (options = {}) {
 
     var data = {};
 
-    data._id = srs({length: 32, alphanumeric: true});
+    data._id = srs({length: context.app.get('id_length'), alphanumeric: true});
 
     data.createdAt = Date.now();
 

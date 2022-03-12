@@ -10,7 +10,7 @@ module.exports = function (options = {}) {
   var data2 = {};
 
   // Data validation
-  data2._id = srs({length: 32, alphanumeric: true});
+  data2._id = srs({length: context.app.get('id_length'), alphanumeric: true});
 
   data2.metadata = data.metadata ? data.metadata : {};
 
