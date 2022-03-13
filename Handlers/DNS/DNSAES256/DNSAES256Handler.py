@@ -78,7 +78,7 @@ class NuagesRequest():
     def __init__(self, url, data = ""):
         self.url = url
         self.counter = 0
-        self.lastEdited = time.time()
+        self.lastCalled = time.time()
         self.data = data
         self.executed = False
         self.response = b''
@@ -122,7 +122,7 @@ class NuagesDNS:
             try:
                 now = time.time()
                 for key, val in self.requestDB.items():
-                    if(now - val.lastEdited > 15):
+                    if(now - val.lastCalled > 15):
                         toDelete.append(key)
                 for key in toDelete:
                     del self.requestDB[key]
@@ -146,7 +146,7 @@ class NuagesDNS:
                 if (args.verbose): print("Received Data for Request: {}".format(splitReq[1]))
                 if(int(splitReq[2]) == self.requestDB[splitReq[1]].counter + 1):
                     data = "".join(splitReq[3:-self.domNum])
-                    self.requestDB[splitReq[1]].lastEdited = time.time()
+                    self.requestDB[splitReq[1]].lastCalled = time.time()
                     self.requestDB[splitReq[1]].data += data
                     self.requestDB[splitReq[1]].counter += 1
                 if(self.requestDB[splitReq[1]].counter > 100):
@@ -163,7 +163,7 @@ class NuagesDNS:
                         response = self.requestDB[reqId].response
                     else:
                         self.requestDB[reqId] = NuagesRequest(splitReq[2], data)
-                        self.requestDB[reqId].lastEdited = time.time()
+                        self.requestDB[reqId].lastCalled = time.time()
                         response = self.doRequest(self.requestDB[reqId])
                         self.requestDB[reqId].response = response
                 else:
@@ -172,7 +172,7 @@ class NuagesDNS:
                         self.requestDB[reqId].executed = True
                         data = "".join(splitReq[2:-self.domNum])
                         self.requestDB[reqId].data += data
-                        self.requestDB[reqId].lastEdited = time.time()       
+                        self.requestDB[reqId].lastCalled = time.time()       
                         response = self.doRequest(self.requestDB[reqId])
                         self.requestDB[reqId].response = response
                     else:
@@ -191,6 +191,7 @@ class NuagesDNS:
             elif(splitReq[0] == "M"):
                 reqId = splitReq[1]
                 if (reqId in self.requestDB):
+                        self.requestDB[reqId].lastCalled = time.time()
                         encResponse = self.requestDB[reqId].encResponse
                         i = int(splitReq[2])
                         c = 0
