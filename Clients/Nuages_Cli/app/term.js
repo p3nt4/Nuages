@@ -48,7 +48,7 @@ function getTerm(){
         }
         else if(words[0].toLowerCase() == "!tunnels"){
             var completions = Object.keys(nuages.vars.tunnels);
-            completions = completions.concat("--socks --tcp --listen --destination --remove".split(' '));
+            completions = completions.concat("--socks --tcp --listen --destination --remove --reverse".split(' '));
         }
         else if((words[0].toLowerCase() == "!use") && words.length == 2){
             var completions = Object.keys(nuages.vars.modules).concat(Object.keys(nuages.vars.handlers));
