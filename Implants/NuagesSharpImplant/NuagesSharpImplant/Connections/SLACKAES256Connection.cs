@@ -10,7 +10,7 @@ namespace NuagesSharpImplant.Connections
 {
     
 
-    public class SLACKAES256Connection : NuagesC2Connection
+    class SLACKAES256Connection : NuagesC2Connection
     {
 
         private string handler = "SLACKAES256Connection";

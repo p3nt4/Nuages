@@ -6,7 +6,7 @@ using System.Text;
 
 namespace NuagesSharpImplant.Connections
 {
-    public class DirectConnection : NuagesC2Connection
+    class DirectConnection : NuagesC2Connection
     {
         private string connectionString;
 

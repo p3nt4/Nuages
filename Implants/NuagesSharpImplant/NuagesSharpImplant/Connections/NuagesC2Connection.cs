@@ -1,6 +1,6 @@
 ﻿namespace NuagesSharpImplant.Connections
 {
-    public interface NuagesC2Connection
+    interface NuagesC2Connection
     {
         string POST(string url, string jsonContent);
 

@@ -9,7 +9,7 @@ using NuagesSharpImplant.Connections;
 
 namespace NuagesSharpImplant
 {
-    public class NuagesC2Connector
+    class NuagesC2Connector
     {
         private NuagesC2Connection NC2Con;
 

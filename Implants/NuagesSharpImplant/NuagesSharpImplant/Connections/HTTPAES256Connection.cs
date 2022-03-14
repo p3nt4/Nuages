@@ -9,7 +9,7 @@ using NuagesSharpImplant.Utils;
 namespace NuagesSharpImplant.Connections
 {
    
-    public class HTTPAES256Connection : NuagesC2Connection
+    class HTTPAES256Connection : NuagesC2Connection
     {
         private string connectionString;
 
