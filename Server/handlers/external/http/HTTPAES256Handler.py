@@ -87,7 +87,7 @@ class S(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def POST(self, url, body):
-        if(len(url) > 30):
+        if(url.count("/") > 2):
             headers = {'Content-type': 'application/octet-stream; charset=utf-8'}
         else:
             headers = {'Content-type': 'application/json; charset=utf-8'}
