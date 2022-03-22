@@ -54,21 +54,23 @@ module.exports = function (options = {}) {
     else{
       var server = net.createServer(async function(socket) {
         try{
-          pipe_id = srs({length: context.app.get('id_length'), alphanumeric: true});
+          let pipe_id = srs({length: context.app.get('id_length'), alphanumeric: true});
           socket.on('error', function(e) {
             try{
-              context.app.service('pipes').remove(pipe_id).catch((err) => {});
+              //console.log("TCP connection error: " + pipe_id);
+              context.app.service('pipes').remove(pipe_id);
           }catch(e){};
           });
           socket.on('end', function(e) {
             try{
-                context.app.service('pipes').remove(pipe_id).catch((err) => {});
+                //console.log("TCP connection END: " + pipe_id);
+                context.app.service('pipes').remove(pipe_id);
             }catch(e){};
           });
           socket.on('timeout', function(e) {
-            console.log("TCP connection timed out");
+            //console.log("TCP connection timed out");
             try{
-                context.app.service('pipes').remove(pipe_id).catch((err) => {});
+                context.app.service('pipes').remove(pipe_id);
             }catch(e){};
           });
   
@@ -76,9 +78,9 @@ module.exports = function (options = {}) {
 
           if(context.data.timeout !== null){
             socket.setTimeout(data.timeout, function(e) {
-              console.log("TCP connection timed out");
+              //console.log("TCP connection timed out");
               try{
-                  context.app.service('pipes').remove(pipe_id).catch((err) => {});
+                  context.app.service('pipes').remove(pipe_id);
               }catch(e){};
             });
           } 

@@ -7,6 +7,7 @@ const { NotFound } = require('@feathersjs/errors');
 
 module.exports = (options = {}) => {
   return async context => {
+    //console.log("Received IO for pipe " + context.params.route.pipeId);
     if(context.app.pipe_list[context.params.route.pipeId] != undefined){
       var pipe = context.app.pipe_list[context.params.route.pipeId];
       if(pipe.canWrite){
