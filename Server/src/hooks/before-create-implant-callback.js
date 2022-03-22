@@ -110,7 +110,9 @@ module.exports = function (options = {}) {
     // This callback is used to close a pipe, at the end of a reverse TCP connection
     else if(context.data.callback == "pipe_close"){
       var result = {};
+      try{
       context.app.service('pipes').remove(context.data.data.pipe_id).catch((err) => {});
+      }catch{}
     }
 
     // This call is used to set the destionation of a pipe, after a socks connection has been opened

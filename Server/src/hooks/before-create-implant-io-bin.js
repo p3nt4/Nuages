@@ -9,9 +9,11 @@ module.exports = (options = {}) => {
   return async context => {
     if(context.app.pipe_list[context.params.route.pipeId] != undefined){
       var pipe = context.app.pipe_list[context.params.route.pipeId];
-      if(context.arguments[0].length > 0 && pipe.canWrite){
-        context.app.service('/implant/io').emit('pipeData', {pipe_id: context.params.route.pipeId, length: context.arguments[0].length});
+      if(pipe.canWrite){
         pipe.out.write(context.arguments[0]);
+        if(context.arguments[0].length){
+          context.app.service('/implant/io').emit('pipeData', {pipe_id: context.params.route.pipeId, length: context.arguments[0].length});
+        }
       }
       if(pipe.canRead){
         if(context.params.route.maxSize){
@@ -37,7 +39,8 @@ module.exports = (options = {}) => {
       
     }
     else{
-      throw new NotFound("Pipe not found: " + context.params.route.pipeId);
+      context.statusCode = 404;
+      context.data = "";
     }
     return context;
   }

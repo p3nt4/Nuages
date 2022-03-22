@@ -57,7 +57,9 @@ module.exports = function (options = {}) {
 
     //Delete pipe if this job had a pipe
     if(job.pipe_id && job.jobStatus > 2 && !(job.noPipeDelete && job.jobStatus == 3) && context.app.pipe_list[job.pipe_id]){
-      context.app.service("pipes").remove(job.pipe_id);	
+      try{
+        context.app.service('pipes').remove(job.pipe_id);	
+      }catch{}
     }
 
     //Delete tunnel if this job had a tunnel

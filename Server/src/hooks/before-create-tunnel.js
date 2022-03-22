@@ -65,15 +65,23 @@ module.exports = function (options = {}) {
                 context.app.service('pipes').remove(pipe_id).catch((err) => {});
             }catch(e){};
           });
+          socket.on('timeout', function(e) {
+            console.log("TCP connection timed out");
+            try{
+                context.app.service('pipes').remove(pipe_id).catch((err) => {});
+            }catch(e){};
+          });
   
-          if(data.timeout != null){
+          socket.setKeepAlive(true, 5000);
+
+          if(context.data.timeout !== null){
             socket.setTimeout(data.timeout, function(e) {
+              console.log("TCP connection timed out");
               try{
-                  console.log("TCP connection timed out");
                   context.app.service('pipes').remove(pipe_id).catch((err) => {});
               }catch(e){};
             });
-          }
+          } 
   
           var pipes = await context.app.service("pipes").find({query:{tunnelId: data._id}});
           if(pipes.total >= data.maxPipes){

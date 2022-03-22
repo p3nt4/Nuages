@@ -35,7 +35,8 @@ module.exports = (options = {}) => {
       return context;
     }
     else{
-      throw new NotFound("Pipe not found: " + context.data.pipe_id);
+      context.statusCode = 404;
+      context.data = "";
     }
   }
 };

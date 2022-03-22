@@ -34,6 +34,14 @@ module.exports = {
     create: [],
     update: [],
     patch: [],
-    remove: []
+    remove: [ctx => {
+      if (ctx.error) {
+        const error = ctx.error;
+        if (error.code === 404 || process.env.NODE_ENV === "production") {
+          ctx.error = null;
+        }
+        return ctx;
+      }
+    }]
   }
 };

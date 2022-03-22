@@ -9,10 +9,12 @@ module.exports = (options = {}) => {
   return async context => {
     if(context.app.pipe_list[context.data.pipe_id] != undefined){
       var pipe = context.app.pipe_list[context.data.pipe_id];
-      if(context.data.in && pipe.canWrite){
+      if(pipe.canWrite){
         let buff = Buffer.from(context.data.in, 'base64');
-        context.service.emit('pipeData', {pipe_id: context.data.pipe_id, length: buff.length});
         pipe.out.write(buff);
+        if(context.data.in){
+          context.service.emit('pipeData', {pipe_id: context.data.pipe_id, length: buff.length});
+        }
       }
       if(pipe.canRead){
         if(context.data.maxSize){
@@ -38,7 +40,8 @@ module.exports = (options = {}) => {
       
     }
     else{
-      throw new NotFound("Pipe not found: " + context.data.pipe_id);
+      context.statusCode = 404;
+      context.data = "";
     }
     return context;
   }
