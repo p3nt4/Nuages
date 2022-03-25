@@ -10,10 +10,13 @@ module.exports = (options = {}) => {
     if(context.app.pipe_list[context.data.pipe_id] != undefined){
       var pipe = context.app.pipe_list[context.data.pipe_id];
       if(pipe.canWrite){
-        let buff = Buffer.from(context.data.in, 'base64');
-        pipe.out.write(buff);
         if(context.data.in){
+          let buff = Buffer.from(context.data.in, 'base64');
           context.service.emit('pipeData', {pipe_id: context.data.pipe_id, length: buff.length});
+          pipe.out.write(buff);
+        }
+        else{
+          pipe.out.write(Buffer.from(""));
         }
       }
       if(pipe.canRead){
