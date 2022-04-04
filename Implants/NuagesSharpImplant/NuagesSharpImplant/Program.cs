@@ -18,6 +18,9 @@ namespace NuagesSharpImplant
 
             // Refreshrate in milliseconds
             config["refreshrate"] = "50";
+            
+            // Shell to use: powershell or cmd
+            config["shell"] = "powershell";
 
             // If the Direct connector is used (VERY BAD PRACTICE - Only for POC)
             //DirectConnection connection = new DirectConnection("http://127.0.0.1:3030/implant/", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
