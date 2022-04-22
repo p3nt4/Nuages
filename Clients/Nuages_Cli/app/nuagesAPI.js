@@ -23,7 +23,7 @@ const socket = io(nuages.program.url);
 const app = feathers();
 
 app.configure(feathers.authentication({}));
-app.configure(feathers.socketio(socket));
+app.configure(feathers.socketio(socket, { timeout: 10000 }));
 
 nuages.implantService = app.service('/implants');
 nuages.jobService = app.service('/jobs');
