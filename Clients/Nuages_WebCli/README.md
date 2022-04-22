@@ -1,4 +1,4 @@
- ## Nuages_WebCli
+ ## Nuages_WebCli (DEPRECATED)
  
  ## Setup
  To use this client, put the directory in the public/ folder of the server and access it through http(s).
