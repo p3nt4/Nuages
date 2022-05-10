@@ -26,6 +26,8 @@ namespace NuagesSharpImplant.Connections
 
             string result;
 
+            string errorLog = "";
+
             foreach (NuagesC2Connection connection in this.connections) {
 
                 try
@@ -34,16 +36,20 @@ namespace NuagesSharpImplant.Connections
 
                     return result;
                 }
-                catch (Exception e) { }
+                catch (Exception e) {
+                    errorLog += connection.getHandler() + ": " + e.Message + "\r\n";
+                }
             }
 
-            throw new Exception("All connections failed");
+            throw new Exception(errorLog);
         }
 
         public byte[] POST(string url, byte[] input)
         {
 
             byte[] result;
+
+            string errorLog = "";
 
             foreach (NuagesC2Connection connection in this.connections)
             {
@@ -75,10 +81,12 @@ namespace NuagesSharpImplant.Connections
                     }
 
                 }
-                catch (Exception e) { }
+                catch (Exception e) {
+                    errorLog += connection.getHandler() + ": " + e.Message + "\r\n";
+                }
             }
 
-            throw new Exception("All connections failed");
+            throw new Exception(errorLog);
         }
 
         public string getConnectionString() {
