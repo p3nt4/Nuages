@@ -13,6 +13,7 @@ module.exports = (options = {}) => {
       if(pipe.canWrite){
         pipe.out.write(context.arguments[0]);
         if(context.arguments[0].length){
+          context.app.pipe_list[context.params.route.pipeId].dataUp = pipe.dataUp + context.arguments[0].length;
           context.app.service('/implant/io').emit('pipeData', {pipe_id: context.params.route.pipeId, length: context.arguments[0].length});
         }
       }
@@ -30,6 +31,7 @@ module.exports = (options = {}) => {
           var buff = pipe.in.read();
         }
         if(buff){
+          context.app.pipe_list[context.params.route.pipeId].dataDown = pipe.dataDown + buff.length;
           context.result = buff;
         }else{
           context.result = "";

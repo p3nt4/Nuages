@@ -11,9 +11,9 @@ var MemoryStream = require('memorystream');
 module.exports = (options = {}) => {
   return async context => {
 
+    var data = {};
     // These pipes are used to communicate between implants and clients directly
     if(context.data.type == "interactive" || context.data.type == "bidirectional"){
-      var data = {};
       data.id = srs({length: context.app.get('id_length'), alphanumeric: true});
       data._id = data.id;
       data.implantId = context.data.implantId;
@@ -27,6 +27,8 @@ module.exports = (options = {}) => {
 
       context.app.pipe_list[data._id]={
         bufferSize : data.bufferSize,
+        dataUp: 0,
+        dataDown: 0,
         in: new MemoryStream(), // in is towards implants
         out: new MemoryStream(), // out is towards clients
         canRead: true,
@@ -35,7 +37,6 @@ module.exports = (options = {}) => {
     }
     // This is a file upload
     else if(context.data.type == "upload"){
-      var data = {};
       data.id = srs({length: context.app.get('id_length'), alphanumeric: true});
       data._id = data.id;
       data.implantId = context.data.implantId;
@@ -64,6 +65,8 @@ module.exports = (options = {}) => {
       });
       if(data.implantId){
         context.app.pipe_list[data._id]={
+          dataUp: 0,
+          dataDown: 0,
           bufferSize : data.bufferSize,
           out: stream, 
           canRead: false,
@@ -71,6 +74,8 @@ module.exports = (options = {}) => {
         };
       }else{
         context.app.pipe_list[data._id]={
+          dataUp: 0,
+          dataDown: 0,
           bufferSize : data.bufferSize,
           in: stream,
           canRead: false,
@@ -81,7 +86,6 @@ module.exports = (options = {}) => {
 
     // This is a file download
     else if(context.data.type == "download"){
-      var data = {};
       data.id = srs({length: context.app.get('id_length'), alphanumeric: true});
       data._id = data.id;
       data.implantId = context.data.implantId;
@@ -108,6 +112,8 @@ module.exports = (options = {}) => {
       if(data.implantId){
         context.app.pipe_list[data._id]={
           bufferSize : data.bufferSize,
+          dataUp: 0,
+          dataDown: 0,
           in: stream, 
           canRead: true,
           canWrite: false
@@ -115,6 +121,8 @@ module.exports = (options = {}) => {
       }else{
         context.app.pipe_list[data._id]={
           bufferSize : data.bufferSize,
+          dataUp: 0,
+          dataDown: 0,
           out: stream,
           canRead: true,
           canWrite: false
@@ -124,7 +132,6 @@ module.exports = (options = {}) => {
     
     // If the id is already defined this pipe has already been created by a tunnel object and only needs to be saved
     else if(context.data._id){
-      var data = {};
       // Using the both _id and id for consistency (id is used by feathers memory instead of _id)
       data.id = context.data._id;
       data._id = context.data._id;

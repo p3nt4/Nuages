@@ -277,6 +277,16 @@ nuages.templates.pipes = [
         header: "Destination",
         attr: "destination",
         process: (e,o)=>{if(o.type == "upload"){return e.substring(0,6)}else{return e}},
+    },
+    {   
+        header: "Uploaded",
+        attr: "dataUp",
+        process: (e)=>{if (e==undefined){return 0;}return nuages.humanFileSize(Math.floor(e))}
+    },
+    {   
+        header: "Downloaded",
+        attr: "dataDown",
+        process: (e)=>{if (e==undefined){return 0;}return nuages.humanFileSize(Math.floor(e))}
     }
 ];
 

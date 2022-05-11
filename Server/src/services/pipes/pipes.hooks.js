@@ -4,6 +4,8 @@ const beforeCreatePipe = require('../../hooks/before-create-pipe');
 
 const beforeRemovePipe = require('../../hooks/before-remove-pipe');
 
+const afterFindPipes = require('../../hooks/after-find-pipes');
+
 const {disallow} = require('feathers-hooks-common');
 
 module.exports = {
@@ -19,7 +21,7 @@ module.exports = {
 
   after: {
     all: [],
-    find: [],
+    find: [afterFindPipes()],
     get: [],
     create: [],
     update: [],
