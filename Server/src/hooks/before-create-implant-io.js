@@ -34,7 +34,7 @@ module.exports = (options = {}) => {
           var buff = pipe.in.read();
         }
         if(buff){
-          context.app.pipe_list[context.params.route.pipeId].dataDown = pipe.dataDown + buff.length;
+          context.app.pipe_list[context.data.pipe_id].dataDown = pipe.dataDown + buff.length;
           context.result = {out:buff.toString('base64')};
         }else{
           context.result = {out:""};
