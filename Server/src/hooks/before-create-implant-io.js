@@ -13,7 +13,7 @@ module.exports = (options = {}) => {
         if(context.data.in){
           let buff = Buffer.from(context.data.in, 'base64');
           context.service.emit('pipeData', {pipe_id: context.data.pipe_id, length: buff.length});
-          context.app.pipe_list[context.params.route.pipeId].dataUp = pipe.dataUp + buff.length;
+          context.app.pipe_list[context.data.pipe_id].dataUp = pipe.dataUp + buff.length;
           pipe.out.write(buff);
         }
         else{
