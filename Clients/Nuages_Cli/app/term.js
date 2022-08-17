@@ -60,9 +60,9 @@ function getTerm(){
         else if((words[0].toLowerCase() == "!autoruns") && words.length == 2){
             var completions = '--clear'.split(' ');
         }
-        else if((words[0].toLowerCase() == "!webhooks") && words.length == 2){
+        else if((words[0].toLowerCase() == "!webhooks")){
             var completions = Object.keys(nuages.vars.webhooks);
-            var completions = completions.concat('--mattermost --remove --ignoreCertErrors'.split(' '));
+            var completions = completions.concat('--mattermost --remove --custom --ignoreCertErrors'.split(' '));
         }
         else if(words.length==1 || (words.length==2 && words[0] == "!help")){ 
             var completions = '!login !implant !implants !shell !put !get !files !options !config !set !unset !modules !use !run !jobs !handlers !listeners !webhooks !channels !tunnels !interactive !back !help'.split(' ');

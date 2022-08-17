@@ -586,12 +586,13 @@ nuages.commands["!implants"]= new Command()
         .exitOverride()
         .description('Manage webhooks')
         .option('-m, --mattermost <url>', 'Create Mattermost hook')
+        .option('-c, --custom <message>', 'Add a custom message')
         .option('-r, --remove', 'Delete web hook')
         .option('-i, --ignoreCertErrors', 'Ignore TLS errors')
         .action(function (id, cmdObj) {
         if(cmdObj.mattermost){
             var ignoreCertErrors = cmdObj.ignoreCertErrors ? true : false;
-            nuages.webhookService.create({type: "mattermost", url: cmdObj.mattermost, ignoreCertErrors: ignoreCertErrors}).then(()=>{
+            nuages.webhookService.create({type: "mattermost", url: cmdObj.mattermost, ignoreCertErrors: ignoreCertErrors, customMessage: cmdObj.custom}).then(()=>{
                 nuages.getWebhooks();
             }).catch((err) => {
                 nuages.term.logError(err.message);
@@ -702,7 +703,8 @@ nuages.commands["!implants"]= new Command()
         nuages.commands["!channels"].remove = undefined; 
         nuages.commands["!channels"].interact = undefined; 
         nuages.commands["!channels"].all = undefined;
-        nuages.commands["!webhooks"].mattermost = undefined; 
+        nuages.commands["!webhooks"].mattermost = undefined;
+        nuages.commands["!webhooks"].custom = undefined; 
         nuages.commands["!webhooks"].remove = undefined; 
         nuages.commands["!webhooks"].ignoreCertErrors = undefined; 
 

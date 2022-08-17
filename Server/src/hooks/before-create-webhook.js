@@ -20,12 +20,13 @@ module.exports = (options = {}) => {
 
     data.ignoreCertErrors = (context.data.ignoreCertErrors == true); // Do not validate certificate
 
+    data.customMessage = context.data.customMessage !== undefined ? context.data.customMessage : ""; // Custom Web Hook Message
+
     context.data = data;
 
     if (data.type != "mattermost"){
       throw new error.BadRequest("Web Hook type not supported");
     }
-
     return context;
   };
 };

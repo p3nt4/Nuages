@@ -275,6 +275,11 @@ nuages.templates.webhooks = [
         process: (e)=>{return e}
     },
     {   
+        header: "Message",
+        attr: "customMessage",
+        process: (e)=>{return e}
+    },
+    {   
         header: "Ignore TLS Errors",
         attr: "ignoreCertErrors",
         process: (e)=>{return e}
