@@ -579,6 +579,42 @@ nuages.commands["!implants"]= new Command()
         }
     });
 
+
+    nuages.commands["!webhooks"] = new Command()
+        .name("!webhooks")
+        .arguments("[id]")
+        .exitOverride()
+        .description('Manage webhooks')
+        .option('-m, --mattermost <url>', 'Create Mattermost hook')
+        .option('-r, --remove', 'Delete web hook')
+        .option('-i, --ignoreCertErrors', 'Ignore TLS errors')
+        .action(function (id, cmdObj) {
+        if(cmdObj.mattermost){
+            var ignoreCertErrors = cmdObj.ignoreCertErrors ? true : false;
+            nuages.webhookService.create({type: "mattermost", url: cmdObj.mattermost, ignoreCertErrors: ignoreCertErrors}).then(()=>{
+                nuages.getWebhooks();
+            }).catch((err) => {
+                nuages.term.logError(err.message);
+            });
+        }
+        else if (id != undefined){
+            if(nuages.vars.webhooks[id] == undefined){
+                nuages.term.logError("Web hook not found");
+            }
+            else if(cmdObj.remove !== undefined){
+                nuages.webhookService.remove(nuages.vars.webhooks[id]._id).then(()=>{
+                    nuages.getWebhooks();
+                }).catch((err) => {
+                    nuages.term.logError(err.message);
+                });
+            }
+        }
+        else{
+            nuages.getWebhooks();
+        }
+      })
+    
+      
     nuages.commands["!back"] = new Command()
     .name("!back")
     .exitOverride()
@@ -596,6 +632,8 @@ nuages.commands["!implants"]= new Command()
     .action(function () {
         process.exit(0);
     });
+
+    
 
     nuages.maincommand.addCommand(nuages.commands["!login"]);
     nuages.maincommand.addCommand(nuages.commands["!implants"]);
@@ -617,6 +655,7 @@ nuages.commands["!implants"]= new Command()
     nuages.maincommand.addCommand(nuages.commands["!options"]);
     nuages.maincommand.addCommand(nuages.commands["!set"]);
     nuages.maincommand.addCommand(nuages.commands["!unset"]);
+    nuages.maincommand.addCommand(nuages.commands["!webhooks"]);
     nuages.maincommand.addCommand(nuages.commands["!back"]);
     nuages.maincommand.addCommand(nuages.commands["!exit"]);
 
@@ -662,7 +701,11 @@ nuages.commands["!implants"]= new Command()
         nuages.commands["!tunnels"].timeout = undefined;
         nuages.commands["!channels"].remove = undefined; 
         nuages.commands["!channels"].interact = undefined; 
-        nuages.commands["!channels"].all = undefined; 
+        nuages.commands["!channels"].all = undefined;
+        nuages.commands["!webhooks"].mattermost = undefined; 
+        nuages.commands["!webhooks"].remove = undefined; 
+        nuages.commands["!webhooks"].ignoreCertErrors = undefined; 
+
 }
 
 function CommandParser(str) {

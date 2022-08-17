@@ -39,6 +39,7 @@ nuages.handloadService = app.service('/handlers/load');
 nuages.tunnelService = app.service('/tunnels');
 nuages.pipeService = app.service('/pipes');
 nuages.ioService = app.service('/pipes/io');
+nuages.webhookService = app.service('/webhooks');
 
 
 nuages.vars = { 
@@ -50,6 +51,7 @@ nuages.vars = {
     handlers: {},
     jobs: {},
     listeners: {},
+    webhooks: {},
     module: ""
 };
 
@@ -253,6 +255,32 @@ nuages.templates.files = [
         attr: "filename"
     },
 ];
+
+
+
+nuages.templates.webhooks = [
+    {   
+        header: "ID",
+        attr: "_id",
+        process: (e)=>{return term.toBold((e.substring(0,6)))},
+    },
+    {   
+        header: "Type",
+        attr: "type",
+        process: (e)=>{return e}
+    },
+    {   
+        header: "URL",
+        attr: "url",
+        process: (e)=>{return e}
+    },
+    {   
+        header: "Ignore TLS Errors",
+        attr: "ignoreCertErrors",
+        process: (e)=>{return e}
+    }
+];
+
 nuages.templates.pipes = [
     {   
         header: "ID",
@@ -661,6 +689,7 @@ nuages.login = async function(user,password){
         nuages.getModules(false);
         nuages.getHandlers(false);
         nuages.getFiles(false);
+        nuages.getWebhooks(false);
         nuages.getListeners(false);
         nuages.getPipes(false);
         nuages.getTunnels(false);
@@ -733,6 +762,10 @@ nuages.humanDate = function(ts) {
 }; 
 nuages.printFiles = function(files){
     return nuages.toTable(nuages.templates.files, files);
+}
+
+nuages.printWebhooks = function(webhooks){
+    return nuages.toTable(nuages.templates.webhooks, webhooks);
 }
 
 nuages.printModules = function(modules){
@@ -876,6 +909,20 @@ nuages.getFiles = async function(print = true){
         nuages.term.logInfo("Files:\r\n" + nuages.printFiles(items.data)); 
     }
 }
+
+nuages.getWebhooks = async function(print = true){
+    nuages.vars.webhooks = {};
+    try{
+        items = await nuages.webhookService.find({query: {$limit: 200}});
+        }catch(e){nuages.term.printError(e); return}
+    for(var i = 0; i< items.data.length; i++){
+        nuages.vars.webhooks[items.data[i]._id.substring(0,6)] = items.data[i]
+    };
+    if(print){
+        nuages.term.logInfo("Web Hooks:\r\n" + nuages.printWebhooks(items.data)); 
+    }
+}
+
 
 nuages.getAutoruns = async function(){
     try{

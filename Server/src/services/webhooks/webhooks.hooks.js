@@ -1,13 +1,14 @@
-const { authenticate } = require('@feathersjs/authentication').hooks;
 
-const {disallow} = require('feathers-hooks-common');
+const beforeCreateWebhook = require('../../hooks/before-create-webhook');
+
+const { authenticate } = require('@feathersjs/authentication').hooks;
 
 module.exports = {
   before: {
-    all: [authenticate('jwt')],
+    all: [authenticate('jwt') ],
     find: [],
     get: [],
-    create: [disallow("external")],
+    create: [beforeCreateWebhook()],
     update: [],
     patch: [],
     remove: []
