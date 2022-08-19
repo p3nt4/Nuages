@@ -71,7 +71,7 @@ module.exports = function (options = {}) {
         var message = webhook.customMessage !== "" ? webhook.customMessage : "### New Implant! :fire:" ;
         instance.post(webhook.url, {
           username:'New Implant Bot',
-          text: message + " \n| Hostname | Username | IP Address |\n|:---------|:--------:|:-----------|\n|"+data.hostname+"|"+data.username+"|"+data.localIp+"|\n"
+          text: `${message} \n| Hostname | Username | IP Address |\n|:---------|:--------:|:-----------|\n|${data.hostname}|${data.username}|${data.localIp}|\n`
         })
         .catch(error => {
           console.error(error);
