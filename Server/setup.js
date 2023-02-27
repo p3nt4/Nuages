@@ -134,7 +134,7 @@ async function promptMongoDB() {
     type: 'input',
     message: 'Enter the mongodb connection string:  ',
     name: 'mongodb',
-    default: 'mongodb://localhost:27017/nuages_c_2'
+    default: 'mongodb://127.0.0.1:27017/nuages_c_2'
   }]);
   MongoClient.connect(answers.mongodb, { useNewUrlParser: true, useUnifiedTopology: true }, function(err, db) {
     if (err){
