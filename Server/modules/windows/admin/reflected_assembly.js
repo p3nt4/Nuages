@@ -28,13 +28,19 @@ exports.load = function (app) {
             arguments:{
                 value: "",
                 required: false,
-                description: "Arguments in format: MyString,[bool]true,[int]21"
+                description: "Arguments in string array format or: MyString,[bool]true,[int]21"
             },
             cache:{
                 value: "true",
                 required: false,
                 description: "Allow caching of assembly file"
+            },
+            arg_as_string_array:{
+                value: "false",
+                required: false,
+                description: "Select if input arguments format is a string array or default (MyString,[bool]true,[int]21)"
             }
+
         },
         supportedOS: ["windows"],
 
