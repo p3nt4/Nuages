@@ -11,11 +11,15 @@ exports.load = function (app) {
         options: {
             token: {
                 required: true,
-                description: "The slack token"
+                description: "The slack bot token"
             },
             bot:{
                 required: true,
                 description: "The ID of the slack bot"
+            },
+            secret:{
+                required: true,
+                description: "The Slack signing secret"
             },
             key: {
                 value: "",
@@ -47,7 +51,7 @@ exports.run = async function (app, run) {
 
     var script = path.join(__dirname,"SLACKAES256Handler.py");
 
-    var command = script +" -t " + escapeShellArg(run.options.token.value) + " -k " + escapeShellArg(run.options.key.value) + " -b " + escapeShellArg(run.options.bot.value) + " -q" + " -i " + run._id;
+    var command = script +" -t " + escapeShellArg(run.options.token.value) + " -k " + escapeShellArg(run.options.key.value) + " -b " + escapeShellArg(run.options.bot.value) + " -s " + escapeShellArg(run.options.secret.value) + " -q" + " -i " + run._id;
 
     if(app, run.options.uri.value && run.options.uri.value != ""){
         command+= " -u " + escapeShellArg(run.options.uri.value);

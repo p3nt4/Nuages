@@ -257,7 +257,7 @@ namespace NuagesSharpImplant
             else if (handler_args[0].ToLower() == "slackaes256")
             {
 
-                con = new SLACKAES256Connection(handler_args[1], handler_args[2], handler_args[3], handler_args[4], this.connector.getBufferSize(), this.connector.getRefreshRate());
+                con = new SLACKAES256Connection(handler_args[1], handler_args[2], handler_args[3], this.connector.getBufferSize(), this.connector.getRefreshRate());
 
             }
             else if (handler_args[0].ToLower() == "dnsaes256")
