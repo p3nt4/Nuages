@@ -36,7 +36,7 @@ module.exports = function(app) {
     }
   });
 
-  app.publish('pipeData',(data, hook) => {
+  app.service('implant/io').publish('pipedata',(data, hook) => {
     // Here you can add event publishers to channels set up in `channels.js`
     // To publish only for a specific event use `app.publish(eventname, () => {})`
     return app.channel('authenticated');

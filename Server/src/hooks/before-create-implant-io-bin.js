@@ -14,7 +14,7 @@ module.exports = (options = {}) => {
         pipe.out.write(context.arguments[0]);
         if(context.arguments[0].length){
           context.app.pipe_list[context.params.route.pipeId].dataUp = pipe.dataUp + context.arguments[0].length;
-          context.app.service('/implant/io').emit('pipeData', {pipe_id: context.params.route.pipeId, length: context.arguments[0].length});
+          context.app.service('/implant/io').emit('pipedata', {pipe_id: context.params.route.pipeId, length: context.arguments[0].length});
         }
       }
       if(pipe.canRead){

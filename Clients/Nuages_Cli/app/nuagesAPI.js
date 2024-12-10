@@ -1244,5 +1244,5 @@ nuages.moduleService.on('created', function(mod){nuages.term.logInfo("Module loa
 nuages.handlerService.on('created', function(mod){nuages.term.logInfo("Handler loaded:\r\n" + nuages.printHandlers({mod: mod}));nuages.vars.handlers[mod.name]=mod;});
 nuages.pipeService.on('created', function(mod){if(mod.type=="interactive"){nuages.term.logInfo("Channel created:\r\n" + nuages.printPipes({mod: mod}));}nuages.vars.pipes[mod._id.substring(0,6)]=mod;});
 nuages.tunnelService.on('created', function(mod){nuages.term.logInfo("Tunnel created:\r\n" + nuages.printTunnels({mod: mod}));nuages.vars.tunnels[mod._id.substring(0,6)]=mod;});
-app.service("implant/io").on('pipeData', (data)=>{nuages.onPipeData(data)})
+app.service("implant/io").on('pipedata', (data)=>{nuages.onPipeData(data)})
 exports.nuages = nuages;

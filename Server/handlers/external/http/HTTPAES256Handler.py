@@ -7,7 +7,6 @@ import hashlib
 import requests
 from Crypto import Random
 from Crypto.Cipher import AES
-import cgi
 from sys import argv
 import binascii
 import io

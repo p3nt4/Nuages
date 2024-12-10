@@ -3,7 +3,6 @@ const logger = require('./logger');
 const app = require('./app');
 const port = app.get('port');
 const host = app.get('host');
-const server = app.listen(port, host);
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -15,7 +14,7 @@ process.on('unhandledRejection', (reason, p) =>
   logger.error('Unhandled Rejection at: Promise ', p, reason)
 );
 
-server.on('listening', () =>{
+app.listen(port).then(() =>{
   logger.info('Nuages C2 started on http://%s:%d', host, port);
 
   // Initialize pipe list

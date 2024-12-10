@@ -9,10 +9,10 @@
   "author": "p3nt4",
   "license": "ISC",
   "dependencies": {
-    "@feathersjs/client": "^4.5.13",
-    "@feathersjs/socketio-client": "^4.5.13",
+    "@feathersjs/client": "^5.0.31",
+    "@feathersjs/socketio-client": "^5.0.31",
     "commander": "^5.1.0",
-    "socket.io-client": "^2.4.0",
+    "socket.io-client": "^4.8.1",
     "table": "^5.4.6"
   }
 }

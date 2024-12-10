@@ -35,7 +35,9 @@ app.use(bodyParser.raw({
     limit: '100mb',
     extended: true,
 }));
-app.use(favicon(path.join(app.get('public'), 'favicon.ico')));
+
+// This causes a issue for now
+//app.use(favicon(path.join(app.get('public'), 'favicon.ico')));
 // Host the public folder
 app.use('/', express.static(app.get('public')));
 
