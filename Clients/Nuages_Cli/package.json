@@ -11,8 +11,8 @@
   "dependencies": {
     "@feathersjs/client": "^5.0.31",
     "@feathersjs/socketio-client": "^5.0.31",
-    "commander": "^5.1.0",
+    "commander": "^13.0.0",
     "socket.io-client": "^4.8.1",
-    "table": "^5.4.6"
+    "table": "^6.9.0"
   }
 }

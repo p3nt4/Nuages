@@ -11,7 +11,7 @@ nuages.program
   .option('--ASCII', 'Use ASCII tables')
 
 nuages.program.parse(process.argv);
-
+nuages.cli_options = nuages.program.opts();
 const table = require('table').table;
 const getBorderCharacters = require('table').getBorderCharacters;
 const feathers = require('@feathersjs/client');
@@ -19,7 +19,7 @@ var path = require("path");
 var fs = require("fs");
 const io = require('socket.io-client');
 //var endpoint = process.argv[2] ? process.argv[2]  : "http://127.0.0.1:3030";
-const socket = io(nuages.program.url);
+const socket = io(nuages.cli_options.url);
 const app = feathers();
 
 app.configure(feathers.authentication({}));
@@ -411,7 +411,7 @@ nuages.toTable = function (template, objects){
     var data = [Headers];
 
     var config = {
-        border: (nuages.program.ASCII? getBorderCharacters("ramac"):getBorderCharacters("honeywell")),
+        border: (nuages.cli_options.ASCII? getBorderCharacters("ramac"):getBorderCharacters("honeywell")),
         columns: {}
       };
 
