@@ -63,7 +63,7 @@ namespace NuagesSharpImplant
         {
             if (this.supportsBinaryIO)
             {
-                string url = "io/" + pipe_id + "/" + maxSize;
+                string url = "bin/" + pipe_id + "?max=" + maxSize;
                 return this.NC2Con.POST(url, input);
             }
             else
@@ -85,7 +85,7 @@ namespace NuagesSharpImplant
         {
             if (this.supportsBinaryIO)
             {
-                string url = "io/" + pipe_id;
+                string url = "bin/" + pipe_id;
                 return this.NC2Con.POST(url, input);
             }
             else {

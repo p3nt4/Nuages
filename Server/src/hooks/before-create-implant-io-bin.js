@@ -7,7 +7,6 @@ const { NotFound } = require('@feathersjs/errors');
 
 module.exports = (options = {}) => {
   return async context => {
-    //console.log("Received IO for pipe " + context.params.route.pipeId);
     if(context.app.pipe_list[context.params.route.pipeId] != undefined){
       var pipe = context.app.pipe_list[context.params.route.pipeId];
       if(pipe.canWrite){
@@ -18,8 +17,8 @@ module.exports = (options = {}) => {
         }
       }
       if(pipe.canRead){
-        if(context.params.route.maxSize){
-          var bufferSize = Math.min(pipe.bufferSize, context.params.route.maxSize);
+        if(context.params.query.max){
+          var bufferSize = Math.min(pipe.bufferSize,context.params.query.max);
         }else{
           var bufferSize = pipe.bufferSize;
         }

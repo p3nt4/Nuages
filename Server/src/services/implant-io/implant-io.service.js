@@ -11,7 +11,7 @@ module.exports = function (app) {
   app.use('/implant/io', new ImplantsIo(options, app));
 
   // Get our initialized service so that we can register hooks
-  const service = app.service('implant/io');
+  const service = app.service('/implant/io');
 
   service.hooks(hooks);
 };

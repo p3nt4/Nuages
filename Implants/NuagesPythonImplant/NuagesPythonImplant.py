@@ -98,7 +98,7 @@ class NuagesConnector:
 
     def POSTBIN(self, pipe_id, data):
         # The target URL is generated
-        url = "io/" + pipe_id
+        url = "bin/" + pipe_id
         
         # The data is encrypted
         encrypted_data = self.aes.encrypt(data)
@@ -118,7 +118,7 @@ class NuagesConnector:
 
     def POSTBIN(self, pipe_id, data, maxSize):
         # The target URL is generated
-        url = "io/{}/{}".format(pipe_id, maxSize)
+        url = "bin/{}?max={}".format(pipe_id, maxSize)
         
         # The data is encrypted
         encrypted_data = self.aes.encrypt(data)

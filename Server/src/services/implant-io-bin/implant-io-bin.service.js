@@ -11,18 +11,11 @@ module.exports = function (app) {
   };
 
   // Initialize our service with any options it requires
-  app.use('/implant/io/:pipeId', createService(options));
+  app.use('/implant/bin/:pipeId', createService(options));
 
   // Get our initialized service so that we can register hooks
-  const service = app.service('/implant/io/:pipeId');
+  const service = app.service('/implant/bin/:pipeId');
 
   service.hooks(hooks);
 
-  // Initialize our service with any options it requires
-  app.use('/implant/io/:pipeId/:maxSize', createService(options));
-
-  // Get our initialized service so that we can register hooks
-  const service2 = app.service('/implant/io/:pipeId/:maxSize');
-
-  service2.hooks(hooks);
 };
