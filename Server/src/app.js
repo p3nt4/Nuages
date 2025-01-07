@@ -43,7 +43,7 @@ app.use('/', express.static(app.get('public')));
 
 //app.configure(express.rest());
 app.configure(express.rest(function(req, res) {
-    if(res.hook.path === 'implant/io/:pipeId'){
+    if(res.hook.path === 'implant/bin/:pipeId'){
         res.type('application/octet-stream');
     }
     res.send(res.data);
