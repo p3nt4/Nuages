@@ -2,7 +2,7 @@
 This PoC DNS handler uses AES256 to encrypt traffic between implants and the server.
 
 ### DNS Queries
-This handler uses TXT DNS queries, with a protocol based on three types of queries.
+This handler uses TXT DNS queries, with a protocol based on four types of queries.
 
 #### N Query
 This DNS query asks the server to start buffering a new request, and gets a request ID as a response.
