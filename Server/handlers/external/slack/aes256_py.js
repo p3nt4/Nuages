@@ -10,14 +10,17 @@ exports.load = function (app) {
         name: "external/slack/aes256_py",
         options: {
             token: {
+                value : '',
                 required: true,
                 description: "The slack bot token"
             },
             bot:{
+                value : '',
                 required: true,
                 description: "The ID of the slack bot"
             },
             secret:{
+                value : '',
                 required: true,
                 description: "The Slack signing secret"
             },
@@ -30,6 +33,16 @@ exports.load = function (app) {
                 value: "http://127.0.0.1:3030",
                 required: true,
                 description: "The URI of the Nuages API"
+            },
+            port:{
+                value: "9320",
+                required: true,
+                description: "The port to listen on for SLACK callbacks"
+            },
+            listen_ip:{
+                value: "0.0.0.0",
+                required: true,
+                description: "The IP to listen on for SLACK callbacks"
             }
         },
 
@@ -42,19 +55,22 @@ exports.load = function (app) {
     return handler;
 };
 
-function escapeShellArg (arg) {
-    return arg.replace(/(\s+)/g, '');
-}
-
 // This is the first function to be called when the handler is run
 exports.run = async function (app, run) {
 
     var script = path.join(__dirname,"SLACKAES256Handler.py");
 
-    var command = script +" -t " + escapeShellArg(run.options.token.value) + " -k " + escapeShellArg(run.options.key.value) + " -b " + escapeShellArg(run.options.bot.value) + " -s " + escapeShellArg(run.options.secret.value) + " -q" + " -i " + run._id;
+    var command = script +
+    " -t " + run.options.token.value + 
+    " -k " + run.options.key.value + 
+    " -b " + run.options.bot.value + 
+    " -s " + run.options.secret.value + 
+    " -p " + run.options.port.value + 
+    " -l " + run.options.listen_ip.value + 
+    " -q" + " -i " + run._id;
 
     if(app, run.options.uri.value && run.options.uri.value != ""){
-        command+= " -u " + escapeShellArg(run.options.uri.value);
+        command+= " -u " + run.options.uri.value;
     }
     
     var python = app.get("python_path");

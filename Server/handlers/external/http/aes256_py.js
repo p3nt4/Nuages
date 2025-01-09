@@ -4,6 +4,7 @@ const child_process = require('child_process');
 
 const path = require("path");
 
+
 // This function returns the handler object to be loaded in the database 
 exports.load = function (app) {
     var handler = {
@@ -36,18 +37,14 @@ exports.load = function (app) {
 };
 
 
-function escapeShellArg (arg) {
-    return arg.replace(/(\s+)/g, '');
-}
-
 // This is the first function to be called when the handler is run
 exports.run = async function (app, run) {
     var script = path.join(__dirname,"HTTPAES256Handler.py");
 
-    var command = script +" -p " + escapeShellArg(run.options.port.value) + " -k " + escapeShellArg(run.options.key.value) + " -i " + run._id;
+    var command = script +" -p " + run.options.port.value + " -k " + run.options.key.value + " -i " + run._id;
 
     if(app, run.options.uri.value && run.options.uri.value != ""){
-        command+= " -u " + escapeShellArg(run.options.uri.value);
+        command+= " -u " + run.options.uri.value;
     }
 
     // This pauses a security threat as is

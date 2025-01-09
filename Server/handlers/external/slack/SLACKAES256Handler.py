@@ -59,6 +59,8 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--secret", required=True, help="The Slack signing secret")
     parser.add_argument("-k", "--key", required=True, help="The seed for the encryption key")
     parser.add_argument("-u", "--uri", default="http://127.0.0.1:3030", help="The URI of the Nuages API")
+    parser.add_argument("-p", "--port", type=int, help="The port to listen on", default=9320)
+    parser.add_argument("-l", "--listen_ip", default="0.0.0.0", help="The IP address to listen on")
     parser.add_argument("-i", "--id", help="The listener ID for listener tracking")
     parser.add_argument("-q", "--quiet", action='store_true', help="Hide logs")
     args = parser.parse_args()
@@ -111,4 +113,4 @@ if __name__ == "__main__":
             print(e)
             pass
 
-    app.run(debug=True, port=9320, host='0.0.0.0')
+    app.run(debug=False, port=args.port, host=args.listen_ip)
