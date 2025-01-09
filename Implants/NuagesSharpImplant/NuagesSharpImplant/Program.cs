@@ -29,7 +29,7 @@ namespace NuagesSharpImplant
             HTTPAES256Connection connection = new HTTPAES256Connection("http://127.0.0.1:8888", "password", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
             // If the SLACKAES256 Handler is used:
-            // SLACKAES256Connection connection = new SLACKAES256Connection("password", "CHANNELID", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
+            // SLACKAES256Connection connection = new SLACKAES256Connection("password", "CHANNELID", "SLACK_BOT_TOKEN", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
             // If the DNSAES256 Handler is used:
             // config["buffersize"] = "200";

