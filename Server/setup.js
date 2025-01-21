@@ -4,6 +4,7 @@ const inquirer = require('inquirer');
 const MongoClient = require('mongodb').MongoClient;
 const bcrypt = require('bcryptjs');
 const { ENOBUFS } = require('constants');
+const { validate } = require('feathers-hooks-common');
 const BCRYPT_WORK_FACTOR_BASE = 12;
 const BCRYPT_DATE_BASE = 1483228800000;
 const BCRYPT_WORK_INCREASE_INTERVAL = 47300000000;
@@ -12,10 +13,13 @@ const destinationFileName = './config/default.json';
 const sourceFile = require(sourceFileName);
 var dbo;
 
+// This is an ugly workaround to pass the password from the first prompt to the second prompt
+global.password_to_verify = null;
+
 async function connectDB(){
   try{
     var config = require(destinationFileName);
-    var db = await MongoClient.connect(config.mongodb, { useNewUrlParser: true, useUnifiedTopology: true});
+    var db = await MongoClient.connect(config.mongodb, {});
     dbo = db.db(db.s.options.dbName);
   }catch(e){}
 }
@@ -29,8 +33,14 @@ async function validateUsername(username){
   return true;
 }
 
-async function validatePassword(password,test){
-  if(password != test.password1) {return "Passwords do not match";}
+async function validatePassword(password){
+  if(password != global.password_to_verify) {return "Passwords do not match";}
+  global.password_to_verify = null;
+  return true;
+}
+
+async function savePassword1(password){
+  global.password_to_verify = password;
   return true;
 }
 
@@ -53,31 +63,31 @@ var nuagesUserQuestions = [
     message: 'Enter the password of the Nuages user:  ',
     name: 'password1',
     mask: '*',
+    validate: (password) => savePassword1(password)
   },
   {
     type: 'password',
     message: 'Retype the password of the Nuages user: ',
     name: 'password2',
     mask: '*',
-    validate: validatePassword
+    validate: (password) => validatePassword(password)
   }
 ];
 
 function promptAddUser() {
-  inquirer.prompt(nuagesUserQuestions).then(async function(answers) {
+  inquirer.default.prompt(nuagesUserQuestions).then(async function(answers) {
     nuagesUser = answers;
     nuagesUser.password = await hasher(nuagesUser.password1);
-    dbo.collection('users').insertOne({
+    const result = await dbo.collection('users').insertOne({
         username: nuagesUser.username,
         password: nuagesUser.password
-    },function (err, response) {
-      if(err) {
-        console.log("  Error creating the Nuages user: " + err.message);
+    });
+      if(!result.acknowledged) {
+        console.log("  Error creating the user" );
       } else {
-        console.log("  User created: " + nuagesUser.username);
+    console.log("  User created: " + nuagesUser.username);
       }
-        promptIndex();
-      });
+    promptIndex();
     });
 }
 
@@ -88,7 +98,7 @@ async function promptDelUser() {
     choices.push(users[i].username);
   }
   choices.push("Cancel");
-  answers = await inquirer.prompt([
+  answers = await inquirer.default.prompt([
     {
       type: 'list',
       name: 'user',
@@ -100,28 +110,27 @@ async function promptDelUser() {
     promptIndex();
   }
   else{
-  dbo.collection("users").deleteOne({username: answers.user},function (err, response) {
-    if(err) {
-      console.log("  Error deleting the Nuages user: " + err.message);
+  const result = await dbo.collection("users").deleteOne({username: answers.user});
+    if(!result.acknowledged){
+      console.log("  Error deleting the Nuages user ");
     } else {
       console.log("  User deleted: " + answers.user);
     }
-      promptIndex();
-    });
+    promptIndex();
   }
 }
 
 
 async function promptMongoDB() {
-  answers = await inquirer.prompt([{
+  answers = await inquirer.default.prompt([{
     type: 'input',
     message: 'Enter the mongodb connection string:  ',
     name: 'mongodb',
     default: 'mongodb://127.0.0.1:27017/nuages_c_2'
   }]);
-  MongoClient.connect(answers.mongodb, { useNewUrlParser: true, useUnifiedTopology: true }, function(err, db) {
-    if (err){
-      console.log("  Error connecting to MongoDB: " + err.message);
+  db = await MongoClient.connect(answers.mongodb, {});
+    if (!db){
+      console.log("  Error connecting to MongoDB ");
       promptIndex();
     }else{
       console.log("  Connection successful!");
@@ -133,11 +142,10 @@ async function promptMongoDB() {
       });
       promptIndex();
     }
-  });
 }
 
 async function promptClearDatabase(){
-  answers = await inquirer.prompt([
+  answers = await inquirer.default.prompt([
     {
       type: 'confirm',
       name: 'clear',
@@ -145,14 +153,13 @@ async function promptClearDatabase(){
     }
   ]);
   if(answers.clear){
-    dbo.dropDatabase(function (err, response) {
-      if(err) {
-        console.log("  Error clearing the database: " + err.message);
+    const result = await dbo.dropDatabase();
+      if(!result) {
+        console.log("  Error clearing the database: ");
       } else {
         console.log("  Database cleared!");
       }
-        promptIndex();
-      });
+    promptIndex();
   }else{promptIndex();}
 }
 
@@ -168,7 +175,7 @@ function promptIndex() {
       'Exit'
     ];
   }
-  inquirer.prompt([
+  inquirer.default.prompt([
     {
       type: 'list',
       name: 'action',
