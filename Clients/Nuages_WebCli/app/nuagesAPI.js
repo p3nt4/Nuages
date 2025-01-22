@@ -38,7 +38,7 @@ nuages.vars.globalOptions = {
         implant: 0,
         //path : ".",
         chunksize: 2400000,
-        timeout: "1",
+        timeout: "60",
 };
     
 nuages.vars.moduleOptions = {};
