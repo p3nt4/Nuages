@@ -46,7 +46,7 @@ nuages.commands["!implants"]= new Command()
     }
     else if(cmdObj.kill) {
         if(cmdObj.all) {
-            nuages.implantService.find({$limit:500}).then(implants => {
+            nuages.implantService.find({query: {$limit: 200}}).then(implants => {
                 for(var i=0; i< implants.data.length; i++){
                     shortID = implants.data[i]._id.substring(0,6);
                     nuages.createJob(shortID, {type: "exit", options: {}});
@@ -63,7 +63,7 @@ nuages.commands["!implants"]= new Command()
             tmpconfig[cmdObj.configure] = cmdObj.value
         }
         if(cmdObj.all) {
-            nuages.implantService.find({$limit:500}).then(implants => {
+            nuages.implantService.find({query: {$limit: 200}}).then(implants => {
                 for(var i=0; i< implants.data.length; i++){
                     shortID = implants.data[i]._id.substring(0,6);
                     nuages.createJob(shortID, {type: "configure", options: {config:tmpconfig}});
