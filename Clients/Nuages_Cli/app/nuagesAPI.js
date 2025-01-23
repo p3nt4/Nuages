@@ -67,7 +67,7 @@ nuages.vars.globalOptions = {
             description: "The implant to interact with"
         },
         timeout:{
-            value: 60,
+            value: 1,
             description: "The job timeout, in minutes"
         },
         buffersize:{
