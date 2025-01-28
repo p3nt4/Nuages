@@ -6,14 +6,29 @@ using System.Text;
 
 namespace NuagesSharpImplant.Utils
 {
-    static class Posh
+    public class Posh
     {
-        static public string posh(string cmd)
+        Runspace singleRunspace;
+        public Posh()
+        {
+            singleRunspace = RunspaceFactory.CreateRunspace();
+            singleRunspace.Open();
+        }   
+        public string execute(string cmd, bool SinglePoshRunspace = true)
         {
             try
             {
-                Runspace runspace = RunspaceFactory.CreateRunspace();
-                runspace.Open();
+                Runspace runspace;
+                if (SinglePoshRunspace)
+                {
+                    runspace = singleRunspace;
+                }
+                else
+                {
+                    runspace = RunspaceFactory.CreateRunspace();
+                    runspace.Open();
+                }
+
                 Pipeline pipeline = runspace.CreatePipeline();
                 pipeline.Commands.AddScript(cmd);
                 pipeline.Commands.Add("Out-String");
@@ -26,7 +41,12 @@ namespace NuagesSharpImplant.Utils
                         stringBuilder.AppendLine(line.TrimEnd());
                     }
                 }
-                runspace.Close();
+
+                if (!SinglePoshRunspace)
+                {
+                    runspace.Close();
+                }
+
                 return stringBuilder.ToString();
             }
             catch (Exception e)
