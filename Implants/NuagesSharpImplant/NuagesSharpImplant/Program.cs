@@ -22,6 +22,12 @@ namespace NuagesSharpImplant
             // Shell to use: powershell or cmd
             config["shell"] = "powershell";
 
+            // Whether we run each job in a new thread or run single threaded
+            config["multithread"] = "true";
+
+            // Whether we run each powershell command in a new runspace
+            config["single_posh_runspace"] = "false";
+
             // If the Direct connector is used (VERY BAD PRACTICE - Only for POC)
             //DirectConnection connection = new DirectConnection("http://127.0.0.1:3030/implant/", int.Parse(config["buffersize"]), int.Parse(config["refreshrate"]));
 
