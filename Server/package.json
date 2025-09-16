@@ -39,7 +39,7 @@
     "@feathersjs/express": "~5.0.31",
     "@feathersjs/feathers": "~5.0.31",
     "@feathersjs/socketio": "~5.0.31",
-    "axios": "~1.8.2",
+    "axios": "~1.12.0",
     "bcryptjs": "~2.4.3",
     "compression": "~1.8.1",
     "cors": "~2.8.5",
