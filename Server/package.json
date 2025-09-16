@@ -41,7 +41,7 @@
     "@feathersjs/socketio": "~5.0.31",
     "axios": "~1.8.2",
     "bcryptjs": "~2.4.3",
-    "compression": "~1.7.5",
+    "compression": "~1.8.1",
     "cors": "~2.8.5",
     "feathers-hooks-common": "~8.2.1",
     "feathers-memory": "~4.1.0",
