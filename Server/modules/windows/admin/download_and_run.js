@@ -38,7 +38,7 @@ exports.load = function (app) {
 // This is the first function to be called when the module is ran
 exports.run = async function (app, run) {
     try{
-        var file = await app.service("/fs/files").get(run.options.file.value).catch(() => {});
+        var file = await app.service("/files").get(run.options.file.value).catch(() => {});
         if (!file){
             moduleHelper.logError(app,run, "File not found");
             moduleHelper.fail(app, run);

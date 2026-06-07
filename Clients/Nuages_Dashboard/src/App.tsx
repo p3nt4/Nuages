@@ -120,7 +120,7 @@ function WorkspaceFrame({ queryClient }: { queryClient: QueryClient }) {
     client.socket.on('disconnect', handleDisconnect);
     client.socket.on('connect_error', handleError);
 
-    const serviceNames = ['implants', 'jobs', 'files', 'modules', 'handlers', 'listeners', 'tunnels', 'pipes', 'webhooks'] as const;
+    const serviceNames = ['implants', 'jobs', 'files', 'modules', 'modules/run', 'handlers', 'listeners', 'tunnels', 'pipes', 'webhooks'] as const;
     const serviceEvents = ['created', 'updated', 'patched', 'removed'] as const;
 
     for (const serviceName of serviceNames) {

@@ -736,6 +736,25 @@ button:focus-visible {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.overview-mini-item {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.overview-mini-item__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.overview-mini-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
 .auth-screen {
   min-height: 100vh;
   display: grid;

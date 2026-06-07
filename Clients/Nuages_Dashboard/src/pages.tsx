@@ -23,6 +23,33 @@ type LegacyConnectionDraft = {
   password?: string;
 };
 
+type ModuleOptionDefinition = {
+  value?: unknown;
+  required?: boolean;
+  description?: string;
+};
+
+type ModuleRecord = {
+  _id: string;
+  name?: string;
+  description?: string;
+  supportedOS?: string[];
+  requiredPayloads?: string[];
+  options?: Record<string, ModuleOptionDefinition>;
+  [key: string]: unknown;
+};
+
+type ModuleLogRecord = {
+  _id: string;
+  sourceId?: string;
+  sourceType?: string;
+  sourceName?: string;
+  type?: number;
+  time?: number;
+  message?: string;
+  [key: string]: unknown;
+};
+
 const defaultDraft: ConnectionDraft = {
   name: 'Local Server',
   url: 'http://localhost:3030',
@@ -207,10 +234,50 @@ export function OverviewPage() {
       </section>
       <section className="split-grid">
         <Panel title="Recent implants">
-          <CollectionMini data={implants.data ?? []} emptyLabel="No implants yet" render={(implant) => `${implant.hostname ?? implant._id} · ${implant.os ?? 'unknown OS'} · ${formatLastSeen(implant.lastSeen)}`} />
+          <CollectionMini
+            data={implants.data ?? []}
+            emptyLabel="No implants yet"
+            render={(implant) => {
+              const active = isImplantActive(implant.lastSeen);
+              return (
+                <div className="overview-mini-item">
+                  <div className="overview-mini-item__title">
+                    <span className={`implant-status__dot ${active ? 'live' : ''}`} aria-hidden="true" />
+                    <strong>{implant.hostname ?? implant._id.slice(0, 10)}</strong>
+                  </div>
+                  <div className="overview-mini-item__meta">
+                    <span>{implant.os ?? 'unknown OS'}</span>
+                    <span>{implant.username ?? 'unknown user'}</span>
+                    <span>{formatLastSeen(implant.lastSeen)}</span>
+                  </div>
+                </div>
+              );
+            }}
+          />
         </Panel>
         <Panel title="Recent jobs">
-          <CollectionMini data={jobs.data ?? []} emptyLabel="No jobs yet" render={(job) => `${job._id.slice(0, 8)} · ${describeJobStatus(job.jobStatus)} · ${describeRunStatus(job.runStatus as number | undefined)}`} />
+          <CollectionMini
+            data={jobs.data ?? []}
+            emptyLabel="No jobs yet"
+            render={(job) => {
+              const payload = (job.payload as { type?: string } | undefined) ?? undefined;
+              const payloadType = payload?.type ? String(payload.type) : 'unknown';
+              return (
+                <div className="overview-mini-item">
+                  <div className="overview-mini-item__title">
+                    <strong>{job._id.slice(0, 8)}</strong>
+                    <span className="muted">{payloadType}</span>
+                  </div>
+                  <div className="overview-mini-item__meta">
+                    <span>job: {describeJobStatus(job.jobStatus)}</span>
+                    <span>run: {describeRunStatus(job.runStatus as number | undefined)}</span>
+                    <span>implant: {job.implantId ? job.implantId.slice(0, 8) : 'n/a'}</span>
+                    <span>{job.createdAt ? new Date(job.createdAt).toLocaleString() : 'unknown time'}</span>
+                  </div>
+                </div>
+              );
+            }}
+          />
         </Panel>
       </section>
     </div>
@@ -226,7 +293,7 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function CollectionMini<T>({ data, emptyLabel, render }: { data: T[]; emptyLabel: string; render: (item: T) => string }) {
+function CollectionMini<T>({ data, emptyLabel, render }: { data: T[]; emptyLabel: string; render: (item: T) => React.ReactNode }) {
   if (data.length === 0) {
     return <p className="muted">{emptyLabel}</p>;
   }
@@ -802,7 +869,7 @@ export function ImplantSessionPage() {
   const { app } = useNuages();
   const patchTabState = useWorkspaceStore((state) => state.patchTabState);
   const currentTab = useWorkspaceStore((state) => state.tabs.find((tab) => tab.route === location.pathname));
-  const [activeSubtab, setActiveSubtab] = useState((currentTab?.state.activeSubtab?.toString() as 'shell' | 'browser' | 'configure' | 'tunnels' | 'history' | undefined) ?? 'shell');
+  const [activeSubtab, setActiveSubtab] = useState((currentTab?.state.activeSubtab?.toString() as 'shell' | 'browser' | 'modules' | 'configure' | 'tunnels' | 'history' | undefined) ?? 'shell');
   const [shellSessions, setShellSessions] = useState<ShellSessionState[]>(
     parseShellSessions(currentTab?.state.shellSessions?.toString(), {
       cwd: currentTab?.state.cwd?.toString() ?? '.',
@@ -832,9 +899,16 @@ export function ImplantSessionPage() {
   const [editingShellTitle, setEditingShellTitle] = useState('');
   const [editingBrowserId, setEditingBrowserId] = useState<string | null>(null);
   const [editingBrowserTitle, setEditingBrowserTitle] = useState('');
+  const [selectedModuleId, setSelectedModuleId] = useState('');
+  const [moduleOptionDrafts, setModuleOptionDrafts] = useState<Record<string, string>>({});
+  const [busyModuleRun, setBusyModuleRun] = useState(false);
+  const [moduleMessage, setModuleMessage] = useState('');
   const implant = useServiceCollection<ImplantRecord>('implants', implantId ? { _id: implantId } : {});
   const jobs = useServiceCollection<JobRecord>('jobs', implantId ? { implantId, $limit: 200, $sort: { createdAt: -1 } } : { $limit: 200 });
   const storedFiles = useServiceCollection<FileRecord>('files', { $limit: 200, $sort: { uploadDate: -1 } }, 60_000);
+  const modules = useServiceCollection<ModuleRecord>('modules', { $limit: 500, $sort: { name: 1 } }, 60_000);
+  const moduleRuns = useServiceCollection<Record<string, unknown>>('modules/run', { $limit: 200, $sort: { createdAt: -1 } }, 15_000);
+  const moduleLogs = useServiceCollection<ModuleLogRecord>('logs', { sourceType: 'module', $limit: 500, $sort: { time: -1 } }, 15_000);
   const tunnels = useServiceCollection<Record<string, unknown>>('tunnels', implantId ? { implantId, $limit: 100, $sort: { createdAt: -1 } } : { $limit: 100 });
   const config = useQuery({
     queryKey: ['implant-config', implantId],
@@ -892,6 +966,48 @@ export function ImplantSessionPage() {
       }),
     [commandJobIdSet, jobs.data]
   );
+  const compatibleModules = useMemo(() => {
+    const implantOs = implantData?.os ? String(implantData.os).toLowerCase() : '';
+    const supportedPayloads = Array.isArray(implantData?.supportedPayloads)
+      ? implantData.supportedPayloads.map((payload) => String(payload))
+      : [];
+
+    return (modules.data ?? []).filter((module) => {
+      const moduleOs = Array.isArray(module.supportedOS) ? module.supportedOS.map((entry) => String(entry).toLowerCase()) : [];
+      const modulePayloads = Array.isArray(module.requiredPayloads) ? module.requiredPayloads.map((entry) => String(entry)) : [];
+      const osSupported = moduleOs.length === 0 || !implantOs || moduleOs.includes(implantOs);
+      const payloadsSupported = modulePayloads.every((payload) => supportedPayloads.includes(payload));
+      return osSupported && payloadsSupported;
+    });
+  }, [implantData?.os, implantData?.supportedPayloads, modules.data]);
+  const selectedModule = useMemo(
+    () => compatibleModules.find((module) => module._id === selectedModuleId) ?? compatibleModules[0] ?? null,
+    [compatibleModules, selectedModuleId]
+  );
+  const implantModuleRuns = useMemo(
+    () =>
+      (moduleRuns.data ?? [])
+        .filter((run) => {
+          const options = run.options as Record<string, { value?: unknown }> | undefined;
+          const implantValue = options?.implant?.value;
+          return implantId && typeof implantValue === 'string' && implantValue === implantId;
+        })
+        .slice(0, 25),
+    [implantId, moduleRuns.data]
+  );
+  const moduleLogsByRun = useMemo(() => {
+    const grouped = new Map<string, ModuleLogRecord[]>();
+    for (const entry of moduleLogs.data ?? []) {
+      const runId = typeof entry.sourceId === 'string' ? entry.sourceId : '';
+      if (!runId) {
+        continue;
+      }
+      const current = grouped.get(runId) ?? [];
+      current.push(entry);
+      grouped.set(runId, current);
+    }
+    return grouped;
+  }, [moduleLogs.data]);
 
   async function waitForJobResult(jobId: string): Promise<JobRecord> {
     for (let attempt = 0; attempt < 180; attempt += 1) {
@@ -1005,7 +1121,7 @@ export function ImplantSessionPage() {
     setActiveShellId(resolvedShellId);
     setBrowserSessions(nextBrowserSessions);
     setActiveBrowserId(resolvedBrowserId);
-    setActiveSubtab((currentTab.state.activeSubtab?.toString() as 'shell' | 'browser' | 'configure' | 'tunnels' | 'history' | undefined) ?? 'shell');
+    setActiveSubtab((currentTab.state.activeSubtab?.toString() as 'shell' | 'browser' | 'modules' | 'configure' | 'tunnels' | 'history' | undefined) ?? 'shell');
     setEditingShellId(null);
     setEditingShellTitle('');
     setEditingBrowserId(null);
@@ -1099,6 +1215,34 @@ export function ImplantSessionPage() {
 
     void browsePath('.', true);
   }, [activeBrowser.id, activeBrowser.resolved, activeSubtab, busyBrowser]);
+
+  useEffect(() => {
+    if (compatibleModules.length === 0) {
+      setSelectedModuleId('');
+      return;
+    }
+
+    if (!compatibleModules.some((module) => module._id === selectedModuleId)) {
+      setSelectedModuleId(compatibleModules[0]._id);
+    }
+  }, [compatibleModules, selectedModuleId]);
+
+  useEffect(() => {
+    if (!selectedModule) {
+      setModuleOptionDrafts({});
+      return;
+    }
+
+    const nextDrafts: Record<string, string> = {};
+    for (const [key, definition] of Object.entries(selectedModule.options ?? {})) {
+      nextDrafts[key] = definition?.value === undefined || definition?.value === null ? '' : String(definition.value);
+    }
+    if (implantId && Object.prototype.hasOwnProperty.call(selectedModule.options ?? {}, 'implant')) {
+      nextDrafts.implant = implantId;
+    }
+    setModuleOptionDrafts(nextDrafts);
+    setModuleMessage('');
+  }, [implantId, selectedModule?._id]);
 
   if (!implantId) {
     return <Navigate to="/implants" replace />;
@@ -1236,6 +1380,40 @@ export function ImplantSessionPage() {
     }
   }
 
+  async function runModule(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!implantId || !selectedModule || busyModuleRun) {
+      return;
+    }
+
+    const optionDefinitions = selectedModule.options ?? {};
+    const optionsPayload: Record<string, ModuleOptionDefinition> = {};
+    for (const [key, definition] of Object.entries(optionDefinitions)) {
+      const value = key === 'implant' ? implantId : moduleOptionDrafts[key] ?? (definition.value === undefined ? '' : String(definition.value));
+      optionsPayload[key] = {
+        ...definition,
+        value
+      };
+    }
+
+    setBusyModuleRun(true);
+    setModuleMessage(`Running ${selectedModule.name ?? 'module'}...`);
+    try {
+      await app.service('modules/run').create({
+        moduleId: selectedModule._id,
+        options: optionsPayload,
+        autorun: false
+      });
+      setModuleMessage(`Run queued: ${selectedModule.name ?? selectedModule._id}`);
+      queryClient.invalidateQueries({ queryKey: ['modules/run'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    } catch (error) {
+      setModuleMessage(error instanceof Error ? error.message : 'Unable to run module');
+    } finally {
+      setBusyModuleRun(false);
+    }
+  }
+
   return (
     <div className="page-stack implant-compact">
       <PageHeader title={`Implant session ${implantId.slice(0, 8)}`} subtitle="Interactive command workspace and recent job stream." />
@@ -1245,6 +1423,9 @@ export function ImplantSessionPage() {
         </button>
         <button type="button" className={`session-subtabs__item ${activeSubtab === 'browser' ? 'active' : ''}`} onClick={() => setActiveSubtab('browser')}>
           Browser
+        </button>
+        <button type="button" className={`session-subtabs__item ${activeSubtab === 'modules' ? 'active' : ''}`} onClick={() => setActiveSubtab('modules')}>
+          Modules
         </button>
         <button type="button" className={`session-subtabs__item ${activeSubtab === 'configure' ? 'active' : ''}`} onClick={() => setActiveSubtab('configure')}>
           Configure
@@ -1649,6 +1830,143 @@ export function ImplantSessionPage() {
                           </td>
                         </tr>
                       ))
+                    )}
+                  </tbody>
+                </table>
+              </section>
+            </>
+          }
+        />
+      ) : null}
+
+      {activeSubtab === 'modules' ? (
+        <SessionPane
+          title="Modules"
+          body={
+            <>
+              <form className="session-form session-form--compact" onSubmit={runModule}>
+                <div className="inline-field inline-field--grow">
+                  <label>
+                    <span>module</span>
+                    <select value={selectedModule?._id ?? ''} onChange={(event) => setSelectedModuleId(event.target.value)}>
+                      {compatibleModules.map((module) => (
+                        <option key={module._id} value={module._id}>
+                          {module.name ?? module._id}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <button type="submit" disabled={busyModuleRun || !selectedModule}>
+                  {busyModuleRun ? 'Running...' : 'Run module'}
+                </button>
+              </form>
+              {selectedModule?.description ? <p className="muted">{selectedModule.description}</p> : null}
+              {compatibleModules.length === 0 ? <p className="muted">No modules are compatible with this implant.</p> : null}
+              {selectedModule ? (
+                <section className="panel panel--table">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Option</th>
+                        <th>Value</th>
+                        <th>Required</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(selectedModule.options ?? {})
+                        .filter(([key]) => key !== 'implant')
+                        .map(([key, definition]) => {
+                          const normalizedKey = key.toLowerCase();
+                          const isFileOption = normalizedKey === 'file';
+                          const selectedFile = (storedFiles.data ?? []).find((file) => file._id === moduleOptionDrafts[key]);
+
+                          return (
+                            <tr key={key}>
+                              <td>{key}</td>
+                              <td>
+                                <div className="session-results">
+                                  <input
+                                    value={moduleOptionDrafts[key] ?? ''}
+                                    onChange={(event) => setModuleOptionDrafts((current) => ({ ...current, [key]: event.target.value }))}
+                                  />
+                                  {isFileOption ? (
+                                    <select
+                                      value={moduleOptionDrafts[key] ?? ''}
+                                      onChange={(event) => setModuleOptionDrafts((current) => ({ ...current, [key]: event.target.value }))}
+                                    >
+                                      <option value="">Select stored file...</option>
+                                      {(storedFiles.data ?? []).map((file) => (
+                                        <option key={file._id} value={file._id}>
+                                          {file.filename} ({file._id.slice(0, 8)})
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : null}
+                                  {isFileOption && selectedFile ? <span className="muted">Selected: {selectedFile.filename}</span> : null}
+                                </div>
+                              </td>
+                              <td>{definition.required ? 'Yes' : 'No'}</td>
+                              <td>{definition.description ?? '—'}</td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </section>
+              ) : null}
+              {moduleMessage ? <p className="muted">{moduleMessage}</p> : null}
+              <section className="panel panel--table">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Module</th>
+                      <th>Status</th>
+                      <th>Result</th>
+                      <th>Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {implantModuleRuns.length === 0 ? (
+                      <tr>
+                        <td className="empty-cell" colSpan={4}>No module runs for this implant yet.</td>
+                      </tr>
+                    ) : (
+                      implantModuleRuns.map((run, index) => {
+                        const runId = String(run._id ?? '');
+                        const runLogs = runId ? moduleLogsByRun.get(runId) ?? [] : [];
+                        const latestLog = runLogs[0];
+                        const statusNumber = typeof run.runStatus === 'number' ? run.runStatus : Number(run.runStatus);
+                        const statusLabel = describeRunStatus(statusNumber);
+                        const resultLabel = latestLog?.message
+                          ? String(latestLog.message)
+                          : statusNumber === 4
+                            ? 'Failed, no module log returned'
+                            : statusNumber === 3
+                              ? 'Completed'
+                              : 'Pending output';
+
+                        return (
+                          <tr key={String(run._id ?? index)}>
+                            <td>{String(run.moduleName ?? run.moduleId ?? '—')}</td>
+                            <td>{statusLabel}</td>
+                            <td>
+                              {runLogs.length > 0 ? (
+                                <details className="result-collapsible">
+                                  <summary>
+                                    <span className="result-summary-type">{resultLabel}</span>
+                                  </summary>
+                                  <pre>{runLogs.map((entry) => `[${entry.type === 1 ? 'ERROR' : entry.type === 2 ? 'SUCCESS' : 'INFO'}] ${entry.message ?? ''}`).join('\n')}</pre>
+                                </details>
+                              ) : (
+                                resultLabel
+                              )}
+                            </td>
+                            <td>{run.lastUpdated ? new Date(Number(run.lastUpdated)).toLocaleString() : '—'}</td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
