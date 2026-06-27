@@ -44,6 +44,35 @@ type NuagesContextState = {
   socket: any;
 };
 
+type AuthState = 'checking' | 'authenticated' | 'unauthenticated';
+
+function isUnauthorizedError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const details = error as {
+    code?: number;
+    statusCode?: number;
+    message?: string;
+    name?: string;
+    data?: { code?: number; message?: string };
+  };
+
+  const code = details.code ?? details.statusCode ?? details.data?.code;
+  const name = (details.name ?? '').toLowerCase();
+  const message = (details.message ?? details.data?.message ?? '').toLowerCase();
+
+  return (
+    code === 401
+    || name.includes('not-authenticated')
+    || name.includes('notauthenticated')
+    || message.includes('not authenticated')
+    || message.includes('jwt expired')
+    || message.includes('invalid token')
+  );
+}
+
 const NuagesContext = createContext<NuagesContextState | null>(null);
 
 export function useNuages(): NuagesContextState {
@@ -95,6 +124,7 @@ function WorkspaceFrame({ queryClient }: { queryClient: QueryClient }) {
   const logEvent = useWorkspaceStore((state) => state.logEvent);
   const { addToast } = useToast();
   const [clientState, setClientState] = useState<NuagesContextState | null>(null);
+  const [authState, setAuthState] = useState<AuthState>('checking');
   const profile = useMemo(() => profiles.find((entry) => entry.id === activeProfileId) ?? profiles[0] ?? null, [activeProfileId, profiles]);
   const location = useLocation();
   const navigate = useNavigate();
@@ -102,10 +132,12 @@ function WorkspaceFrame({ queryClient }: { queryClient: QueryClient }) {
   useEffect(() => {
     if (!profile) {
       setClientState(null);
+      setAuthState('unauthenticated');
       setConnectionState('disconnected');
       return;
     }
 
+    setAuthState('checking');
     const client = createNuagesClient(profile);
     let cancelled = false;
 
@@ -114,11 +146,43 @@ function WorkspaceFrame({ queryClient }: { queryClient: QueryClient }) {
     const handleError = (error: unknown) => {
       setConnectionState('error');
       logEvent('error', error instanceof Error ? error.message : 'Socket connection error');
+
+      if (isUnauthorizedError(error)) {
+        setAuthState('unauthenticated');
+        logEvent('warning', 'Authentication expired. Redirecting to login.');
+        navigate('/connect', { replace: true });
+      }
+    };
+
+    const handleLoggedOut = () => {
+      if (cancelled) {
+        return;
+      }
+
+      setAuthState('unauthenticated');
+      setConnectionState('error');
+      logEvent('warning', 'Session ended. Please login again.');
+      navigate('/connect', { replace: true });
+    };
+
+    const handleReauthError = (error: unknown) => {
+      if (cancelled) {
+        return;
+      }
+
+      if (isUnauthorizedError(error)) {
+        setAuthState('unauthenticated');
+        setConnectionState('error');
+        logEvent('warning', 'Authentication expired. Please login again.');
+        navigate('/connect', { replace: true });
+      }
     };
 
     client.socket.on('connect', handleConnect);
     client.socket.on('disconnect', handleDisconnect);
     client.socket.on('connect_error', handleError);
+    client.app.on('logout', handleLoggedOut);
+    client.app.on('reauthentication-error', handleReauthError);
 
     const serviceNames = ['implants', 'jobs', 'files', 'modules', 'modules/run', 'handlers', 'listeners', 'tunnels', 'pipes', 'webhooks'] as const;
     const serviceEvents = ['created', 'updated', 'patched', 'removed'] as const;
@@ -149,12 +213,16 @@ function WorkspaceFrame({ queryClient }: { queryClient: QueryClient }) {
       try {
         await client.app.reAuthenticate();
         if (!cancelled) {
+          setAuthState('authenticated');
           setConnectionState('authenticated');
           logEvent('success', `Connected to ${profile.name}`);
         }
       } catch {
         if (!cancelled) {
+          setAuthState('unauthenticated');
+          setConnectionState('error');
           logEvent('warning', 'Awaiting login credentials');
+          navigate('/connect', { replace: true });
         }
       }
     })();
@@ -164,9 +232,11 @@ function WorkspaceFrame({ queryClient }: { queryClient: QueryClient }) {
       client.socket.off('connect', handleConnect);
       client.socket.off('disconnect', handleDisconnect);
       client.socket.off('connect_error', handleError);
+      client.app.off('logout', handleLoggedOut);
+      client.app.off('reauthentication-error', handleReauthError);
       client.socket.disconnect();
     };
-  }, [logEvent, profile, queryClient, setConnectionState]);
+  }, [logEvent, navigate, profile, queryClient, setConnectionState]);
 
   useEffect(() => {
     if (location.pathname === '/' && profile) {
@@ -178,16 +248,24 @@ function WorkspaceFrame({ queryClient }: { queryClient: QueryClient }) {
     return <Navigate to="/connect" replace />;
   }
 
-  if (!clientState) {
+  if (!clientState || authState === 'checking') {
     return (
       <div className="auth-screen">
         <div className="auth-card">
           <div className="auth-card__eyebrow">Nuages Dashboard</div>
-          <h1>Connecting to server</h1>
-          <p>Loading the realtime client and restoring the current workspace.</p>
+          <h1>{clientState ? 'Authenticating session' : 'Connecting to server'}</h1>
+          <p>
+            {clientState
+              ? 'Verifying your credentials before loading the workspace.'
+              : 'Loading the realtime client and restoring the current workspace.'}
+          </p>
         </div>
       </div>
     );
+  }
+
+  if (authState === 'unauthenticated') {
+    return <Navigate to="/connect" replace />;
   }
 
   return (

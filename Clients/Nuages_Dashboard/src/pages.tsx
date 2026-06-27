@@ -15,6 +15,8 @@ type ConnectionDraft = {
   password: string;
 };
 
+type PersistedConnectionDraft = Omit<ConnectionDraft, 'password'>;
+
 type LegacyConnectionDraft = {
   name?: string;
   url?: string;
@@ -62,7 +64,7 @@ function normalizeConnectionDraft(value: LegacyConnectionDraft): ConnectionDraft
     name: value.name ?? defaultDraft.name,
     url: value.url ?? defaultDraft.url,
     username: value.username ?? value.email ?? defaultDraft.username,
-    password: value.password ?? defaultDraft.password
+    password: defaultDraft.password
   };
 }
 
@@ -82,13 +84,63 @@ function StatusBadge({ value }: { value: string }) {
   return <span className={`status status--${value.replace(/\s+/g, '-')}`}>{value}</span>;
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
+function waitForSocket(client: ReturnType<typeof useNuages>, timeoutMs = 4_000): Promise<void> {
+  if (client.socket?.connected) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const onConnect = () => {
+      window.clearTimeout(timer);
+      client.socket.off('connect', onConnect);
+      resolve();
+    };
+
+    const timer = window.setTimeout(() => {
+      client.socket.off('connect', onConnect);
+      reject(new Error('Socket connection timed out'));
+    }, timeoutMs);
+
+    client.socket.on('connect', onConnect);
+    client.socket.connect();
+  });
+}
+
 function useServiceCollection<T>(serviceName: string, query: Record<string, unknown> = {}, staleTime = 15_000) {
   const client = useNuages();
+
   return useQuery({
     queryKey: [serviceName, query, client?.profile.id ?? 'offline'],
     enabled: Boolean(client?.app),
     staleTime,
-    queryFn: async () => normalizeMaybeArray<T>(await client.app.service(serviceName).find({ query }))
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
+    retry: 2,
+    queryFn: async () => {
+      await waitForSocket(client);
+      const result = await withTimeout<{ data?: T[] } | T[]>(
+        client.app.service(serviceName).find({ query }),
+        10_000,
+        `Timed out loading ${serviceName}`
+      );
+      return normalizeMaybeArray<T>(result);
+    }
   });
 }
 
@@ -121,7 +173,12 @@ export function ConnectPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    writeJson('nuages.dashboard.connectDraft', draft);
+    const persistedDraft: PersistedConnectionDraft = {
+      name: draft.name,
+      url: draft.url,
+      username: draft.username
+    };
+    writeJson('nuages.dashboard.connectDraft', persistedDraft);
   }, [draft]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -323,10 +380,23 @@ function ServiceTable<T extends Record<string, unknown>>({
   query?: Record<string, unknown>;
 }) {
   const result = useServiceCollection<T>(serviceName, query ?? { $limit: 100, $sort: { createdAt: -1 } });
+  const rowSpan = columns.length + (rowAction ? 1 : 0);
+  const hasRows = (result.data ?? []).length > 0;
+  const loading = result.isPending || (result.isFetching && !hasRows);
+  const errorMessage = result.error instanceof Error ? result.error.message : 'Unable to load records.';
 
   return (
     <div className="page-stack">
-      <PageHeader title={title} subtitle={subtitle} />
+      <PageHeader
+        title={title}
+        subtitle={subtitle}
+        action={(
+          <button type="button" className="btn-icon" onClick={() => void result.refetch()}>
+            <RefreshCw size={16} aria-hidden="true" />
+            <span>Refresh</span>
+          </button>
+        )}
+      />
       <section className="panel panel--table">
         <table className="data-table">
           <thead>
@@ -338,9 +408,21 @@ function ServiceTable<T extends Record<string, unknown>>({
             </tr>
           </thead>
           <tbody>
-            {(result.data ?? []).length === 0 ? (
+            {loading ? (
               <tr>
-                <td colSpan={columns.length + (rowAction ? 1 : 0)} className="empty-cell">
+                <td colSpan={rowSpan} className="empty-cell">
+                  Loading records...
+                </td>
+              </tr>
+            ) : result.isError ? (
+              <tr>
+                <td colSpan={rowSpan} className="empty-cell">
+                  {errorMessage}
+                </td>
+              </tr>
+            ) : !hasRows ? (
+              <tr>
+                <td colSpan={rowSpan} className="empty-cell">
                   No records found.
                 </td>
               </tr>
@@ -394,9 +476,10 @@ export function ImplantsPage() {
       title="Implants"
       subtitle="List, inspect, and open live sessions for active implants."
       serviceName="implants"
+      query={{ $limit: 100, $sort: { lastSeen: -1 } }}
       columns={[
         {
-          key: 'lastSeen',
+          key: 'status',
           label: 'Status',
           render: (row) => {
             const active = isImplantActive(row.lastSeen);
@@ -448,6 +531,7 @@ export function JobsPage() {
       title="Jobs"
       subtitle="Track command execution, module runs, and job results in one place."
       serviceName="jobs"
+      query={{ $limit: 100, $sort: { createdAt: -1 } }}
       columns={[
         { key: '_id', label: 'ID', render: (row) => <code>{row._id.slice(0, 10)}</code> },
         { key: 'implantId', label: 'Implant' },
