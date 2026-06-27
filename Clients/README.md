@@ -4,8 +4,11 @@ Nuages is available through REST or socket.io and as such, clients can be implem
 
 The following clients are currently available:
 
- * The Nuages_Cli client is the default client to access Nuages, it is a available over command line.
- * ~~The Nuages_WebCli client is a browser version of the Nuages_Cli client.~~
- * The Nuages Dashboard is a fully fledged UI to manage and operate implants
 
-![Nuages_Cli](https://user-images.githubusercontent.com/19682240/57589031-ee8f0e00-74eb-11e9-9f7d-b3023a0e6506.PNG)
+### Nuages CLI
+<img width="604" height="448" alt="image" src="https://github.com/user-attachments/assets/4f4dd1c7-1789-41c2-8436-b400c22e6b59" />
+
+
+
+### Nuages Dashboard
+<img width="1093" height="542" alt="image" src="https://github.com/user-attachments/assets/30199b0c-debb-4da4-bef5-934aca07b12d" />
