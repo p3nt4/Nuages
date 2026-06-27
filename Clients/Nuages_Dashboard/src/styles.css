@@ -1042,8 +1042,19 @@ button:focus-visible {
   align-items: start;
 }
 
+.browser-edit-form {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.browser-edit-content {
+  min-height: 18rem;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
 .browser-path-form {
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
 }
 
 .browser-put-button {

@@ -148,6 +148,50 @@ function createTabTitle(kind: 'implant-session' | 'job-session', entityId: strin
   return `${kind === 'implant-session' ? 'Implant' : 'Job'} ${entityId.slice(0, 6)}`;
 }
 
+function getJobType(job: JobRecord): string {
+  const payload = (job.payload as { type?: unknown } | undefined) ?? undefined;
+  if (typeof payload?.type === 'string' && payload.type.trim()) {
+    return payload.type;
+  }
+
+  if (typeof job.moduleName === 'string' && job.moduleName.trim()) {
+    return `module:${job.moduleName}`;
+  }
+
+  return 'unknown';
+}
+
+function getJobSummary(job: JobRecord): string {
+  const payload = (job.payload as Record<string, unknown> | undefined) ?? undefined;
+  if (!payload) {
+    return '-';
+  }
+
+  const options = (payload.options as Record<string, unknown> | undefined) ?? undefined;
+  const command = options?.cmd ?? payload.command ?? payload.cmd;
+  if (typeof command === 'string' && command.trim()) {
+    return command;
+  }
+
+  const source = options?.source ?? payload.source;
+  const destination = options?.destination ?? payload.destination;
+  if (typeof source === 'string' || typeof destination === 'string') {
+    return `${typeof source === 'string' ? source : '?'} -> ${typeof destination === 'string' ? destination : '?'}`;
+  }
+
+  const path = options?.path ?? options?.cwd ?? payload.path;
+  if (typeof path === 'string' && path.trim()) {
+    return path;
+  }
+
+  if (getJobType(job) === 'configure' && options?.config && typeof options.config === 'object') {
+    const keys = Object.keys(options.config as Record<string, unknown>);
+    return keys.length > 0 ? `config: ${keys.join(', ')}` : 'config update';
+  }
+
+  return '-';
+}
+
 function parseConfigResult(raw: unknown): Record<string, string> {
   if (typeof raw !== 'string' || !raw.trim()) {
     return {};
@@ -526,6 +570,16 @@ export function ImplantsPage() {
 export function JobsPage() {
   const navigate = useNavigate();
   const openSessionTab = useWorkspaceStore((state) => state.openSessionTab);
+
+  function renderJobSummary(row: JobRecord) {
+    const summary = getJobSummary(row);
+    return (
+      <span className="muted" title={summary}>
+        {summary}
+      </span>
+    );
+  }
+
   return (
     <ServiceTable<JobRecord>
       title="Jobs"
@@ -534,6 +588,8 @@ export function JobsPage() {
       query={{ $limit: 100, $sort: { createdAt: -1 } }}
       columns={[
         { key: '_id', label: 'ID', render: (row) => <code>{row._id.slice(0, 10)}</code> },
+        { key: 'jobType', label: 'Type', render: (row) => <code>{getJobType(row)}</code> },
+        { key: 'jobSummary', label: 'Summary', render: renderJobSummary },
         { key: 'implantId', label: 'Implant' },
         { key: 'creator', label: 'Creator' },
         { key: 'jobStatus', label: 'Job status', render: (row) => describeJobStatus(row.jobStatus) },
@@ -979,6 +1035,15 @@ export function ImplantSessionPage() {
   const [showPutModal, setShowPutModal] = useState(false);
   const [putFileId, setPutFileId] = useState('');
   const [putTarget, setPutTarget] = useState('');
+  const [busyLocalGetName, setBusyLocalGetName] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTargetPath, setEditTargetPath] = useState('');
+  const [editTargetName, setEditTargetName] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editMessage, setEditMessage] = useState('');
+  const [busyEditLoad, setBusyEditLoad] = useState(false);
+  const [busyEditSave, setBusyEditSave] = useState(false);
+  const localPutInputRef = useRef<HTMLInputElement | null>(null);
   const [editingShellId, setEditingShellId] = useState<string | null>(null);
   const [editingShellTitle, setEditingShellTitle] = useState('');
   const [editingBrowserId, setEditingBrowserId] = useState<string | null>(null);
@@ -1432,6 +1497,285 @@ export function ImplantSessionPage() {
     }
   }
 
+  async function getLocal(remoteName: string) {
+    if (!implantId || busyTransfer) {
+      return;
+    }
+
+    const remotePath = joinBrowserPath(activeBrowser.cwd, remoteName);
+    setBusyTransfer(true);
+    setBusyLocalGetName(remoteName);
+    setTransferMessage(`Downloading ${remoteName} to local client...`);
+
+    let pipeId = '';
+    try {
+      const created = (await app.service('jobs').create({
+        ...uploadJobPayload(remotePath, activeBrowser.cwd, implantId),
+        noPipeDelete: true,
+        pipe: {
+          type: 'bidirectional',
+          source: remotePath,
+          destination: `Local: ${remoteName}`,
+          implantId
+        }
+      })) as JobRecord & { pipe_id?: string };
+
+      pipeId = typeof created.pipe_id === 'string' ? created.pipe_id : '';
+      if (!pipeId) {
+        throw new Error('Unable to open transfer pipe');
+      }
+
+      await waitForJobResult(created._id);
+
+      const chunks: ArrayBuffer[] = [];
+      let idleCount = 0;
+      while (idleCount < 4) {
+        const io = await app.service('pipes/io').create({ pipe_id: pipeId });
+        const out = typeof io?.out === 'string' ? io.out : '';
+        if (!out) {
+          idleCount += 1;
+          continue;
+        }
+
+        const raw = atob(out);
+        const bytes = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i += 1) {
+          bytes[i] = raw.charCodeAt(i);
+        }
+        const chunk = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+        chunks.push(chunk);
+        idleCount = 0;
+      }
+
+      if (chunks.length === 0) {
+        throw new Error('No data received from implant');
+      }
+
+      const blob = new Blob(chunks, { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = remoteName;
+      anchor.click();
+      URL.revokeObjectURL(url);
+
+      setTransferMessage(`Downloaded ${remoteName} to local client`);
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to download file locally';
+      setTransferMessage(message);
+    } finally {
+      if (pipeId) {
+        void app.service('pipes').remove(pipeId).catch(() => undefined);
+      }
+      setBusyTransfer(false);
+      setBusyLocalGetName('');
+    }
+  }
+
+  async function putLocal(file: File) {
+    if (!implantId || busyTransfer) {
+      return;
+    }
+
+    const promptedTarget = window.prompt('Remote target path on implant', file.name);
+    if (promptedTarget === null) {
+      if (localPutInputRef.current) {
+        localPutInputRef.current.value = '';
+      }
+      return;
+    }
+
+    const target = promptedTarget.trim() || file.name;
+    setBusyTransfer(true);
+    setTransferMessage(`Uploading ${file.name} to implant...`);
+
+    let pipeId = '';
+    try {
+      const created = (await app.service('jobs').create({
+        ...downloadJobPayload(target, file.name, file.size, activeBrowser.cwd, implantId),
+        pipe: {
+          type: 'bidirectional',
+          source: file.name,
+          destination: target,
+          implantId
+        }
+      })) as JobRecord & { pipe_id?: string };
+
+      pipeId = typeof created.pipe_id === 'string' ? created.pipe_id : '';
+      if (!pipeId) {
+        throw new Error('Unable to open transfer pipe');
+      }
+
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const chunkSize = 65536;
+      for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+        const chunk = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
+        let binary = '';
+        for (let i = 0; i < chunk.length; i += 1) {
+          binary += String.fromCharCode(chunk[i]);
+        }
+        await app.service('pipes/io').create({ pipe_id: pipeId, in: btoa(binary) });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      setTransferMessage(`Put queued from local client: ${file.name} -> ${target}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to upload local file';
+      setTransferMessage(message);
+      if (pipeId) {
+        void app.service('pipes').remove(pipeId).catch(() => undefined);
+      }
+    } finally {
+      setBusyTransfer(false);
+      if (localPutInputRef.current) {
+        localPutInputRef.current.value = '';
+      }
+    }
+  }
+
+  function closeEditModal() {
+    setShowEditModal(false);
+    setBusyEditLoad(false);
+    setBusyEditSave(false);
+  }
+
+  async function openEditModal(remoteName: string) {
+    if (!implantId || busyTransfer || busyEditLoad || busyEditSave) {
+      return;
+    }
+
+    const remotePath = joinBrowserPath(activeBrowser.cwd, remoteName);
+    setShowPutModal(false);
+    setShowEditModal(true);
+    setEditTargetName(remoteName);
+    setEditTargetPath(remotePath);
+    setEditContent('');
+    setEditMessage(`Loading ${remoteName}...`);
+    setBusyTransfer(true);
+    setBusyEditLoad(true);
+
+    let pipeId = '';
+    try {
+      const created = (await app.service('jobs').create({
+        ...uploadJobPayload(remotePath, activeBrowser.cwd, implantId),
+        noPipeDelete: true,
+        pipe: {
+          type: 'bidirectional',
+          source: remotePath,
+          destination: `Local editor: ${remoteName}`,
+          implantId
+        }
+      })) as JobRecord & { pipe_id?: string };
+
+      pipeId = typeof created.pipe_id === 'string' ? created.pipe_id : '';
+      if (!pipeId) {
+        throw new Error('Unable to open edit transfer pipe');
+      }
+
+      await waitForJobResult(created._id);
+
+      const chunks: Uint8Array[] = [];
+      let totalBytes = 0;
+      let idleCount = 0;
+      while (idleCount < 4) {
+        const io = await app.service('pipes/io').create({ pipe_id: pipeId });
+        const out = typeof io?.out === 'string' ? io.out : '';
+        if (!out) {
+          idleCount += 1;
+          continue;
+        }
+
+        const raw = atob(out);
+        const bytes = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i += 1) {
+          bytes[i] = raw.charCodeAt(i);
+        }
+
+        chunks.push(bytes);
+        totalBytes += bytes.length;
+        idleCount = 0;
+      }
+
+      const merged = new Uint8Array(totalBytes);
+      let offset = 0;
+      for (const chunk of chunks) {
+        merged.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      const decoder = new TextDecoder();
+      setEditContent(decoder.decode(merged));
+      setEditMessage('');
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load file for editing';
+      setEditMessage(message);
+    } finally {
+      if (pipeId) {
+        void app.service('pipes').remove(pipeId).catch(() => undefined);
+      }
+      setBusyEditLoad(false);
+      setBusyTransfer(false);
+    }
+  }
+
+  async function saveEditedFile(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!implantId || busyTransfer || busyEditLoad || busyEditSave || !editTargetPath.trim()) {
+      return;
+    }
+
+    setBusyTransfer(true);
+    setBusyEditSave(true);
+    setEditMessage(`Saving ${editTargetPath}...`);
+
+    let pipeId = '';
+    try {
+      const encoder = new TextEncoder();
+      const payload = encoder.encode(editContent);
+
+      const created = (await app.service('jobs').create({
+        ...downloadJobPayload(editTargetPath.trim(), editTargetName || 'edited.txt', payload.length, activeBrowser.cwd, implantId),
+        pipe: {
+          type: 'bidirectional',
+          source: editTargetName || 'edited.txt',
+          destination: editTargetPath.trim(),
+          implantId
+        }
+      })) as JobRecord & { pipe_id?: string };
+
+      pipeId = typeof created.pipe_id === 'string' ? created.pipe_id : '';
+      if (!pipeId) {
+        throw new Error('Unable to open save transfer pipe');
+      }
+
+      const chunkSize = 65536;
+      for (let offset = 0; offset < payload.length; offset += chunkSize) {
+        const chunk = payload.subarray(offset, Math.min(offset + chunkSize, payload.length));
+        let binary = '';
+        for (let i = 0; i < chunk.length; i += 1) {
+          binary += String.fromCharCode(chunk[i]);
+        }
+        await app.service('pipes/io').create({ pipe_id: pipeId, in: btoa(binary) });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      setTransferMessage(`Saved ${editTargetPath}`);
+      setEditMessage('Saved');
+      setShowEditModal(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to save edited file';
+      setEditMessage(message);
+      if (pipeId) {
+        void app.service('pipes').remove(pipeId).catch(() => undefined);
+      }
+    } finally {
+      setBusyEditSave(false);
+      setBusyTransfer(false);
+    }
+  }
+
   async function queuePut(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!implantId || busyTransfer || !putFileId) {
@@ -1779,9 +2123,34 @@ export function ImplantSessionPage() {
                 <button type="submit" className="browser-refresh-button" disabled={busyBrowser} title="Refresh">
                   <RefreshCw className={`browser-refresh-icon ${busyBrowser ? 'spinning' : ''}`} size={16} aria-hidden="true" />
                 </button>
-                <button type="button" className="browser-put-button" onClick={() => setShowPutModal(true)}>
+                <button
+                  type="button"
+                  className="browser-put-button"
+                  onClick={() => setShowPutModal(true)}
+                  title="Put from server-stored files already uploaded to Nuages"
+                >
                   Put
                 </button>
+                <button
+                  type="button"
+                  className="browser-put-button"
+                  onClick={() => localPutInputRef.current?.click()}
+                  disabled={busyTransfer}
+                  title="Put local: select a file from this browser client and stream it directly to the implant"
+                >
+                  Put local
+                </button>
+                <input
+                  ref={localPutInputRef}
+                  type="file"
+                  style={{ display: 'none' }}
+                  onChange={(event) => {
+                    const selected = event.target.files?.[0];
+                    if (selected) {
+                      void putLocal(selected);
+                    }
+                  }}
+                />
               </form>
               {showPutModal ? (
                 <div className="modal-backdrop" role="presentation" onClick={() => setShowPutModal(false)}>
@@ -1831,6 +2200,43 @@ export function ImplantSessionPage() {
                         </button>
                         <button type="submit" disabled={busyTransfer || !putFileId}>
                           {busyTransfer ? 'Queuing...' : 'Put'}
+                        </button>
+                      </div>
+                    </form>
+                  </section>
+                </div>
+              ) : null}
+              {showEditModal ? (
+                <div className="modal-backdrop" role="presentation" onClick={closeEditModal}>
+                  <section className="modal-card" role="dialog" aria-modal="true" aria-label="Edit remote file" onClick={(event) => event.stopPropagation()}>
+                    <header className="modal-card__header">
+                      <h3>Edit File</h3>
+                      <button type="button" className="modal-close" onClick={closeEditModal} aria-label="Close edit dialog">
+                        x
+                      </button>
+                    </header>
+                    <form className="session-form browser-edit-form" onSubmit={saveEditedFile}>
+                      <label>
+                        <span>remote file path</span>
+                        <input value={editTargetPath} onChange={(event) => setEditTargetPath(event.target.value)} placeholder="path/to/file.txt" />
+                      </label>
+                      <label>
+                        <span>content</span>
+                        <textarea
+                          className="browser-edit-content"
+                          value={editContent}
+                          onChange={(event) => setEditContent(event.target.value)}
+                          spellCheck={false}
+                          disabled={busyEditLoad}
+                        />
+                      </label>
+                      {editMessage ? <p className="muted">{editMessage}</p> : null}
+                      <div className="modal-actions">
+                        <button type="button" onClick={closeEditModal}>
+                          Cancel
+                        </button>
+                        <button type="submit" disabled={busyEditLoad || busyEditSave || !editTargetPath.trim()}>
+                          {busyEditSave ? 'Saving...' : 'Save'}
                         </button>
                       </div>
                     </form>
@@ -1905,9 +2311,32 @@ export function ImplantSessionPage() {
                           <td>{entry.type === 'file' ? formatFileSize(entry.size) : '-'}</td>
                           <td>
                             {entry.type === 'file' ? (
-                              <button type="button" onClick={() => queueGet(entry.name)} disabled={busyTransfer}>
-                                Get
-                              </button>
+                              <div className="row-actions">
+                                <button
+                                  type="button"
+                                  onClick={() => queueGet(entry.name)}
+                                  disabled={busyTransfer}
+                                  title="Get to server storage: stage file in Nuages files service"
+                                >
+                                  Get
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void getLocal(entry.name)}
+                                  disabled={busyTransfer}
+                                  title="Get local: download file directly to this browser client"
+                                >
+                                  {busyLocalGetName === entry.name ? 'Getting...' : 'Get local'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void openEditModal(entry.name)}
+                                  disabled={busyTransfer || busyEditLoad || busyEditSave}
+                                  title="Edit file content directly from the browser and save back to implant"
+                                >
+                                  Edit
+                                </button>
+                              </div>
                             ) : (
                               '-'
                             )}
