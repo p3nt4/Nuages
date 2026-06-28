@@ -1,4 +1,4 @@
-# Nuages Dashboard Tutorial
+# Nuages Dashboard
 
 This guide walks you through running the Dashboard, connecting to a server, and using the core workflow.
 
