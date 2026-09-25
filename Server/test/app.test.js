@@ -12,19 +12,33 @@ const getUrl = pathname => url.format({
 });
 
 describe('Feathers application tests', () => {
-  before(function(done) {
-    this.server = app.listen(port);
-    this.server.once('listening', () => done());
+  before(async function() {
+    this.server = await app.listen(port);
   });
 
-  after(function(done) {
-    this.server.close(done);
+  after(async function() {
+    await new Promise((resolve, reject) => {
+      this.server.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
   });
 
   it('starts and shows the index page', () => {
     return rp(getUrl()).then(body =>
       assert.ok(body.indexOf('<html>') !== -1)
     );
+  });
+
+  it('exposes the app bootstrap state with runtime collections', () => {
+    assert.ok(app, 'app instance should exist');
+    assert.strictEqual(typeof app.service, 'function', 'Feathers service registry should be configured');
+    assert.deepStrictEqual(app.pipe_list || {}, {});
+    assert.deepStrictEqual(app.child_process_list || {}, {});
   });
 
   describe('404', function() {

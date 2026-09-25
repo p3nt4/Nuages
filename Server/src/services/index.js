@@ -48,4 +48,26 @@ module.exports = function (app) {
   app.configure(implantIoBin);
   app.configure(implantCallback);
   app.configure(webhooks);
+
+  const registerLegacyAlias = (alias, target) => {
+    try {
+      app.service(alias);
+      return;
+    } catch {
+      // Legacy service aliases intentionally preserve older API paths.
+    }
+
+    app.use(alias, app.service(target));
+  };
+
+  registerLegacyAlias('/fs', '/files');
+  registerLegacyAlias('/fs/files', '/files');
+  registerLegacyAlias('/handlers/run', '/listeners');
+  registerLegacyAlias('/handlers/startstop', '/listeners/startstop');
+  registerLegacyAlias('/implant-io-bin', '/implant/bin/:pipeId');
+  registerLegacyAlias('/implants/io', '/implant/io');
+  registerLegacyAlias('/handlers-load', '/handlers/load');
+  registerLegacyAlias('/handlers-run', '/listeners');
+  registerLegacyAlias('/listen', '/listeners');
+  registerLegacyAlias('/files', '/files');
 };

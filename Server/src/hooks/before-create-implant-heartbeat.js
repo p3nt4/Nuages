@@ -7,6 +7,9 @@ const error = require('@feathersjs/errors');
 
 module.exports = function (options = {}) {
   return async context => {
+    if (!context || !context.data || typeof context.data !== 'object') {
+      return context;
+    }
     
     // The implant must know its id
     if(!context.data.id || context.data.id.length != context.app.get("id_length")){

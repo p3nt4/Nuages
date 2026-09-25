@@ -6,6 +6,9 @@ const error = require('@feathersjs/errors');
 
 module.exports = function (options = {}) {
   return async context => {
+    if (!context || !context.data || typeof context.data !== 'object') {
+      return context;
+    }
 
     // Get the job this is related to:
     var job = await context.app.service('jobs').get(context.data.jobId);

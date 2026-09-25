@@ -1,0 +1,16 @@
+/* eslint-env node */
+module.exports = {
+  env: {
+    node: true,
+    es2021: true,
+    mocha: true,
+  },
+  extends: ['eslint:recommended'],
+  parserOptions: {
+    ecmaVersion: 2021,
+  },
+  rules: {
+    'no-console': 'off',
+    'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+  },
+};

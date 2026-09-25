@@ -8,6 +8,9 @@ const error = require('@feathersjs/errors');
 
 module.exports = function (options = {}) {
   return async context => {
+    if (!context || !context.data || typeof context.data !== 'object') {
+      return context;
+    }
     
     var data = {};
 
@@ -40,13 +43,13 @@ module.exports = function (options = {}) {
     data.noPipeDelete = context.data.noPipeDelete ? context.data.noPipeDelete : false;
 
     if(!context.data.payload){
-      throw error.BadRequest("A payload is needed");
+      throw new error.BadRequest("A payload is needed");
     } else{
       data.payload = context.data.payload;
     }
 
     if(!context.data.implantId){
-      throw error.BadRequest("An implant ID is needed");
+      throw new error.BadRequest("An implant ID is needed");
     }else{
       data.implantId = context.data.implantId;
     }

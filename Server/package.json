@@ -23,8 +23,8 @@
     "npm": ">= 3.0.0"
   },
   "scripts": {
-    "test": "npm run eslint && NODE_ENV= npm run mocha",
-    "eslint": "eslint src/. test/. --config .eslintrc.json",
+    "test": "npm run eslint && cross-env NODE_ENV=test npm run mocha",
+    "eslint": "eslint src/. test/.",
     "dev": "nodemon src/",
     "start": "node src/",
     "mocha": "mocha test/ --recursive --exit"
@@ -58,7 +58,9 @@
   },
   "devDependencies": {
     "@feathersjs/cli": "~5.0.31",
+    "cross-env": "^10.1.0",
     "eslint": "~9.17.0",
+    "cross-env": "^10.0.0",
     "mocha": "~11.0.1",
     "nodemon": "~3.1.9",
     "request": "~2.88.2",

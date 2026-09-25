@@ -7,8 +7,8 @@ module.exports = (options = {}) => {
 
     if(context.app.server_list !== undefined && context.app.server_list[context.id]){
       console.log("Shutting down server: " + context.app.server_list[context.id]._connectionKey.replace("4:",""));
-      try{context.app.server_list[context.id].close()}catch(e){};
-      try{delete context.app.server_list[context.id]}catch(e){};
+      try{context.app.server_list[context.id].close();}catch{};
+      try{delete context.app.server_list[context.id];}catch{};
       context.app.service("pipes").remove(null,{query:{tunnelId: context.id}});
     }
     return context;

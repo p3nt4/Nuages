@@ -9,6 +9,9 @@ const error = require('@feathersjs/errors');
 
 module.exports = (options = {}) => {
   return async context => {
+    if (!context || !context.data || typeof context.data !== 'object') {
+      return context;
+    }
 
     var data = {};
 

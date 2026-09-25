@@ -11,6 +11,9 @@ const srs = require('secure-random-string');
 
 module.exports = function (options = {}) {
   return async context => {
+    if (!context || !context.data || typeof context.data !== 'object') {
+      return context;
+    }
     
     // If the runId attribute is there, the callback is intended for a module
     // This had not been tested yet but would allow for implants to communicate with modules during execution

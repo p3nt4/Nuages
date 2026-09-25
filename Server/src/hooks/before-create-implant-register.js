@@ -11,6 +11,10 @@ const https = require('https');
 
 module.exports = function (options = {}) {
   return async context => {
+    if (!context || !context.data || typeof context.data !== 'object') {
+      return context;
+    }
+
     const { data } = context;
 
     var data2 = {};

@@ -1,12 +1,12 @@
 // Use this hook to manipulate incoming or outgoing data.
 // For more information on hooks see: http://docs.feathersjs.com/api/hooks.html
 
-// eslint-disable-next-line no-unused-vars
-
-const { NotFound } = require('@feathersjs/errors');
-
 module.exports = (options = {}) => {
   return async context => {
+    if (!context || !context.data || typeof context.data !== 'object') {
+      return context;
+    }
+
     if(context.app.pipe_list[context.params.route.pipeId] != undefined){
       var pipe = context.app.pipe_list[context.params.route.pipeId];
       if(pipe.canWrite){
