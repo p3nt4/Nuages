@@ -90,7 +90,7 @@ class NuagesHttpAesConnector:
         headers = {'Authorization': encrypted_url}
 
         r = requests.post(self.connectionString, encrypted_data, headers=headers)
-        if(r.status_code != 200):
+        if(not r.ok):
             raise Exception(r.status_code)
         if(len(r.content)>0):
             # The result must be decrypted
@@ -110,7 +110,7 @@ class NuagesHttpAesConnector:
         headers = {'Authorization': encrypted_url}
 
         r = requests.post(self.connectionString, encrypted_data, headers=headers)
-        if(r.status_code != 200):
+        if(not r.ok):
             raise Exception(r.status_code)
         if(len(r.content)>0):
             # The result must be decrypted
@@ -132,7 +132,7 @@ class NuagesHttpApiConnector:
     def POST(self, url, data):
         headers = {'Content-Type': 'application/json; charset=utf-8'}
         r = requests.post(self._build_url(url), data=bytes(data, 'utf-8'), headers=headers)
-        if(r.status_code != 200):
+        if(not r.ok):
             raise Exception(r.status_code)
         return r.text if len(r.text) > 0 else ''
 
@@ -141,7 +141,7 @@ class NuagesHttpApiConnector:
         headers = {'Content-Type': 'application/octet-stream'}
         payload = data if data is not None else b''
         r = requests.post(self._build_url(url), data=payload, headers=headers)
-        if(r.status_code != 200):
+        if(not r.ok):
             raise Exception(r.status_code)
         return r.content if len(r.content) > 0 else b''
 

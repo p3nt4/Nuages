@@ -47,15 +47,6 @@ app.use('/', express.static(app.get('public'), {
   maxAge: '1h',
 }));
 
-// Keep the legacy HTML 404 semantics while preserving JSON NotFound responses for API callers.
-app.use((req, res, next) => {
-  if (req.accepts('html')) {
-    return res.status(404).type('html').send('<html><body><h1>404 Page not found</h1></body></html>');
-  }
-
-  return next(new NotFound('Page not found'));
-});
-
 app.configure(express.rest(function(req, res) {
   if (res.hook.path === 'implant/bin/:pipeId') {
     res.type('application/octet-stream');
@@ -71,6 +62,16 @@ app.configure(middleware);
 app.configure(authentication);
 app.configure(services);
 app.configure(channels);
+
+// Keep the legacy HTML 404 semantics while preserving JSON NotFound responses for API callers.
+// This must run after routes/services are registered so valid endpoints are not intercepted.
+app.use((req, res, next) => {
+  if (req.accepts('html')) {
+    return res.status(404).type('html').send('<html><body><h1>404 Page not found</h1></body></html>');
+  }
+
+  return next(new NotFound('Page not found'));
+});
 
 // Configure a middleware for 404s and the error handler.
 app.use(express.errorHandler({ logger }));
