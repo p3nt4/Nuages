@@ -8,6 +8,7 @@ const error = require('@feathersjs/errors');
 var net = require('net');
 
 const srs = require('secure-random-string');
+const { createCapability, findByCapability } = require('./implant-capabilities');
 
 module.exports = function (options = {}) {
   return async context => {
@@ -66,10 +67,12 @@ module.exports = function (options = {}) {
             }
             else{
               var pipe_id = srs({length: context.app.get('id_length'), alphanumeric: true});
+              const pipeCapability = createCapability();
               var pipe = await context.app.service('pipes').create({
                 tunnelId:tunnel._id,  
                 type: "rev_tcp",
                 _id: pipe_id,
+                implantCapability: pipeCapability,
                 implantId: tunnel.implantId,
                 source: tunnel.destination,
                 destination:  context.data.data.source,
@@ -103,7 +106,7 @@ module.exports = function (options = {}) {
                 canWrite: true
               };
               result.error = false;
-              result.pipe_id = pipe_id;
+              result.pipe_id = pipeCapability;
               
             }
 
@@ -114,14 +117,24 @@ module.exports = function (options = {}) {
     else if(context.data.callback == "pipe_close"){
       var result = {};
       try{
-      context.app.service('pipes').remove(context.data.data.pipe_id).catch((err) => {});
+      const pipe = await findByCapability(
+        context.app.service('pipes'),
+        'implantCapabilityHash',
+        context.data.data.pipe_id
+      );
+      context.app.service('pipes').remove(pipe._id).catch((err) => {});
       }catch{}
     }
 
     // This call is used to set the destionation of a pipe, after a socks connection has been opened
     else if(context.data.callback == "pipe_dest"){
       var result = {};
-      context.app.service('pipes').patch(context.data.data.pipe_id,{destination: context.data.data.destination}).catch((err) => {});
+      const pipe = await findByCapability(
+        context.app.service('pipes'),
+        'implantCapabilityHash',
+        context.data.data.pipe_id
+      );
+      context.app.service('pipes').patch(pipe._id,{destination: context.data.data.destination}).catch((err) => {});
     }
     else{
       throw new error.NotFound("Callback not found"); 

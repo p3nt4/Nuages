@@ -3,6 +3,7 @@
 
 // eslint-disable-next-line no-unused-vars
 const error = require('@feathersjs/errors');
+const { findByCapability } = require('./implant-capabilities');
 
 module.exports = function (options = {}) {
   return async context => {
@@ -10,12 +11,11 @@ module.exports = function (options = {}) {
       return context;
     }
 
-    // Get the job this is related to:
-    var job = await context.app.service('jobs').get(context.data.jobId);
-
-    if (job === undefined){
-      throw new  error.NotFound("Job not found");
-    }
+    var job = await findByCapability(
+      context.app.service('jobs'),
+      'implantCapabilityHash',
+      context.data.jobId
+    );
 
     if (job.jobStatus > 2){
       throw new  error.Forbidden("Job already completed");

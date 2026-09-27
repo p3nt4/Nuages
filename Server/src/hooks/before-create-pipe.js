@@ -5,6 +5,7 @@
 const error = require('@feathersjs/errors');
 
 const srs = require('secure-random-string');
+const { createCapability, hashCapability } = require('./implant-capabilities');
 
 var MemoryStream = require('memorystream');
 
@@ -12,6 +13,8 @@ module.exports = (options = {}) => {
   return async context => {
 
     var data = {};
+    const implantCapability = context.data.implantCapability || createCapability();
+    data.implantCapabilityHash = hashCapability(implantCapability);
     // These pipes are used to communicate between implants and clients directly
     if(context.data.type == "interactive" || context.data.type == "bidirectional"){
       data.id = srs({length: context.app.get('id_length'), alphanumeric: true});

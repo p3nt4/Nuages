@@ -3,6 +3,7 @@
 
 // eslint-disable-next-line no-unused-vars
 const srs = require('secure-random-string');
+const { createCapability } = require('./implant-capabilities');
 
 const error = require('@feathersjs/errors');
 
@@ -55,6 +56,7 @@ module.exports = function (options = {}) {
       var server = net.createServer(async function(socket) {
         try{
           let pipe_id = srs({length: context.app.get('id_length'), alphanumeric: true});
+          const pipeCapability = createCapability();
           socket.on('error', function(e) {
             try{
               //console.log("TCP connection error: " + pipe_id);
@@ -106,10 +108,11 @@ module.exports = function (options = {}) {
               jobOptions.host = destAddr[0];
               jobOptions.port = parseInt(destAddr[1]); 
             }
-            jobOptions.pipe_id=pipe_id;
+            jobOptions.pipe_id=pipeCapability;
             context.app.service('pipes').create({
               tunnelId:data._id, 
               _id:pipe_id, 
+              implantCapability: pipeCapability,
               type: data.type,
               implantId: data.implantId,
               source: ":" + data.port.toString(),

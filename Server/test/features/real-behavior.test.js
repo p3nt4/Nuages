@@ -45,7 +45,8 @@ describe('real feature behavior', () => {
     await beforeCreateJob()(validContext);
 
     assert.strictEqual(validContext.data.implantId, 'implant-1');
-    assert.deepStrictEqual(validContext.data.payload, { type: 'whoami', options: { pipe_id: 'pipe-123' } });
+  assert.strictEqual(validContext.data.payload.type, 'whoami');
+  assert.match(validContext.data.payload.options.pipe_id, /^[a-f0-9]{64}$/);
     assert.strictEqual(validContext.data.timeout, 2500);
     assert.strictEqual(validContext.data.creator, 'alice');
     assert.strictEqual(validContext.data.fileUpload, true);
@@ -157,7 +158,8 @@ describe('real feature behavior', () => {
 
     await beforeCreateImplantRegister()(context);
 
-    assert.strictEqual(context.data._id, 'implant-abc');
+  assert.match(context.data._id, /^[a-f0-9]{64}$/);
+  assert.strictEqual(services.implantCreate._id.length, 12);
     assert.strictEqual(services.implantCreate.localIp, '127.0.0.1');
     assert.strictEqual(services.implantCreate.os, 'windows');
     assert.strictEqual(services.implantCreate.hostname, 'test-host');

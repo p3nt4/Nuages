@@ -4,6 +4,7 @@
 // eslint-disable-next-line no-unused-vars
 
 const srs = require('secure-random-string');
+const { createCapability, hashCapability } = require('./implant-capabilities');
 
 const axios = require('axios');
 
@@ -42,6 +43,8 @@ module.exports = function (options = {}) {
     data2.supportedPayloads = data.supportedPayloads ? data.supportedPayloads : ["Unknown"];
 
     data2._id = srs({length: context.app.get('id_length'), alphanumeric: true});
+    const implantCapability = createCapability();
+    data2.implantCapabilityHash = hashCapability(implantCapability);
 
     data2.createdAt = Date.now();
 
@@ -50,7 +53,7 @@ module.exports = function (options = {}) {
     data2.listener = context.params.headers.listener ? context.params.headers.listener: "";
    
     // Actually create the implant
-    const implant = await context.app.service('implants').create(data2);
+    await context.app.service('implants').create(data2);
     
     // Run autorun modules
     context.app.service('/modules/run').find({query: {autorun: true}}).then(autoruns =>{
@@ -85,7 +88,7 @@ module.exports = function (options = {}) {
       console.error(error);
     });
     
-    context.data = {_id: implant._id};
+    context.data = {_id: implantCapability};
     //context.data = implant;
   };
 };

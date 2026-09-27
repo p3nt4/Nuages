@@ -1,15 +1,24 @@
 // Use this hook to manipulate incoming or outgoing data.
 // For more information on hooks see: http://docs.feathersjs.com/api/hooks.html
 
+const { findByCapability } = require('./implant-capabilities');
+
 module.exports = (options = {}) => {
   return async context => {
-    if(context.app.pipe_list[context.data.pipe_id] != undefined){
-      var pipe = context.app.pipe_list[context.data.pipe_id];
+    const pipeRecord = await findByCapability(
+      context.app.service('pipes'),
+      'implantCapabilityHash',
+      context.data.pipe_id
+    );
+    const pipeId = pipeRecord._id;
+
+    if(context.app.pipe_list[pipeId] != undefined){
+      var pipe = context.app.pipe_list[pipeId];
       if(pipe.canWrite){
         if(context.data.in){
           let buff = Buffer.from(context.data.in, 'base64');
-          context.service.emit('pipedata', {pipe_id: context.data.pipe_id, length: buff.length});
-          context.app.pipe_list[context.data.pipe_id].dataUp = pipe.dataUp + buff.length;
+          context.service.emit('pipedata', {pipe_id: pipeId, length: buff.length});
+          context.app.pipe_list[pipeId].dataUp = pipe.dataUp + buff.length;
           pipe.out.write(buff);
         }
         else{
@@ -30,7 +39,7 @@ module.exports = (options = {}) => {
           var buff = pipe.in.read();
         }
         if(buff){
-          context.app.pipe_list[context.data.pipe_id].dataDown = pipe.dataDown + buff.length;
+          context.app.pipe_list[pipeId].dataDown = pipe.dataDown + buff.length;
           context.result = {out:buff.toString('base64')};
         }else{
           context.result = {out:""};

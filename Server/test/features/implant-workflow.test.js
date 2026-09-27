@@ -33,6 +33,11 @@ describe('implant workflow', () => {
               implants.push(data);
               return { _id: data._id, ...data };
             },
+            async find({ query }) {
+              return {
+                data: implants.filter(item => item.implantCapabilityHash === query.implantCapabilityHash)
+              };
+            },
             async patch(id, patch) {
               const implant = implants.find(item => item._id === id || item.id === id) || { _id: id };
               Object.assign(implant, patch);
@@ -105,9 +110,11 @@ describe('implant workflow', () => {
 
     await beforeCreateImplantRegister()(registerContext);
     assert.ok(registerContext.data._id);
-    assert.strictEqual(registerContext.data._id.length, 16);
+    assert.strictEqual(registerContext.data._id.length, 64);
 
-    const implantId = registerContext.data._id;
+    const implantCapability = registerContext.data._id;
+    const implantId = implants[0]._id;
+    assert.strictEqual(implantId.length, 16);
     jobs[0].implantId = implantId;
 
     const jobContext = {
@@ -123,18 +130,29 @@ describe('implant workflow', () => {
     };
 
     await beforeCreateJob()(jobContext);
-    assert.strictEqual(jobContext.data.payload.options.pipe_id, 'pipe-abc');
+    assert.notStrictEqual(jobContext.data.payload.options.pipe_id, 'pipe-abc');
+    assert.match(jobContext.data.payload.options.pipe_id, /^[a-f0-9]{64}$/);
 
     const heartbeatContext = {
       app,
-      data: { id: implantId },
+      data: { id: implantCapability },
       params: { headers: { listener: 'listener-1' } }
     };
+
+    await assert.rejects(
+      () => beforeCreateImplantHeartbeat()({
+        app,
+        data: { id: implantId },
+        params: { headers: { listener: 'listener-1' } }
+      }),
+      err => err && err.code === 403
+    );
 
     await beforeCreateImplantHeartbeat()(heartbeatContext);
 
     assert.strictEqual(heartbeatContext.result.data.length, 1);
-    assert.strictEqual(heartbeatContext.result.data[0]._id, 'job-1');
+    assert.notStrictEqual(heartbeatContext.result.data[0]._id, 'job-1');
+    assert.strictEqual(heartbeatContext.result.data[0]._id.length, 64);
     assert.strictEqual(heartbeatContext.result.data[0].payload.type, 'whoami');
     assert.strictEqual(jobs[0].jobStatus, 1);
   });
@@ -163,11 +181,10 @@ describe('implant workflow', () => {
       service(name) {
         if (name === 'jobs') {
           return {
-            async get(id) {
-              if (id !== job._id) {
-                throw new Error(`Unknown job ${id}`);
-              }
-              return job;
+            async find({ query }) {
+              return {
+                data: job.implantCapabilityHash === query.implantCapabilityHash ? [job] : []
+              };
             },
             async patch(id, patch) {
               Object.assign(job, patch);
@@ -198,15 +215,32 @@ describe('implant workflow', () => {
       }
     };
 
+    const { createCapability, hashCapability } = require('../../src/hooks/implant-capabilities');
+    const jobCapability = createCapability();
+    job.implantCapabilityHash = hashCapability(jobCapability);
+
     const context = {
       app,
       data: {
-        jobId: 'job-2',
+        jobId: jobCapability,
         result: 'hello world',
         moreData: false,
         error: false
       }
     };
+
+    await assert.rejects(
+      () => beforeCreateImplantJobresult()({
+        app,
+        data: {
+          jobId: job._id,
+          result: 'unauthorized',
+          moreData: false,
+          error: false
+        }
+      }),
+      err => err && err.code === 403
+    );
 
     await beforeCreateImplantJobresult()(context);
 

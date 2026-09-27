@@ -1,19 +1,28 @@
 // Use this hook to manipulate incoming or outgoing data.
 // For more information on hooks see: http://docs.feathersjs.com/api/hooks.html
 
+const { findByCapability } = require('./implant-capabilities');
+
 module.exports = (options = {}) => {
   return async context => {
     if (!context || !context.data || typeof context.data !== 'object') {
       return context;
     }
 
-    if(context.app.pipe_list[context.params.route.pipeId] != undefined){
-      var pipe = context.app.pipe_list[context.params.route.pipeId];
+    const pipeRecord = await findByCapability(
+      context.app.service('pipes'),
+      'implantCapabilityHash',
+      context.params.route.pipeId
+    );
+    const pipeId = pipeRecord._id;
+
+    if(context.app.pipe_list[pipeId] != undefined){
+      var pipe = context.app.pipe_list[pipeId];
       if(pipe.canWrite){
         pipe.out.write(context.arguments[0]);
         if(context.arguments[0].length){
-          context.app.pipe_list[context.params.route.pipeId].dataUp = pipe.dataUp + context.arguments[0].length;
-          context.app.service('/implant/io').emit('pipedata', {pipe_id: context.params.route.pipeId, length: context.arguments[0].length});
+          context.app.pipe_list[pipeId].dataUp = pipe.dataUp + context.arguments[0].length;
+          context.app.service('/implant/io').emit('pipedata', {pipe_id: pipeId, length: context.arguments[0].length});
         }
       }
       if(pipe.canRead){
@@ -30,7 +39,7 @@ module.exports = (options = {}) => {
           var buff = pipe.in.read();
         }
         if(buff){
-          context.app.pipe_list[context.params.route.pipeId].dataDown = pipe.dataDown + buff.length;
+          context.app.pipe_list[pipeId].dataDown = pipe.dataDown + buff.length;
           context.result = buff;
         }else{
           context.result = "";

@@ -3,6 +3,7 @@
 
 // eslint-disable-next-line no-unused-vars
 const srs = require('secure-random-string');
+const { createCapability } = require('./implant-capabilities');
 
 const error = require('@feathersjs/errors');
 
@@ -56,9 +57,13 @@ module.exports = function (options = {}) {
 
     
     if(context.data.pipe){
-      pipe = await context.app.service('pipes').create(context.data.pipe).catch((err)=>{console.log(err)});
+      const pipeCapability = createCapability();
+      pipe = await context.app.service('pipes').create({
+        ...context.data.pipe,
+        implantCapability: pipeCapability
+      }).catch((err)=>{console.log(err)});
       data.pipe_id = pipe._id;
-      data.payload.options.pipe_id = pipe._id;
+      data.payload.options.pipe_id = pipeCapability;
     }
 
     context.data = data;
