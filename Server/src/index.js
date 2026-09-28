@@ -56,6 +56,8 @@ async function initializeRuntimeState() {
 
   // Initialize runtime collections used by child processes and pipe-backed sessions.
   app.pipe_list = {};
+  app.pipe_capability_map = Object.create(null);
+  app.pipe_capability_hashes = Object.create(null);
   app.child_process_list = {};
 
   await sleep(1000);

@@ -5,7 +5,11 @@
 const error = require('@feathersjs/errors');
 
 const srs = require('secure-random-string');
-const { createCapability, hashCapability } = require('./implant-capabilities');
+const {
+  createCapability,
+  hashCapability,
+  registerPipeCapability
+} = require('./implant-capabilities');
 
 var MemoryStream = require('memorystream');
 
@@ -146,6 +150,7 @@ module.exports = (options = {}) => {
       data.bufferSize = parseInt(context.data.bufferSize) ? parseInt(context.data.bufferSize) : 65536;
     }
 
+    registerPipeCapability(context.app, data._id, data.implantCapabilityHash);
     context.data = data;
 
     return context;

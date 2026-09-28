@@ -1,16 +1,11 @@
 // Use this hook to manipulate incoming or outgoing data.
 // For more information on hooks see: http://docs.feathersjs.com/api/hooks.html
 
-const { findByCapability } = require('./implant-capabilities');
+const { resolvePipeCapability } = require('./implant-capabilities');
 
 module.exports = (options = {}) => {
   return async context => {
-    const pipeRecord = await findByCapability(
-      context.app.service('pipes'),
-      'implantCapabilityHash',
-      context.data.pipe_id
-    );
-    const pipeId = pipeRecord._id;
+    const pipeId = resolvePipeCapability(context.app, context.data.pipe_id);
 
     if(context.app.pipe_list[pipeId] != undefined){
       var pipe = context.app.pipe_list[pipeId];
