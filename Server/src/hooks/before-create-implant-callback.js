@@ -81,7 +81,7 @@ module.exports = function (options = {}) {
               client.connect(parseInt(destinationArr[1]), destinationArr[0], function() {
               });
               if(tunnel.timeout != null){
-                socket.setTimeout(tunnel.timeout, function(e) {
+                client.setTimeout(tunnel.timeout, function(e) {
                   try{
                       console.log("TCP connection timed out");
                       context.app.service('pipes').remove(pipe._id).catch((err) => {});
