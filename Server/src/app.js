@@ -14,6 +14,7 @@ const middleware = require('./middleware');
 const services = require('./services');
 const appHooks = require('./app.hooks');
 const channels = require('./channels');
+const { resolveAuthenticationSecret } = require('./authentication-secret');
 
 const mongodb = require('./mongodb');
 const authentication = require('./authentication');
@@ -24,6 +25,12 @@ const app = express(feathers());
 // Application bootstrap: load config first so later middleware and services can rely on
 // environment-specific values such as host, port and public folder paths.
 app.configure(configuration());
+
+const authenticationConfig = app.get('authentication');
+app.set('authentication', {
+  ...authenticationConfig,
+  secret: resolveAuthenticationSecret(authenticationConfig.secret)
+});
 
 // Security and transport defaults. These protect the app and keep large implant/file uploads
 // available without overloading the request parser.

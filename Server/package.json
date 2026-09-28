@@ -23,7 +23,7 @@
     "npm": ">= 3.0.0"
   },
   "scripts": {
-    "test": "npm run eslint && cross-env NODE_ENV=test npm run mocha",
+    "test": "npm run eslint && cross-env NODE_ENV=test NUAGES_AUTH_SECRET=test-only-authentication-secret npm run mocha",
     "eslint": "eslint src/. test/.",
     "dev": "nodemon src/",
     "start": "node src/",
