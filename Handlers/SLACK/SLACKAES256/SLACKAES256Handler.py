@@ -3,6 +3,8 @@ import slack_sdk as slack
 import json
 import base64
 import hashlib
+import hmac
+import time
 import requests
 from Crypto import Random
 from Crypto.Cipher import AES
@@ -80,8 +82,21 @@ if __name__ == "__main__":
 
     slack_event_adapter = SlackEventAdapter(signing_secret=args.secret, endpoint="/slack/event-handler", server=app)
 
+    def verify_slack_request(req):
+        timestamp = req.headers.get('X-Slack-Request-Timestamp')
+        signature = req.headers.get('X-Slack-Signature')
+        if timestamp is None or signature is None:
+            return False
+        if abs(time.time() - int(timestamp)) > 60 * 5:
+            return False
+        basestring = f"v0:{timestamp}:{req.get_data().decode('utf-8')}".encode('utf-8')
+        expected_signature = 'v0=' + hmac.new(args.secret.encode('utf-8'), basestring, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected_signature, signature)
+
     @app.route('/slack/event-handler', methods=['POST'])
     def handle_event():
+        if not verify_slack_request(request):
+            return ("", 403)
         return slack_event_adapter.handle(request)
 
     @slack_event_adapter.on('message')
