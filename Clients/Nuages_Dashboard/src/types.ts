@@ -12,6 +12,7 @@ export type TabKind =
   | 'channels'
   | 'webhooks'
   | 'settings'
+  | 'users'
   | 'implant-session'
   | 'job-session';
 
@@ -96,4 +97,11 @@ export interface ListItem {
   path: string;
   file?: FileRecord;
   count?: number;
+}
+
+export interface UserRecord {
+  _id: string;
+  username: string;
+  isAdmin?: boolean;
+  [key: string]: unknown;
 }

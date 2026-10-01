@@ -84,6 +84,22 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text);
+}
+
+.checkbox-label input {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
 .shell {
   display: flex;
   flex-direction: column;
@@ -792,6 +808,12 @@ button:focus-visible {
 .session-form label {
   display: grid;
   gap: 0.4rem;
+}
+
+.auth-form .checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .auth-card__profiles {

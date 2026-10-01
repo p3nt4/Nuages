@@ -5,8 +5,8 @@ import { RefreshCw } from 'lucide-react';
 import { authenticate, cdJobPayload, createNuagesClient, describeJobStatus, describeListenerStatus, describeRunStatus, downloadJobPayload, downloadPipePayload, exitJobPayload, formatFileSize, formatLastSeen, isImplantActive, jobPayload, lsJobPayload, normalizeMaybeArray, normalizePath, uploadJobPayload, uploadPipePayload } from '@/lib/nuages';
 import { createId, readJson, writeJson } from '@/lib/storage';
 import { useWorkspaceStore } from '@/state/workspace';
-import type { FileRecord, ImplantRecord, JobRecord, ListItem, ServerProfile } from '@/types';
-import { useNuages } from '@/App';
+import type { FileRecord, ImplantRecord, JobRecord, ListItem, ServerProfile, UserRecord } from '@/types';
+import { useNuages, useToast } from '@/App';
 
 type ConnectionDraft = {
   name: string;
@@ -2966,6 +2966,130 @@ export function SettingsPage() {
           <button type="button" onClick={resetSensitiveState}>
             Reset sensitive state
           </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+type UserDraft = {
+  username: string;
+  password: string;
+  isAdmin: boolean;
+};
+
+const emptyUserDraft: UserDraft = { username: '', password: '', isAdmin: false };
+
+export function UsersPage() {
+  const { app, currentUser } = useNuages();
+  const queryClient = useQueryClient();
+  const { addToast } = useToast();
+  const users = useServiceCollection<UserRecord>('users', { $sort: { username: 1 } });
+  const [draft, setDraft] = useState<UserDraft>(emptyUserDraft);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  function editUser(user: UserRecord) {
+    setEditingId(user._id);
+    setDraft({ username: user.username, password: '', isAdmin: user.isAdmin === true });
+  }
+
+  function resetForm() {
+    setEditingId(null);
+    setDraft(emptyUserDraft);
+  }
+
+  async function saveUser(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const username = draft.username.trim();
+    if (!username || (!editingId && !draft.password)) {
+      addToast('Username and password are required');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const data: Record<string, unknown> = { username, isAdmin: draft.isAdmin };
+      if (draft.password) {
+        data.password = draft.password;
+      }
+
+      if (editingId) {
+        await app.service('users').patch(editingId, data);
+        addToast('User updated', username);
+      } else {
+        await app.service('users').create(data);
+        addToast('User created', username);
+      }
+
+      resetForm();
+      await queryClient.invalidateQueries({ queryKey: ['users'] });
+    } catch (error) {
+      addToast('Unable to save user', error instanceof Error ? error.message : 'Request failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeUser(user: UserRecord) {
+    if (user._id === currentUser?._id || !window.confirm(`Delete ${user.username}?`)) {
+      return;
+    }
+
+    try {
+      await app.service('users').remove(user._id);
+      addToast('User deleted', user.username);
+      await queryClient.invalidateQueries({ queryKey: ['users'] });
+    } catch (error) {
+      addToast('Unable to delete user', error instanceof Error ? error.message : 'Request failed');
+    }
+  }
+
+  return (
+    <div className="page-stack">
+      <PageHeader title="Users" subtitle="Create accounts and manage administrator access." />
+      <section className="panel">
+        <h2>{editingId ? 'Edit user' : 'Create user'}</h2>
+        <form className="auth-form" onSubmit={saveUser}>
+          <div className="auth-form__grid">
+            <label>
+              <span>Username</span>
+              <input value={draft.username} onChange={(event) => setDraft((value) => ({ ...value, username: event.target.value }))} autoComplete="username" />
+            </label>
+            <label>
+              <span>{editingId ? 'New password' : 'Password'}</span>
+              <input type="password" value={draft.password} onChange={(event) => setDraft((value) => ({ ...value, password: event.target.value }))} autoComplete="new-password" />
+            </label>
+          </div>
+          <label className="checkbox-label">
+            <input type="checkbox" checked={draft.isAdmin} onChange={(event) => setDraft((value) => ({ ...value, isAdmin: event.target.checked }))} />
+            <span>Administrator</span>
+          </label>
+          <div className="row-actions">
+            <button type="submit" disabled={busy}>{editingId ? 'Save user' : 'Create user'}</button>
+            {editingId ? <button type="button" onClick={resetForm}>Cancel</button> : null}
+          </div>
+        </form>
+      </section>
+      <section className="panel">
+        <h2>Accounts</h2>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+            <tbody>
+              {users.isLoading ? <tr><td colSpan={3}>Loading users...</td></tr> : null}
+              {(users.data ?? []).map((user) => (
+                <tr key={user._id}>
+                  <td>{user.username}</td>
+                  <td><StatusBadge value={user.isAdmin ? 'Administrator' : 'User'} /></td>
+                  <td className="row-actions">
+                    <button type="button" onClick={() => editUser(user)}>Edit</button>
+                    <button type="button" onClick={() => removeUser(user)} disabled={user._id === currentUser?._id}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>

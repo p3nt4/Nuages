@@ -41,6 +41,7 @@ nuages.tunnelService = app.service('/tunnels');
 nuages.pipeService = app.service('/pipes');
 nuages.ioService = app.service('/pipes/io');
 nuages.webhookService = app.service('/webhooks');
+nuages.userService = app.service('/users');
 
 
 nuages.vars = { 
@@ -397,6 +398,18 @@ nuages.templates.jobs = [
         attr: "result",
         size: 40,
         process: (e)=>{return e.replace(/[\u0001-\u0006\u0008-\u0009\u000B-\u001A]/g, "").substring(0,115);}
+    }
+];
+
+nuages.templates.users = [
+    {
+        header: "Username",
+        attr: "username"
+    },
+    {
+        header: "Role",
+        attr: "isAdmin",
+        process: (e)=>{return e ? term.toBold(term.toYellow("Admin")) : "User"}
     }
 ];
 

@@ -51,6 +51,7 @@ nuages.commands["!jobs"] = require("./commands/jobs").jobs;
 nuages.commands["!tunnels"] = require("./commands/tunnels").tunnels;
 nuages.commands["!channels"] =  require("./commands/channels").channels;
 nuages.commands["!webhooks"] =  require("./commands/webhooks").webhooks;
+nuages.commands["!users"] =  require("./commands/users").users;
     
 nuages.maincommand.addCommand(nuages.commands["!login"]);
 nuages.maincommand.addCommand(nuages.commands["!implants"]);
@@ -73,6 +74,7 @@ nuages.maincommand.addCommand(nuages.commands["!options"]);
 nuages.maincommand.addCommand(nuages.commands["!set"]);
 nuages.maincommand.addCommand(nuages.commands["!unset"]);
 nuages.maincommand.addCommand(nuages.commands["!webhooks"]);
+nuages.maincommand.addCommand(nuages.commands["!users"]);
 nuages.maincommand.addCommand(nuages.commands["!back"]);
 nuages.maincommand.addCommand(nuages.commands["!exit"]);
 

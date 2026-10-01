@@ -3,16 +3,17 @@ const { authenticate } = require('@feathersjs/authentication').hooks;
 const {
   hashPassword, protect
 } = require('@feathersjs/authentication-local').hooks;
+const requireAdmin = require('../../hooks/require-admin');
 
 module.exports = {
   before: {
     all: [],
-    find: [ authenticate('jwt') ],
-    get: [ authenticate('jwt') ],
-    create: [ hashPassword('password'), authenticate('jwt') ],
-    update: [ hashPassword('password'),  authenticate('jwt') ],
-    patch: [ hashPassword('password'),  authenticate('jwt') ],
-    remove: [ authenticate('jwt') ]
+    find: [ authenticate('jwt'), requireAdmin() ],
+    get: [ authenticate('jwt'), requireAdmin() ],
+    create: [ authenticate('jwt'), requireAdmin(), hashPassword('password') ],
+    update: [ authenticate('jwt'), requireAdmin(), hashPassword('password') ],
+    patch: [ authenticate('jwt'), requireAdmin(), hashPassword('password') ],
+    remove: [ authenticate('jwt'), requireAdmin() ]
   },
 
   after: {

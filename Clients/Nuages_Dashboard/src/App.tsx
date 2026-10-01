@@ -4,8 +4,8 @@ import type { QueryClient } from '@tanstack/react-query';
 import { Shell } from '@/components/Shell';
 import { createNuagesClient, normalizeMaybeArray } from '@/lib/nuages';
 import { useWorkspaceStore } from '@/state/workspace';
-import type { ImplantRecord, ServerProfile } from '@/types';
-import { ChannelsPage, ConnectPage, FilesExplorerPage, HandlersPage, ImplantSessionPage, ImplantsPage, JobSessionPage, JobsPage, ModulesPage, NotFoundPage, OverviewPage, SettingsPage, ListenersPage, TunnelsPage, WebhooksPage } from '@/pages';
+import type { ImplantRecord, ServerProfile, UserRecord } from '@/types';
+import { ChannelsPage, ConnectPage, FilesExplorerPage, HandlersPage, ImplantSessionPage, ImplantsPage, JobSessionPage, JobsPage, ModulesPage, NotFoundPage, OverviewPage, SettingsPage, ListenersPage, TunnelsPage, UsersPage, WebhooksPage } from '@/pages';
 
 type Toast = { id: number; message: string; sub?: string };
 
@@ -42,6 +42,7 @@ type NuagesContextState = {
   profile: ServerProfile;
   app: any;
   socket: any;
+  currentUser: UserRecord | null;
 };
 
 type AuthState = 'checking' | 'authenticated' | 'unauthenticated';
@@ -207,12 +208,13 @@ function WorkspaceFrame({ queryClient }: { queryClient: QueryClient }) {
 
     client.socket.connect();
     setConnectionState('connecting');
-    setClientState(client);
+    setClientState({ ...client, currentUser: null });
 
     (async () => {
       try {
-        await client.app.reAuthenticate();
+        const authentication = await client.app.reAuthenticate() as { user?: UserRecord };
         if (!cancelled) {
+          setClientState({ ...client, currentUser: authentication.user ?? null });
           setAuthState('authenticated');
           setConnectionState('authenticated');
           logEvent('success', `Connected to ${profile.name}`);
@@ -285,6 +287,11 @@ function LegacyImplantSessionRedirect() {
   return <Navigate to={`/implants/${implantId}/session`} replace />;
 }
 
+function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { currentUser } = useNuages();
+  return currentUser?.isAdmin === true ? <>{children}</> : <Navigate to="/overview" replace />;
+}
+
 export default function App({ queryClient }: { queryClient: QueryClient }) {
   return (
     <ToastLayer>
@@ -305,6 +312,7 @@ export default function App({ queryClient }: { queryClient: QueryClient }) {
         <Route path="/tunnels" element={<TunnelsPage />} />
         <Route path="/channels" element={<ChannelsPage />} />
         <Route path="/webhooks" element={<WebhooksPage />} />
+        <Route path="/users" element={<AdminOnlyRoute><UsersPage /></AdminOnlyRoute>} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

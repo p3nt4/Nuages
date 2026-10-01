@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Blocks, Cable, Cog, Cpu, Files, LayoutDashboard, Network, Radio, Shield, Webhook, Workflow } from 'lucide-react';
+import { Blocks, Cable, Cog, Cpu, Files, LayoutDashboard, Network, Radio, Shield, Users, Webhook, Workflow } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { TabStrip } from '@/components/TabStrip';
 import { useWorkspaceStore } from '@/state/workspace';
@@ -18,6 +18,7 @@ const navItems = [
   ['Tunnels', '/tunnels', Network],
   ['Channels', '/channels', Cable],
   ['Webhooks', '/webhooks', Webhook],
+  ['Users', '/users', Users],
   ['Settings', '/settings', Cog]
 ] as const;
 
@@ -28,7 +29,7 @@ export function Shell({ profile }: { profile: ServerProfile }) {
   const setActiveProfileId = useWorkspaceStore((state) => state.setActiveProfileId);
   const connectionState = useWorkspaceStore((state) => state.connectionState);
   const openSessionTab = useWorkspaceStore((state) => state.openSessionTab);
-  const { app } = useNuages();
+  const { app, currentUser } = useNuages();
 
   const implants = useQuery({
     queryKey: ['implants-rail'],
@@ -76,7 +77,7 @@ export function Shell({ profile }: { profile: ServerProfile }) {
         <aside className="rail">
           <div className="rail__group">
             <div className="rail__label">Workspace</div>
-            {navItems.map(([label, path, Icon]) => (
+            {navItems.filter(([label]) => label !== 'Users' || currentUser?.isAdmin === true).map(([label, path, Icon]) => (
               <NavLink key={path} to={path} className={({ isActive }) => `rail__link ${isActive ? 'active' : ''}`}>
                 <Icon size={15} aria-hidden="true" />
                 <span>{label}</span>

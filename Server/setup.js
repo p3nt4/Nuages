@@ -75,12 +75,23 @@ var nuagesUserQuestions = [
 ];
 
 function promptAddUser() {
-  inquirer.default.prompt(nuagesUserQuestions).then(async function(answers) {
+  dbo.collection('users').countDocuments({ isAdmin: true }).then((adminCount) => {
+    const questions = adminCount === 0
+      ? nuagesUserQuestions
+      : [...nuagesUserQuestions, {
+        type: 'confirm',
+        message: 'Make this user an administrator?',
+        name: 'isAdmin',
+        default: false
+      }];
+
+    return inquirer.default.prompt(questions).then(async function(answers) {
     nuagesUser = answers;
     nuagesUser.password = await hasher(nuagesUser.password1);
     const result = await dbo.collection('users').insertOne({
         username: nuagesUser.username,
-        password: nuagesUser.password
+        password: nuagesUser.password,
+        isAdmin: adminCount === 0 || nuagesUser.isAdmin === true
     });
       if(!result.acknowledged) {
         console.log("  Error creating the user" );
@@ -89,6 +100,30 @@ function promptAddUser() {
       }
     promptIndex();
     });
+    });
+}
+
+async function promptGrantAdmin() {
+  const users = await dbo.collection('users').find({ isAdmin: { $ne: true } }).toArray();
+  if (users.length === 0) {
+    console.log('  All users are already administrators');
+    promptIndex();
+    return;
+  }
+
+  const answers = await inquirer.default.prompt([{
+    type: 'list',
+    name: 'username',
+    message: 'Select a user to make an administrator:',
+    choices: users.map((user) => user.username)
+  }]);
+
+  const result = await dbo.collection('users').updateOne(
+    { username: answers.username },
+    { $set: { isAdmin: true } }
+  );
+  console.log(result.modifiedCount === 1 ? `  Administrator access granted to ${answers.username}` : '  Error granting administrator access');
+  promptIndex();
 }
 
 async function promptDelUser() {
@@ -170,6 +205,7 @@ function promptIndex() {
     var choices= [
       'Setup database connection',
       'Add a user',
+      'Grant administrator access',
       'Delete a user',
       'Clear database',
       'Exit'
@@ -191,6 +227,9 @@ function promptIndex() {
     }
     else if(answers.action=='Add a user'){
       promptAddUser();
+    }
+    else if(answers.action=='Grant administrator access'){
+      promptGrantAdmin();
     }
     else if(answers.action=='Delete a user'){
       promptDelUser();
