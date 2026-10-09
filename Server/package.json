@@ -61,7 +61,7 @@
     "cross-env": "^10.1.0",
     "eslint": "~9.17.0",
     "cross-env": "^10.0.0",
-    "mocha": "~11.0.1",
+    "mocha": "~12.0.2",
     "nodemon": "~3.1.9",
     "request": "~2.88.2",
     "request-promise": "~4.2.6"
